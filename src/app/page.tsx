@@ -15,6 +15,19 @@ type AiScore = {
   generatedAt: string
 }
 
+type JobStatus =
+  | 'not_applied'
+  | 'applied'
+  | 'interview'
+  | 'not_interested'
+
+const STATUS_LABELS: Record<JobStatus, string> = {
+  not_applied: '未投遞',
+  applied: '已投遞',
+  interview: '面試中',
+  not_interested: '不感興趣',
+}
+
 type Job = {
   id: string
   title?: string
@@ -22,7 +35,36 @@ type Job = {
   rawText?: string
   source?: string
   collectedAt?: string
+  status?: string
   aiScore?: AiScore
+}
+
+function resolveStatus(status?: string): JobStatus {
+  const valid: JobStatus[] = [
+    'not_applied',
+    'applied',
+    'interview',
+    'not_interested',
+  ]
+
+  if (status && valid.includes(status as JobStatus)) {
+    return status as JobStatus
+  }
+
+  return 'not_applied'
+}
+
+function getStatusBadgeClass(status: JobStatus) {
+  switch (status) {
+    case 'applied':
+      return 'border-blue-800 bg-blue-950/40 text-blue-300'
+    case 'interview':
+      return 'border-amber-800 bg-amber-950/40 text-amber-300'
+    case 'not_interested':
+      return 'border-slate-600 bg-slate-800/80 text-slate-400'
+    default:
+      return 'border-slate-700 bg-slate-800 text-slate-300'
+  }
 }
 
 function getScoreColor(score?: number) {
@@ -210,15 +252,25 @@ export default function HomePage() {
           </section>
         ) : (
           <section className="space-y-5">
-            {jobs.map((job) => (
+            {jobs.map((job) => {
+              const status = resolveStatus(job.status)
+
+              return (
               <article
                 key={job.id}
                 className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg"
               >
                 <div className="mb-4">
-                  <h2 className="text-2xl font-bold leading-relaxed">
-                    {job.title || '未命名職缺'}
-                  </h2>
+                  <div className="flex flex-wrap items-start gap-3">
+                    <h2 className="text-2xl font-bold leading-relaxed">
+                      {job.title || '未命名職缺'}
+                    </h2>
+                    <span
+                      className={`mt-1 rounded-full border px-3 py-1 text-sm font-semibold ${getStatusBadgeClass(status)}`}
+                    >
+                      {STATUS_LABELS[status]}
+                    </span>
+                  </div>
 
                   <div className="mt-3 flex flex-wrap gap-2 text-sm text-slate-400">
                     <span className="rounded-full bg-slate-800 px-3 py-1">
@@ -310,7 +362,7 @@ export default function HomePage() {
                   </button>
                 </div>
               </article>
-            ))}
+            )})}
           </section>
         )}
       </div>
