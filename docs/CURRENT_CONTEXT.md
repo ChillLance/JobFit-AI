@@ -8,52 +8,17 @@ Completed:
 
 - Chrome Extension can collect job postings.
 - Collected jobs are saved into `jobs_temp.json`.
-- Home page displays collected jobs.
-- Job detail page exists at `/jobs/[id]`.
-- Mock AI scoring API works.
-- AI score is persisted back into `jobs_temp.json`.
-- Detail page can load existing AI score.
-- Home page displays AI score and level.
-
-## Current Known Issue
-
-The home page still has an old "AI 評分" button.
-
-When clicked, it shows an alert:
-
-```txt
-AI 評分功能待開發
-```
-
-This is outdated because AI scoring is already available on the detail page through `ScorePanel`.
+- Home page displays collected jobs and AI score/level.
+- Home page action links to `/jobs/[id]` (`查看詳情 / AI 分析`).
+- Job detail page at `/jobs/[id]` with AI score panel (`ScorePanel`) and application status selector (`StatusSelect`).
+- Mock AI scoring API; scores persist to `jobs_temp.json`.
+- `PATCH /api/jobs/[id]/status` persists application status (`not_applied`, `applied`, `interview`, `not_interested`).
+- Missing status defaults to `not_applied` in the UI.
 
 ## Immediate Next Task
 
-Fix the home page AI button:
-
-- Remove the old placeholder alert.
-- Replace the button with a link to `/jobs/[id]`.
-- Rename it to `查看詳情 / AI 分析`.
-- Ensure home page AI score display remains working.
-
-## Next Feature After That
-
-Add application status management:
-
-- `not_applied`
-- `applied`
-- `interview`
-- `not_interested`
-
-Planned flow:
-
-```txt
-PATCH /api/jobs/[id]/status
-→ write status into jobs_temp.json
-→ detail page StatusSelect
-→ home page status badge
-→ home page status filters
-```
+- **TASK-005:** Show status badge on each home page job card.
+- **TASK-006:** Add status filter tabs/grouping on the home page (with counts).
 
 ## Do Not Do Yet
 

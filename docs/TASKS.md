@@ -2,87 +2,6 @@
 
 ## Current Task
 
-### TASK-002 Fix Home AI Button
-
-Goal:
-
-- Remove the old placeholder AI scoring alert.
-- Replace the home page "AI 評分" button with a link to `/jobs/[id]`.
-- Rename the button to `查看詳情 / AI 分析`.
-
-Likely files:
-
-```txt
-src/app/page.tsx
-```
-
-Acceptance Criteria:
-
-- Clicking the button no longer shows an alert.
-- Clicking the button navigates to the job detail page.
-- Home page still displays AI score if `aiScore` exists.
-- Unscored jobs still show `待分析`.
-
-Do Not Do:
-
-- Do not implement real AI API.
-- Do not change storage.
-- Do not add status management in this task.
-- Do not refactor the whole page.
-
----
-
-## Next Tasks
-
-### TASK-003 Add Job Status API
-
-Goal:
-
-- Add `PATCH /api/jobs/[id]/status`.
-- Support:
-  - `not_applied`
-  - `applied`
-  - `interview`
-  - `not_interested`
-- Persist `status` and `statusUpdatedAt` to `jobs_temp.json`.
-
-Likely files:
-
-```txt
-src/app/api/jobs/[id]/status/route.ts
-```
-
-Acceptance Criteria:
-
-- Valid status is written to `jobs_temp.json`.
-- Invalid status returns 400.
-- Missing job id returns 404.
-
----
-
-### TASK-004 Add StatusSelect to Detail Page
-
-Goal:
-
-- Add a dropdown to the job detail page.
-- Allow the user to update application status.
-- Save through the status API.
-
-Likely files:
-
-```txt
-src/app/jobs/[id]/StatusSelect.tsx
-src/app/jobs/[id]/page.tsx
-```
-
-Acceptance Criteria:
-
-- User can change status from detail page.
-- Status is persisted to `jobs_temp.json`.
-- Page defaults missing status to `not_applied`.
-
----
-
 ### TASK-005 Show Status Badge on Home Page
 
 Goal:
@@ -103,6 +22,8 @@ Acceptance Criteria:
 
 ---
 
+## Next Tasks
+
 ### TASK-006 Add Status Filters on Home Page
 
 Goal:
@@ -122,6 +43,25 @@ Acceptance Criteria:
 - Clicking a filter only shows jobs in that status.
 - Counts are shown for each filter.
 - Missing status counts as `not_applied`.
+
+---
+
+## Completed Tasks
+
+### TASK-002 Fix Home AI Button — Done
+
+- Home page button navigates to `/jobs/[id]` (`查看詳情 / AI 分析`); no placeholder alert.
+
+### TASK-003 Add Job Status API — Done
+
+- `PATCH /api/jobs/[id]/status` in `src/app/api/jobs/[id]/status/route.ts`
+- Status values: `not_applied`, `applied`, `interview`, `not_interested`
+- Persists `status` and `statusUpdatedAt` to `jobs_temp.json`
+
+### TASK-004 Add StatusSelect to Detail Page — Done
+
+- `StatusSelect` on the job detail page
+- Updates status via the status API; missing status defaults to `not_applied`
 
 ---
 
