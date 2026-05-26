@@ -157,11 +157,6 @@ export default function HomePage() {
     }
   }
 
-  
-  function handleAiScore() {
-    alert('AI 評分功能待開發')
-  }
-
   useEffect(() => {
     loadJobs()
   }, [])
@@ -260,19 +255,11 @@ export default function HomePage() {
                 )}
 
                 <div className="flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={handleAiScore}
-                    className="rounded-xl bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-500"
-                  >
-                    AI 評分
-                  </button>
-
                   <Link
                     href={`/jobs/${encodeURIComponent(job.id)}`}
-                    className="rounded-xl border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-800"
+                    className="rounded-xl bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-500"
                   >
-                    查看詳情
+                    查看詳情 / AI 分析
                   </Link>
                   <div
   className={`mt-4 rounded-xl border p-4 ${getScoreBoxClass(
