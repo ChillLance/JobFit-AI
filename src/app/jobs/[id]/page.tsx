@@ -2,6 +2,7 @@ import Link from 'next/link'
 import fs from 'fs'
 import path from 'path'
 import { ScorePanel } from './ScorePanel'
+import { StatusSelect, type JobStatus } from './StatusSelect'
 
 type AiScore = {
   score: number
@@ -22,7 +23,24 @@ type Job = {
   rawText?: string
   source?: string
   collectedAt?: string
+  status?: JobStatus
+  statusUpdatedAt?: string
   aiScore?: AiScore
+}
+
+function resolveStatus(status?: string): JobStatus {
+  const valid: JobStatus[] = [
+    'not_applied',
+    'applied',
+    'interview',
+    'not_interested',
+  ]
+
+  if (status && valid.includes(status as JobStatus)) {
+    return status as JobStatus
+  }
+
+  return 'not_applied'
 }
 
 
@@ -152,6 +170,11 @@ export default async function JobDetailPage({
             </span>
           </div>
         </section>
+
+        <StatusSelect
+          jobId={job.id}
+          initialStatus={resolveStatus(job.status)}
+        />
 
         <section className="mb-6 grid gap-4 md:grid-cols-3">
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
