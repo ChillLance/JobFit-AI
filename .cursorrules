@@ -1,0 +1,93 @@
+# Cursor Rules for JobFit-AI
+
+You are working on JobFit-AI, a local Next.js App Router project.
+
+## Core Rules
+
+- Make small, focused changes.
+- Do not rewrite the whole project.
+- Do not introduce a database unless explicitly requested.
+- Do not remove `jobs_temp.json`.
+- Do not remove AI score persistence.
+- Do not connect a real AI API unless explicitly requested.
+- Do not add dependencies unless necessary.
+- Do not change package versions unless explicitly requested.
+- Do not refactor unrelated files.
+- If a change requires editing more than 3 files, explain the plan before editing.
+
+## Next.js Rules
+
+- Keep server-side file operations server-side.
+- Do not add `'use client'` to files using `fs`, `path`, or `jobs_temp.json`.
+- Use Client Components only for interactive UI.
+- Preserve App Router conventions.
+
+## Data Rules
+
+Current source of truth:
+
+```txt
+jobs_temp.json
+```
+
+Preserve these fields:
+
+```txt
+id
+title
+url
+rawText
+source
+collectedAt
+aiScore
+```
+
+AI score shape:
+
+```txt
+score
+level
+summary
+strengths
+concerns
+requiredSkills
+bonusSkills
+applicationAdvice
+generatedAt
+```
+
+Planned job status values:
+
+```txt
+not_applied
+applied
+interview
+not_interested
+```
+
+Missing status means:
+
+```txt
+not_applied
+```
+
+## Current Priority
+
+Fix the home page AI button.
+
+The old button currently shows:
+
+```txt
+AI 評分功能待開發
+```
+
+It should navigate to the job detail page instead.
+
+## Do Not Do Yet
+
+- Do not migrate to Prisma, SQLite, Supabase, or PostgreSQL.
+- Do not add authentication.
+- Do not add cloud sync.
+- Do not add calendar integration.
+- Do not add resume generation.
+- Do not add a real OpenAI or Gemini API call.
