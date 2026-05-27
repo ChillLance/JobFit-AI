@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import path from 'path'
 import { promises as fs } from 'fs'
 
+// Local rule-based analysis only (ANALYZE_MODE defaults to local).
+// Gemini deep analysis will be implemented in a future task; see src/lib/aiConfig.ts.
+
 type Params = {
   params: Promise<{
     id: string
