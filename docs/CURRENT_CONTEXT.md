@@ -19,15 +19,28 @@ Also in place from earlier work:
 - Home page lists jobs with AI score/level and links to `/jobs/[id]`.
 - Job detail page includes AI score panel (`ScorePanel`) and mock scoring API with persistence.
 
-## Next Focus: MVP 0.3 — Job Fit Analysis
+## Current Focus: MVP 0.3 — Job Fit Analysis — In Progress
 
-The next phase targets **true AI job-fit analysis** (profile-aware scoring), not more status UI.
+The current phase targets **true AI job-fit analysis** (profile-aware scoring), not more status UI.
 
-Immediate work starts with a local user profile data source before changing scoring logic.
+### TASK-007 — Done
+
+- `user_profile.json` now exists at the project root.
+- It was generated from the user's real resume, work history, job search direction, and career goals.
+- This is the first user profile data source for future job-fit analysis.
+- No source code was changed; `jobs_temp.json` was not modified.
+
+### MVP 0.3 Data Preparation — Started
+
+User profile data is in place. Next step is UI scaffolding before wiring analysis logic.
 
 ## Immediate Next Task
 
-- **TASK-007:** Create `user_profile.json` at the project root as the user background / skills / preferences data source for upcoming job-fit analysis.
+- **TASK-008:** Add an "Analyze Fit" button placeholder on the job detail page.
+  - Button should be visible but does not need to trigger real analysis.
+  - Do not implement AI analysis in this task.
+  - Do not add an analyze API route.
+  - Do not modify `jobs_temp.json`.
 
 ## Do Not Do Yet
 

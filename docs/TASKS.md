@@ -6,34 +6,53 @@ Focus: move from mock AI scoring toward real job-fit analysis using a local user
 
 ## Current Task
 
-### TASK-007 Create user_profile.json Data Source
+### TASK-008 Add Analyze Fit Button Placeholder on Detail Page
 
 Goal:
 
-- Add a local `user_profile.json` file in the project root as the data source for user background, skills, and preferences.
-- Define a clear schema so future scoring logic can read consistent profile data.
+- Add a visible "Analyze Fit" button (or section) on the job detail page as a placeholder for future profile-aware job-fit analysis.
+- The button should appear on the page but does not need to trigger real analysis yet.
 
 Likely files:
 
 ```txt
-user_profile.json
+src/app/jobs/[id]/page.tsx
 ```
 
 Acceptance Criteria:
 
-- `user_profile.json` exists at the project root with a documented shape (e.g. summary, skills, experience, preferences).
-- File is valid JSON and safe to read from server-side code in a follow-up task.
-- No changes to `jobs_temp.json` or scoring APIs in this task unless explicitly scoped later.
+- An "Analyze Fit" button (or equivalent UI element) is visible on the job detail page.
+- Clicking it may show a placeholder message (e.g. "分析功能即將推出") or do nothing — but must not throw an error.
+- No AI analysis logic is implemented in this task.
+- No analyze API route is added.
+- `jobs_temp.json` is not modified.
+
+Do Not Do in TASK-008:
+
+- Do not implement AI analysis.
+- Do not add an analyze API route.
+- Do not modify `jobs_temp.json`.
 
 ---
 
 ## Next Tasks
 
-_(To be added after TASK-007 — e.g. wire profile into scoring, replace mock AI with profile-aware analysis.)_
+_(To be added after TASK-008 — e.g. wire profile into scoring API, replace mock AI with profile-aware analysis.)_
 
 ---
 
 ## Completed Tasks
+
+### MVP 0.3 — Job Fit Analysis — In Progress
+
+#### TASK-007 Create user_profile.json Data Source — Done
+
+- `user_profile.json` exists at the project root.
+- Generated from real resume, work history, job search direction, and career goals.
+- Valid JSON; safe to read from server-side code in follow-up tasks.
+- No source code was changed; no API route was added; `jobs_temp.json` was not modified.
+
+---
 
 ### MVP 0.2 — Application Status Tracking — Done
 
