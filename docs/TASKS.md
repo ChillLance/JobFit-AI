@@ -6,32 +6,30 @@ Focus: move from mock AI scoring toward real job-fit analysis using a local user
 
 ## Current Task
 
-### TASK-008 Add Analyze Fit Button Placeholder on Detail Page
+### TASK-009 Add Analyze API Endpoint
 
 Goal:
 
-- Add a visible "Analyze Fit" button (or section) on the job detail page as a placeholder for future profile-aware job-fit analysis.
-- The button should appear on the page but does not need to trigger real analysis yet.
+- Add a `POST /api/jobs/[id]/analyze` API route that prepares for profile-aware job-fit analysis.
+- The endpoint should be small and focused, returning a structured JSON analysis response without overcomplicating the implementation.
+
+Behavior (high level):
+
+- Read the target job from `jobs_temp.json` using the given `id`.
+- Read user profile data from `user_profile.json`.
+- Generate a **structured job-fit analysis object** (e.g. scores, strengths, gaps, recommendations) and return it as JSON.
+- Keep side effects minimal; avoid modifying `jobs_temp.json` or `user_profile.json` unless a later task explicitly allows it.
+
+Notes:
+
+- No real external AI API integration in this task.
+- Keep the data shape and implementation small so it remains easy to iterate on in later tasks.
 
 Likely files:
 
 ```txt
-src/app/jobs/[id]/page.tsx
+src/app/api/jobs/[id]/analyze/route.ts
 ```
-
-Acceptance Criteria:
-
-- An "Analyze Fit" button (or equivalent UI element) is visible on the job detail page.
-- Clicking it may show a placeholder message (e.g. "分析功能即將推出") or do nothing — but must not throw an error.
-- No AI analysis logic is implemented in this task.
-- No analyze API route is added.
-- `jobs_temp.json` is not modified.
-
-Do Not Do in TASK-008:
-
-- Do not implement AI analysis.
-- Do not add an analyze API route.
-- Do not modify `jobs_temp.json`.
 
 ---
 
@@ -51,6 +49,14 @@ _(To be added after TASK-008 — e.g. wire profile into scoring API, replace moc
 - Generated from real resume, work history, job search direction, and career goals.
 - Valid JSON; safe to read from server-side code in follow-up tasks.
 - No source code was changed; no API route was added; `jobs_temp.json` was not modified.
+
+#### TASK-008 Add Analyze Fit Button Placeholder on Detail Page — Done
+
+- Job detail page now shows an **AI Job Fit Analysis** section.
+- A disabled **Analyze Fit** button placeholder is visible on each job detail page.
+- The button is disabled for now and does not make any network request.
+- No analyze API exists yet and no AI analysis logic has been implemented.
+- No data files (`jobs_temp.json`, `user_profile.json`) were modified.
 
 ---
 
