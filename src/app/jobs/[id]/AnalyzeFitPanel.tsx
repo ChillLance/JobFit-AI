@@ -28,6 +28,26 @@ type Props = {
   jobId: string
 }
 
+function formatRecommendedAction(action: RecommendedAction): string {
+  switch (action) {
+    case 'apply':
+      return '建議投遞'
+    case 'maybe':
+      return '可以考慮'
+    case 'skip':
+      return '暫不建議'
+    default:
+      return action
+  }
+}
+
+function formatSource(source: string): string {
+  if (source === 'local-placeholder') {
+    return '本地規則分析'
+  }
+  return source
+}
+
 function SectionList({
   title,
   items,
@@ -86,7 +106,7 @@ export function AnalyzeFitPanel({ jobId }: Props) {
       }
 
       setAnalysis(payload as JobFitAnalysis)
-    } catch (err) {
+    } catch {
       setError('無法連線到分析服務，請確認本地伺服器是否仍在執行。')
       setAnalysis(null)
     } finally {
@@ -95,20 +115,20 @@ export function AnalyzeFitPanel({ jobId }: Props) {
   }
 
   const buttonLabel = isLoading
-    ? 'Analyzing...'
+    ? '分析中...'
     : analysis
-      ? 'Analyze Again'
-      : 'Analyze Fit'
+      ? '重新分析'
+      : '開始分析'
 
   return (
     <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold">AI Job Fit Analysis</h2>
+          <h2 className="text-xl font-bold">AI 職缺適合度分析</h2>
           <p className="mt-1 text-sm text-slate-400">
             根據這份職缺內容與你的{' '}
             <span className="font-semibold">user_profile.json</span>{' '}
-            進行在地規則分析，提供職缺適合度與履歷／面試建議。
+            進行本地規則分析，提供職缺適合度與履歷／面試建議。
           </p>
           {analysis?.metadata && (
             <p className="mt-2 text-xs text-slate-500">
@@ -121,7 +141,7 @@ export function AnalyzeFitPanel({ jobId }: Props) {
                 <span className="mr-3">公司：{analysis.metadata.company}</span>
               )}
               {typeof analysis.metadata.profileVersion === 'number' && (
-                <span>Profile v{analysis.metadata.profileVersion}</span>
+                <span>個人檔案版本 v{analysis.metadata.profileVersion}</span>
               )}
             </p>
           )}
@@ -156,44 +176,41 @@ export function AnalyzeFitPanel({ jobId }: Props) {
         <div className="mt-6 space-y-4">
           <div className="grid gap-4 md:grid-cols-3">
             <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-              <p className="text-xs text-slate-400">Fit Score</p>
+              <p className="text-xs text-slate-400">適合度分數</p>
               <p className="mt-2 text-3xl font-bold text-emerald-400">
                 {analysis.fitScore}
                 <span className="ml-1 text-sm text-slate-400">/ 100</span>
               </p>
             </div>
             <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-              <p className="text-xs text-slate-400">Recommended Action</p>
-              <p className="mt-2 text-lg font-semibold capitalize text-slate-100">
-                {analysis.recommendedAction}
+              <p className="text-xs text-slate-400">建議行動</p>
+              <p className="mt-2 text-lg font-semibold text-slate-100">
+                {formatRecommendedAction(analysis.recommendedAction)}
               </p>
             </div>
             <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-              <p className="text-xs text-slate-400">Source</p>
+              <p className="text-xs text-slate-400">分析來源</p>
               <p className="mt-2 text-sm text-slate-200">
-                {analysis.source === 'local-placeholder'
-                  ? 'Local placeholder / rule-based'
-                  : analysis.source}
+                {formatSource(analysis.source)}
               </p>
             </div>
           </div>
 
           {analysis.summary && (
             <div className="mt-2 rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-              <h3 className="text-sm font-semibold text-slate-200">Summary</h3>
+              <h3 className="text-sm font-semibold text-slate-200">分析摘要</h3>
               <p className="mt-2 text-sm text-slate-200">{analysis.summary}</p>
             </div>
           )}
 
-          <SectionList title="Strengths" items={analysis.strengths} />
-          <SectionList title="Gaps / Risks" items={analysis.gaps} />
-          <SectionList title="Required Skills (from job)" items={analysis.requiredSkills} />
-          <SectionList title="Bonus Skills" items={analysis.bonusSkills} />
-          <SectionList title="Resume Advice" items={analysis.resumeAdvice} />
-          <SectionList title="Interview Prep" items={analysis.interviewPrep} />
+          <SectionList title="適合優勢" items={analysis.strengths} />
+          <SectionList title="可能落差" items={analysis.gaps} />
+          <SectionList title="職缺要求技能" items={analysis.requiredSkills} />
+          <SectionList title="加分技能" items={analysis.bonusSkills} />
+          <SectionList title="履歷建議" items={analysis.resumeAdvice} />
+          <SectionList title="面試準備" items={analysis.interviewPrep} />
         </div>
       )}
     </section>
   )
 }
-

@@ -93,6 +93,19 @@ function includesAny(haystack: string, needles: string[]) {
   return needles.some((n) => haystack.includes(n))
 }
 
+function recommendedActionLabel(action: RecommendedAction): string {
+  switch (action) {
+    case 'apply':
+      return '建議投遞'
+    case 'maybe':
+      return '可以考慮'
+    case 'skip':
+      return '暫不建議'
+    default:
+      return action
+  }
+}
+
 function makeAnalysis(job: Job, profile: UserProfile): AnalyzeResponse {
   const jobTitle = job.title || ''
   const company = job.company || ''
@@ -314,45 +327,61 @@ function makeAnalysis(job: Job, profile: UserProfile): AnalyzeResponse {
   if (hospitalityHits.length > 0) {
     strengths.push(
       hasProfileHospitality
-        ? 'Hospitality / front desk signals appear in both job posting and your profile.'
-        : 'Strong hospitality / front desk signals found in the job posting.'
+        ? '職缺與你的個人檔案皆出現飯店、前台、接待或住宿相關訊號，與旅宿服務求職方向高度吻合。'
+        : '職缺中出現飯店、前台、接待或住宿相關訊號，符合你的旅宿服務求職方向。'
     )
   }
 
   if (languageHits.length > 0) {
     strengths.push(
       hasProfileLanguage
-        ? 'Language / multilingual requirements align with your profile.'
-        : 'Language / multilingual guest support signals found in the job posting.'
+        ? '職缺語言或外國旅客對應需求，與你個人檔案中的多語溝通背景相符。'
+        : '職缺內容包含語言或外國旅客對應相關訊號，可凸顯你的中文、日文與英文溝通能力。'
     )
   }
 
   if (snsPrHits.length > 0) {
     strengths.push(
-      'SNS / PR / event or community support experience would be useful for this role.'
+      'SNS、活動、社群或宣傳相關內容可連結你的內容製作與活動支援經驗。'
     )
   }
 
   if (cafeServiceHits.length > 0) {
-    strengths.push(
-      'Customer-facing cafe / service work signals appear in the job posting.'
-    )
+    strengths.push('職缺出現餐飲、咖啡廳或接客販售等面向客人的服務工作訊號。')
   }
 
   if (juniorHits.length > 0) {
-    strengths.push('Junior / entry-friendly signals found (未経験歓迎・研修あり 等)。')
+    strengths.push(
+      '職缺有未經驗可、研修或入門友善訊號，適合作為日本就職初期的切入點。'
+    )
   }
 
   if (webFrontendHits.length > 0) {
     strengths.push(
       hasProfileWeb
-        ? 'Web / frontend / AI-assisted development keywords align with your current projects.'
-        : 'Web / frontend / AI-related keywords appear in the job posting.'
+        ? 'Web、前端或 AI 相關關鍵字與你目前的專案與學習方向相符。'
+        : '職缺提及 Web、前端或 AI 相關技能，可連結你的技術學習與作品集。'
     )
   }
 
-  for (const k of matchedLow) {
-    gaps.push(`Caution: "${k}" signal detected (may indicate higher bar or mismatch).`)
+  if (
+    includesAny(jobText, [
+      'senior',
+      'lead',
+      'manager',
+      '店長',
+      '支配人',
+      'マネージャー',
+      '責任者',
+      'リーダー経験必須',
+      'シニア',
+    ])
+  ) {
+    gaps.push('若職缺偏管理職或要求領導經驗，可能不適合作為初期切入職位。')
+  }
+
+  if (includesAny(jobText, ['夜勤', 'ナイトフロント'])) {
+    gaps.push('若職缺包含夜勤，需確認體力、排班與生活作息是否能長期配合。')
   }
 
   let score = 48
@@ -417,7 +446,7 @@ function makeAnalysis(job: Job, profile: UserProfile): AnalyzeResponse {
     ])
   ) {
     score -= 8
-    gaps.push('May require several years of professional experience.')
+    gaps.push('職缺可能要求較多年實務經驗，需評估是否符合你目前的職涯階段。')
   }
 
   if (
@@ -429,7 +458,7 @@ function makeAnalysis(job: Job, profile: UserProfile): AnalyzeResponse {
     ])
   ) {
     score -= 6
-    gaps.push('Language requirement may be strict (native / business level Japanese).')
+    gaps.push('若職缺要求較高商務日文，建議準備具體情境說明目前日文使用能力。')
   }
 
   if (
@@ -444,11 +473,15 @@ function makeAnalysis(job: Job, profile: UserProfile): AnalyzeResponse {
     ])
   ) {
     score -= 6
-    gaps.push('Role may be backend-heavy or infrastructure-focused.')
+    gaps.push('職缺偏後端、基礎建設或特定技術堆疊，可能與你目前的前端／接客主軸不完全一致。')
+  }
+
+  if (matchedLow.length > 0 && gaps.length === 0) {
+    gaps.push('職缺出現部分需留意的條件訊號，建議仔細確認資格與工作內容後再決定是否投遞。')
   }
 
   if (includesAny(jobText, ['ビザ', 'visa', 'sponsor', 'sponsorship'])) {
-    strengths.push('Mentions visa/sponsorship (confirm details and eligibility in advance).')
+    strengths.push('職缺提及簽證或簽證支援相關內容，建議事先確認資格與細節。')
   }
 
   score = clampScore(score)
@@ -458,44 +491,56 @@ function makeAnalysis(job: Job, profile: UserProfile): AnalyzeResponse {
 
   const requiredSkills = uniq([
     ...(hospitalityHits.length > 0
-      ? ['Customer service', 'Basic Japanese communication', 'Front desk / reception support']
+      ? ['接客服務', '基本日文溝通', '前台／受付支援', '顧客問題處理']
       : []),
-    ...(languageHits.length > 0 ? ['Language support / multilingual communication'] : []),
-    ...(webFrontendHits.length > 0 ? ['Basic web / frontend development understanding'] : []),
+    ...(includesAny(jobText, ['夜勤', 'ナイトフロント'])
+      ? ['夜勤與排班配合']
+      : []),
+    ...(languageHits.length > 0 ? ['語言溝通與外國旅客對應'] : []),
+    ...(cafeServiceHits.length > 0 ? ['餐飲或店面接客能力'] : []),
+    ...(webFrontendHits.length > 0 ? ['基礎 Web／前端理解'] : []),
   ])
 
   const bonusSkills = uniq([
     ...(languageHits.length > 0
-      ? ['Chinese / English communication', 'Experience with inbound guests or tourists']
+      ? ['中文／英文對應', '外國旅客支援', '跨文化溝通']
       : []),
-    ...(snsPrHits.length > 0 ? ['SNS operation (Instagram / TikTok)', 'PR / event support experience'] : []),
-    ...(cafeServiceHits.length > 0 ? ['Cafe / restaurant customer service experience'] : []),
+    ...(snsPrHits.length > 0
+      ? ['SNS 或宣傳內容製作', 'Canva、攝影或活動支援']
+      : []),
+    ...(cafeServiceHits.length > 0 ? ['餐飲現場服務經驗'] : []),
+    ...(webFrontendHits.length > 0 ? ['React／Next.js 等前端技能', 'AI 輔助開發經驗'] : []),
   ])
 
   const resumeAdvice: string[] = []
   if (hospitalityHits.length > 0) {
     resumeAdvice.push(
-      'Emphasize hotel, front desk, guesthouse, or other hospitality experience, including night shifts or check-in support.'
+      '履歷中建議強調飯店、餐飲、接客或顧客服務經驗，並具體寫出你如何處理客人需求。'
     )
+    if (includesAny(jobText, ['夜勤', 'ナイトフロント'])) {
+      resumeAdvice.push(
+        '若投遞夜勤前台，建議補充可靠度、守時、問題處理與獨立作業能力。'
+      )
+    }
   }
   if (languageHits.length > 0) {
     resumeAdvice.push(
-      'Describe concrete situations where you used languages (Chinese, English, Japanese) to help guests or customers.'
+      '可以把中文母語、日文 N2 學習背景與英文溝通能力整理成「可支援外國旅客」的賣點。'
     )
   }
   if (snsPrHits.length > 0) {
     resumeAdvice.push(
-      'Highlight SNS / community operations, PR, event support, and include metrics or concrete results when possible.'
+      '若職缺提到 SNS 或活動，建議補充 Canva、攝影、社群經營或活動支援經驗。'
     )
   }
   if (webFrontendHits.length > 0) {
     resumeAdvice.push(
-      'Position JobFit-AI and other projects as a practical portfolio: explain the features you implemented and tools you used (React / Next.js / TypeScript).'
+      '可將 JobFit-AI 等專案寫成作品集，說明你實作的功能與使用的技術（React／Next.js／TypeScript）。'
     )
   }
   if (resumeAdvice.length === 0) {
     resumeAdvice.push(
-      'Tailor your resume around the main tasks in the job posting and connect them to your past experiences.'
+      '建議依職缺主要工作內容調整履歷，並用 1～2 個具體案例連結你的過往經驗。'
     )
   }
 
@@ -505,7 +550,12 @@ function makeAnalysis(job: Job, profile: UserProfile): AnalyzeResponse {
     includesAny(jobText, ['reception', 'front desk', 'hotel', 'guesthouse', 'hostel'])
   ) {
     interviewPrep.push(
-      'Prepare stories about handling guest questions, explaining rules clearly, and staying calm during problems (check-in / check-out situations).'
+      '準備一個接待客人、處理詢問或解決突發狀況的具體案例（例如入住、退房或現場問題）。'
+    )
+  }
+  if (includesAny(jobText, ['夜勤', 'ナイトフロント'])) {
+    interviewPrep.push(
+      '如果是夜勤職缺，準備說明你如何適應夜班、維持穩定出勤與處理夜間突發狀況。'
     )
   }
   if (
@@ -513,36 +563,44 @@ function makeAnalysis(job: Job, profile: UserProfile): AnalyzeResponse {
     includesAny(jobText, ['multilingual', 'chinese', 'japanese', 'english', '中国語', '英語', '日本語'])
   ) {
     interviewPrep.push(
-      'Be ready to describe your language level with real scenarios (guiding guests, solving issues, telephone or email support).'
+      '準備用日文說明你的自我介紹、可工作時間、簽證狀態與來日本工作的動機。'
     )
+    interviewPrep.push('準備說明你如何用中文或英文協助外國旅客。')
   }
   if (snsPrHits.length > 0) {
     interviewPrep.push(
-      'Prepare examples of SNS posts, events, or campaigns you helped with, and what outcome they achieved.'
+      '準備分享你曾協助的 SNS 貼文、活動或宣傳案例，以及實際成果或學到的事。'
     )
   }
   if (webFrontendHits.length > 0) {
     interviewPrep.push(
-      'Be ready to walk through a small feature you built in JobFit-AI or another project, including what problem it solved and what you learned.'
+      '準備說明你在 JobFit-AI 或其他專案中實作過的一個功能，以及它解決了什麼問題。'
     )
   }
   if (interviewPrep.length === 0) {
     interviewPrep.push(
-      'Review the main responsibilities in the job posting and prepare 2–3 concrete stories that show you can handle similar situations.'
+      '先閱讀職缺主要職責，準備 2～3 個能證明你能勝任類似工作的具體故事。'
     )
   }
 
-  const highFitCategories: string[] = []
-  if (hospitalityHits.length > 0) highFitCategories.push('hospitality / front desk')
-  if (languageHits.length > 0) highFitCategories.push('language / multilingual')
-  if (snsPrHits.length > 0) highFitCategories.push('SNS / PR / events')
-  if (cafeServiceHits.length > 0) highFitCategories.push('cafe / service')
-  if (juniorHits.length > 0) highFitCategories.push('junior / entry-friendly')
-  if (webFrontendHits.length > 0) highFitCategories.push('web / frontend / AI')
+  const highFitCategoryLabels: string[] = []
+  if (hospitalityHits.length > 0) highFitCategoryLabels.push('旅宿／前台接待')
+  if (languageHits.length > 0) highFitCategoryLabels.push('語言能力')
+  if (snsPrHits.length > 0) highFitCategoryLabels.push('SNS／活動宣傳')
+  if (cafeServiceHits.length > 0) highFitCategoryLabels.push('餐飲／接客服務')
+  if (juniorHits.length > 0) highFitCategoryLabels.push('入門友善')
+  if (webFrontendHits.length > 0) highFitCategoryLabels.push('Web／前端／AI')
 
-  const summary = `Local placeholder analysis (v1). Score=${score} (${recommendedAction}). High-fit categories: ${highFitCategories.join(
-    ', '
-  ) || 'none'}. Caution signals: ${uniq(matchedLow).join(', ') || 'none'}.`
+  const actionZh = recommendedActionLabel(recommendedAction)
+  let summary: string
+  if (highFitCategoryLabels.length > 0) {
+    summary = `本次以本地規則進行初步分析（v1）。適合度分數為 ${score} 分。這份職缺與你的${highFitCategoryLabels.join('、')}等方向有明顯相關，因此目前判定為「${actionZh}」。`
+  } else {
+    summary = `本次以本地規則進行初步分析（v1）。適合度分數為 ${score} 分，目前判定為「${actionZh}」。建議再仔細閱讀職缺內容後決定是否投遞。`
+  }
+  if (gaps.length > 0) {
+    summary += ` 同時請留意可能落差：${gaps[0]}`
+  }
 
   return {
     jobId: job.id,
