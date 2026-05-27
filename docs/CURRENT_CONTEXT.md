@@ -4,25 +4,34 @@
 
 JobFit-AI is a local Next.js-based job tracking and AI job-fit analysis tool.
 
-Completed:
+### MVP 0.2 — Application Status Tracking — Complete
 
-- Chrome Extension can collect job postings.
-- Collected jobs are saved into `jobs_temp.json`.
-- Home page displays collected jobs and AI score/level.
-- Home page action links to `/jobs/[id]` (`查看詳情 / AI 分析`).
-- Job detail page at `/jobs/[id]` with AI score panel (`ScorePanel`) and application status selector (`StatusSelect`).
-- Mock AI scoring API; scores persist to `jobs_temp.json`.
-- `PATCH /api/jobs/[id]/status` persists application status (`not_applied`, `applied`, `interview`, `not_interested`).
-- Missing status defaults to `not_applied` in the UI.
+The status management flow is done end-to-end:
+
+- Detail page can update job status via `StatusSelect` and `PATCH /api/jobs/[id]/status`.
+- Home page job cards show application status badges.
+- Home page has client-side status filter tabs with counts per status.
+- Missing or invalid job status is treated as `not_applied` (UI label: 未投遞).
+
+Also in place from earlier work:
+
+- Chrome Extension collects job postings into `jobs_temp.json`.
+- Home page lists jobs with AI score/level and links to `/jobs/[id]`.
+- Job detail page includes AI score panel (`ScorePanel`) and mock scoring API with persistence.
+
+## Next Focus: MVP 0.3 — Job Fit Analysis
+
+The next phase targets **true AI job-fit analysis** (profile-aware scoring), not more status UI.
+
+Immediate work starts with a local user profile data source before changing scoring logic.
 
 ## Immediate Next Task
 
-- **TASK-005:** Show status badge on each home page job card.
-- **TASK-006:** Add status filter tabs/grouping on the home page (with counts).
+- **TASK-007:** Create `user_profile.json` at the project root as the user background / skills / preferences data source for upcoming job-fit analysis.
 
 ## Do Not Do Yet
 
-- Real AI API integration
+- Real AI API integration (until profile data and scoring flow are defined)
 - Database migration
 - Login
 - Cloud sync
