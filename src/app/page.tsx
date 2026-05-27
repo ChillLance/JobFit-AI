@@ -54,6 +54,32 @@ function resolveStatus(status?: string): JobStatus {
   return 'not_applied'
 }
 
+type StatusFilter = 'all' | JobStatus
+
+const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
+  { value: 'all', label: '全部' },
+  { value: 'not_applied', label: '未投遞' },
+  { value: 'applied', label: '已投遞' },
+  { value: 'interview', label: '面試中' },
+  { value: 'not_interested', label: '不感興趣' },
+]
+
+function countJobsByStatus(jobs: Job[]) {
+  const counts: Record<StatusFilter, number> = {
+    all: jobs.length,
+    not_applied: 0,
+    applied: 0,
+    interview: 0,
+    not_interested: 0,
+  }
+
+  for (const job of jobs) {
+    counts[resolveStatus(job.status)] += 1
+  }
+
+  return counts
+}
+
 function getStatusBadgeClass(status: JobStatus) {
   switch (status) {
     case 'applied':
@@ -138,6 +164,13 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+
+  const statusCounts = countJobsByStatus(jobs)
+  const filteredJobs =
+    statusFilter === 'all'
+      ? jobs
+      : jobs.filter((job) => resolveStatus(job.status) === statusFilter)
 
   async function loadJobs() {
     try {
@@ -246,13 +279,41 @@ export default function HomePage() {
           </section>
         )}
 
+        {jobs.length > 0 && (
+          <section className="mb-6 flex flex-wrap gap-2">
+            {STATUS_FILTERS.map(({ value, label }) => {
+              const isActive = statusFilter === value
+
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setStatusFilter(value)}
+                  className={`rounded-xl border px-4 py-2 text-sm font-semibold transition ${
+                    isActive
+                      ? 'border-blue-500 bg-blue-600 text-white'
+                      : 'border-slate-700 bg-slate-900 text-slate-300 hover:border-slate-600 hover:bg-slate-800'
+                  }`}
+                >
+                  {label}
+                  <span className="ml-1.5 opacity-80">({statusCounts[value]})</span>
+                </button>
+              )
+            })}
+          </section>
+        )}
+
         {jobs.length === 0 ? (
           <section className="rounded-2xl border border-slate-800 bg-slate-900 p-10 text-center text-slate-400">
             目前沒有職缺資料。請先使用 Chrome Extension 採集職缺。
           </section>
+        ) : filteredJobs.length === 0 ? (
+          <section className="rounded-2xl border border-slate-800 bg-slate-900 p-10 text-center text-slate-400">
+            此篩選條件下沒有職缺。
+          </section>
         ) : (
           <section className="space-y-5">
-            {jobs.map((job) => {
+            {filteredJobs.map((job) => {
               const status = resolveStatus(job.status)
 
               return (
