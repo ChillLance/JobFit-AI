@@ -119,7 +119,8 @@ function makeAnalysis(job: Job, profile: UserProfile): AnalyzeResponse {
   const jobText = normalize(`${jobTitle}\n${company}\n${rawText}`)
   const profileText = normalize(profileTextParts.join('\n'))
 
-  const highFitKeywords = [
+  // Keyword groups for more structured matching
+  const hospitalityKeywords = [
     'hotel',
     'hostel',
     'guesthouse',
@@ -128,46 +129,161 @@ function makeAnalysis(job: Job, profile: UserProfile): AnalyzeResponse {
     'front desk',
     'inbound',
     'tourism',
+    'customer service',
+    // Japanese hospitality / front desk
+    'ホテル',
+    'フロント',
+    '受付',
+    'レセプション',
+    '宿泊',
+    '旅館',
+    'ゲストハウス',
+    'ホステル',
+    'チェックイン',
+    'チェックアウト',
+    '夜勤',
+    'ナイトフロント',
+    '客室',
+    '接客',
+    'お客様対応',
+    '観光',
+    '旅行',
+    'インバウンド',
+    '外国人対応',
+  ]
+
+  const languageKeywords = [
     'multilingual',
     'chinese',
     'japanese',
     'english',
+    '中国語',
+    '英語',
+    '日本語',
+    '外国語',
+    '多言語',
+    'バイリンガル',
+    '台湾',
+    '中国',
+    '海外',
+    '留学生',
+    'n2',
+    'jlpt',
+  ]
+
+  const snsPrKeywords = [
     'sns',
+    'instagram',
+    'insta',
+    'tiktok',
+    '広報',
     'pr',
+    'マーケティング',
+    'marketing',
+    'イベント',
     'event',
+    'コミュニティ',
     'community',
+    '写真',
+    '撮影',
+    'canva',
+  ]
+
+  const cafeServiceKeywords = [
+    'カフェ',
+    '飲食',
+    'ホール',
+    'レジ',
+    '接客販売',
+    'サービススタッフ',
+  ]
+
+  const juniorFriendlyKeywords = [
+    '未経験',
+    '未経験歓迎',
+    '学歴不問',
+    '研修あり',
+    '初心者',
+    'ブランクok',
+    '第二新卒',
+    'アルバイト',
+    'パート',
+    '契約社員',
+    'entry',
+    'junior',
+  ]
+
+  const webFrontendKeywords = [
     'react',
     'next.js',
     'nextjs',
     'typescript',
+    'javascript',
+    'フロントエンド',
     'frontend',
+    'web',
     'ai',
+    '生成ai',
+    'チャットボット',
+    'アプリ開発',
   ]
 
   const lowFitKeywords = [
     'senior',
     'lead',
     'manager',
+    '店長',
+    '支配人',
+    'マネージャー',
+    '責任者',
+    'リーダー経験必須',
+    '実務経験3年以上',
+    '実務経験５年以上',
+    '実務経験5年以上',
+    '実務経験３年以上',
+    '実務経験７年以上',
+    '実務経験7年以上',
+    'ネイティブレベル',
+    'native japanese',
+    'business japanese',
+    'ビジネスレベル日本語必須',
+    'ビジネス日本語',
+    '法人営業経験',
     'infrastructure',
+    'インフラ',
+    'サーバー',
+    'backend-heavy',
+    'バックエンド専門',
+    'java必須',
+    'php必須',
+    '運転免許必須',
     'kubernetes',
     'sre',
     'devops',
     'on-call',
-    'backend-heavy',
-    'business japanese',
-    'native japanese',
-    '日本語ネイティブ',
-    'ビジネス日本語',
-    'マネージャー',
     'シニア',
   ]
 
   const matchedHigh: string[] = []
   const matchedLow: string[] = []
 
-  for (const k of highFitKeywords) {
-    if (jobText.includes(k)) matchedHigh.push(k)
+  function collectMatches(source: string[], label: string) {
+    const hits: string[] = []
+    for (const k of source) {
+      if (jobText.includes(k)) {
+        hits.push(k)
+        matchedHigh.push(k)
+      }
+    }
+    return uniq(hits)
   }
+
+  const hospitalityHits = collectMatches(hospitalityKeywords, 'hospitality')
+  const languageHits = collectMatches(languageKeywords, 'language')
+  const snsPrHits = collectMatches(snsPrKeywords, 'snspr')
+  const cafeServiceHits = collectMatches(cafeServiceKeywords, 'cafe')
+  const juniorHits = collectMatches(juniorFriendlyKeywords, 'junior')
+  const webFrontendHits = collectMatches(webFrontendKeywords, 'web')
 
   for (const k of lowFitKeywords) {
     if (jobText.includes(normalize(k))) matchedLow.push(k)
@@ -177,68 +293,162 @@ function makeAnalysis(job: Job, profile: UserProfile): AnalyzeResponse {
   const gaps: string[] = []
 
   const profileSignals = [
-    'hotel',
-    'hostel',
-    'guesthouse',
-    'cafe',
-    'reception',
-    'front desk',
-    'inbound',
-    'tourism',
-    'multilingual',
-    'chinese',
-    'japanese',
-    'english',
-    'sns',
-    'pr',
-    'event',
-    'community',
-    'react',
-    'next.js',
-    'typescript',
-    'frontend',
-    'ai',
+    ...hospitalityKeywords,
+    ...languageKeywords,
+    ...snsPrKeywords,
+    ...cafeServiceKeywords,
+    ...juniorFriendlyKeywords,
+    ...webFrontendKeywords,
   ].filter((k) => profileText.includes(k))
 
-  for (const k of matchedHigh) {
-    if (profileSignals.includes(k)) {
-      strengths.push(`Keyword match: "${k}" appears in job + profile`)
-    } else {
-      strengths.push(`Keyword match: "${k}" appears in job posting`)
-    }
+  const hasProfileHospitality = hospitalityHits.some((k) =>
+    profileSignals.includes(k)
+  )
+  const hasProfileLanguage = languageHits.some((k) =>
+    profileSignals.includes(k)
+  )
+  const hasProfileWeb = webFrontendHits.some((k) =>
+    profileSignals.includes(k)
+  )
+
+  if (hospitalityHits.length > 0) {
+    strengths.push(
+      hasProfileHospitality
+        ? 'Hospitality / front desk signals appear in both job posting and your profile.'
+        : 'Strong hospitality / front desk signals found in the job posting.'
+    )
+  }
+
+  if (languageHits.length > 0) {
+    strengths.push(
+      hasProfileLanguage
+        ? 'Language / multilingual requirements align with your profile.'
+        : 'Language / multilingual guest support signals found in the job posting.'
+    )
+  }
+
+  if (snsPrHits.length > 0) {
+    strengths.push(
+      'SNS / PR / event or community support experience would be useful for this role.'
+    )
+  }
+
+  if (cafeServiceHits.length > 0) {
+    strengths.push(
+      'Customer-facing cafe / service work signals appear in the job posting.'
+    )
+  }
+
+  if (juniorHits.length > 0) {
+    strengths.push('Junior / entry-friendly signals found (未経験歓迎・研修あり 等)。')
+  }
+
+  if (webFrontendHits.length > 0) {
+    strengths.push(
+      hasProfileWeb
+        ? 'Web / frontend / AI-assisted development keywords align with your current projects.'
+        : 'Web / frontend / AI-related keywords appear in the job posting.'
+    )
   }
 
   for (const k of matchedLow) {
-    gaps.push(`Potential risk: "${k}" signal in job posting`)
+    gaps.push(`Caution: "${k}" signal detected (may indicate higher bar or mismatch).`)
   }
 
-  let score = 50
-  score += matchedHigh.length * 6
-  score -= matchedLow.length * 10
+  let score = 48
 
-  if (includesAny(jobText, ['未経験', '初心者', '研修', 'entry', 'junior'])) {
+  // Hospitality is a strong target direction
+  if (hospitalityHits.length > 0) {
+    score += 14
+  }
+
+  // Language / inbound guests
+  if (languageHits.length > 0) {
+    score += 10
+  }
+
+  // SNS / PR / events
+  if (snsPrHits.length > 0) {
     score += 6
-    strengths.push('Junior/entry-friendly signal found in job posting')
+  }
+
+  // Cafe / service work
+  if (cafeServiceHits.length > 0) {
+    score += 4
+  }
+
+  // Junior-friendly
+  if (juniorHits.length > 0) {
+    score += 8
+  }
+
+  // Web / frontend / AI roles
+  if (webFrontendHits.length > 0) {
+    score += 6
+  }
+
+  // Penalize low-fit / senior-only signals, but per category, not per occurrence
+  if (
+    includesAny(jobText, [
+      'senior',
+      'lead',
+      'manager',
+      '店長',
+      '支配人',
+      'マネージャー',
+      'シニア',
+    ])
+  ) {
+    score -= 10
   }
 
   if (
     includesAny(jobText, [
+      '実務経験3年以上',
+      '実務経験５年以上',
+      '実務経験5年以上',
+      '実務経験７年以上',
+      '実務経験7年以上',
       '5+ years',
       '7+ years',
       '10+ years',
       'years of experience',
-      '経験5年以上',
-      '経験7年以上',
-      '経験10年以上',
       '実務経験',
     ])
   ) {
-    score -= 10
-    gaps.push('May require significant experience (years/experience requirement detected)')
+    score -= 8
+    gaps.push('May require several years of professional experience.')
+  }
+
+  if (
+    includesAny(jobText, [
+      'ネイティブレベル',
+      'native japanese',
+      'ビジネスレベル日本語必須',
+      'ビジネス日本語',
+    ])
+  ) {
+    score -= 6
+    gaps.push('Language requirement may be strict (native / business level Japanese).')
+  }
+
+  if (
+    includesAny(jobText, [
+      'インフラ',
+      'infrastructure',
+      'サーバー',
+      'backend-heavy',
+      'バックエンド専門',
+      'java必須',
+      'php必須',
+    ])
+  ) {
+    score -= 6
+    gaps.push('Role may be backend-heavy or infrastructure-focused.')
   }
 
   if (includesAny(jobText, ['ビザ', 'visa', 'sponsor', 'sponsorship'])) {
-    strengths.push('Mentions visa/sponsorship (confirm details if needed)')
+    strengths.push('Mentions visa/sponsorship (confirm details and eligibility in advance).')
   }
 
   score = clampScore(score)
@@ -246,50 +456,93 @@ function makeAnalysis(job: Job, profile: UserProfile): AnalyzeResponse {
   const recommendedAction: RecommendedAction =
     score >= 75 ? 'apply' : score >= 45 ? 'maybe' : 'skip'
 
-  const requiredSkills = uniq(
-    matchedHigh.filter((k) =>
-      ['reception', 'front desk', 'inbound', 'tourism', 'react', 'next.js', 'typescript', 'frontend'].includes(
-        k
-      )
-    )
-  )
+  const requiredSkills = uniq([
+    ...(hospitalityHits.length > 0
+      ? ['Customer service', 'Basic Japanese communication', 'Front desk / reception support']
+      : []),
+    ...(languageHits.length > 0 ? ['Language support / multilingual communication'] : []),
+    ...(webFrontendHits.length > 0 ? ['Basic web / frontend development understanding'] : []),
+  ])
 
-  const bonusSkills = uniq(
-    matchedHigh.filter((k) =>
-      ['multilingual', 'chinese', 'japanese', 'english', 'sns', 'pr', 'event', 'community', 'ai'].includes(
-        k
-      )
-    )
-  )
+  const bonusSkills = uniq([
+    ...(languageHits.length > 0
+      ? ['Chinese / English communication', 'Experience with inbound guests or tourists']
+      : []),
+    ...(snsPrHits.length > 0 ? ['SNS operation (Instagram / TikTok)', 'PR / event support experience'] : []),
+    ...(cafeServiceHits.length > 0 ? ['Cafe / restaurant customer service experience'] : []),
+  ])
 
   const resumeAdvice: string[] = []
-  if (includesAny(jobText, ['hotel', 'hostel', 'guesthouse', 'reception', 'front desk'])) {
-    resumeAdvice.push('Emphasize multilingual guest support, front desk support, and hospitality service experience.')
+  if (hospitalityHits.length > 0) {
+    resumeAdvice.push(
+      'Emphasize hotel, front desk, guesthouse, or other hospitality experience, including night shifts or check-in support.'
+    )
   }
-  if (includesAny(jobText, ['sns', 'pr', 'event', 'community'])) {
-    resumeAdvice.push('Highlight SNS/community operation and any event support experience with concrete outcomes.')
+  if (languageHits.length > 0) {
+    resumeAdvice.push(
+      'Describe concrete situations where you used languages (Chinese, English, Japanese) to help guests or customers.'
+    )
   }
-  if (includesAny(jobText, ['react', 'next.js', 'typescript', 'frontend'])) {
-    resumeAdvice.push('Position JobFit-AI as a practical portfolio: Next.js pages, API routes, and JSON persistence.')
+  if (snsPrHits.length > 0) {
+    resumeAdvice.push(
+      'Highlight SNS / community operations, PR, event support, and include metrics or concrete results when possible.'
+    )
+  }
+  if (webFrontendHits.length > 0) {
+    resumeAdvice.push(
+      'Position JobFit-AI and other projects as a practical portfolio: explain the features you implemented and tools you used (React / Next.js / TypeScript).'
+    )
   }
   if (resumeAdvice.length === 0) {
-    resumeAdvice.push('Tailor the resume to the job keywords and explain how your experience maps to the daily tasks.')
+    resumeAdvice.push(
+      'Tailor your resume around the main tasks in the job posting and connect them to your past experiences.'
+    )
   }
 
   const interviewPrep: string[] = []
-  if (includesAny(jobText, ['reception', 'front desk', 'hotel', 'guesthouse', 'hostel'])) {
-    interviewPrep.push('Prepare examples of handling guest questions, explaining rules clearly, and staying calm under pressure.')
+  if (
+    hospitalityHits.length > 0 ||
+    includesAny(jobText, ['reception', 'front desk', 'hotel', 'guesthouse', 'hostel'])
+  ) {
+    interviewPrep.push(
+      'Prepare stories about handling guest questions, explaining rules clearly, and staying calm during problems (check-in / check-out situations).'
+    )
   }
-  if (includesAny(jobText, ['multilingual', 'chinese', 'japanese', 'english', '中国語', '英語', '日本語'])) {
-    interviewPrep.push('Be ready to describe your language level with real situations (check-in, guidance, troubleshooting).')
+  if (
+    languageHits.length > 0 ||
+    includesAny(jobText, ['multilingual', 'chinese', 'japanese', 'english', '中国語', '英語', '日本語'])
+  ) {
+    interviewPrep.push(
+      'Be ready to describe your language level with real scenarios (guiding guests, solving issues, telephone or email support).'
+    )
   }
-  if (includesAny(jobText, ['react', 'next.js', 'typescript', 'frontend'])) {
-    interviewPrep.push('Be ready to walk through a small feature you built in JobFit-AI and what you learned.')
+  if (snsPrHits.length > 0) {
+    interviewPrep.push(
+      'Prepare examples of SNS posts, events, or campaigns you helped with, and what outcome they achieved.'
+    )
+  }
+  if (webFrontendHits.length > 0) {
+    interviewPrep.push(
+      'Be ready to walk through a small feature you built in JobFit-AI or another project, including what problem it solved and what you learned.'
+    )
+  }
+  if (interviewPrep.length === 0) {
+    interviewPrep.push(
+      'Review the main responsibilities in the job posting and prepare 2–3 concrete stories that show you can handle similar situations.'
+    )
   }
 
-  const summary = `Local placeholder analysis (v1). Score=${score} (${recommendedAction}). Matched high-fit keywords: ${uniq(matchedHigh).join(
+  const highFitCategories: string[] = []
+  if (hospitalityHits.length > 0) highFitCategories.push('hospitality / front desk')
+  if (languageHits.length > 0) highFitCategories.push('language / multilingual')
+  if (snsPrHits.length > 0) highFitCategories.push('SNS / PR / events')
+  if (cafeServiceHits.length > 0) highFitCategories.push('cafe / service')
+  if (juniorHits.length > 0) highFitCategories.push('junior / entry-friendly')
+  if (webFrontendHits.length > 0) highFitCategories.push('web / frontend / AI')
+
+  const summary = `Local placeholder analysis (v1). Score=${score} (${recommendedAction}). High-fit categories: ${highFitCategories.join(
     ', '
-  ) || 'none'}. Low-fit signals: ${uniq(matchedLow).join(', ') || 'none'}.`
+  ) || 'none'}. Caution signals: ${uniq(matchedLow).join(', ') || 'none'}.`
 
   return {
     jobId: job.id,
