@@ -193,9 +193,30 @@ export default async function JobDetailPage({
           </div>
         </section>
 
+        <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-bold">AI Job Fit Analysis</h2>
+              <p className="mt-1 text-sm text-slate-400">
+                未來版本會根據這份職缺內容與你的{' '}
+                <span className="font-semibold">user_profile.json</span> 做深度比對，提供更精準的職缺適合度分析。
+              </p>
+            </div>
+
+            <div className="flex flex-col items-end gap-1">
+              <button
+                type="button"
+                disabled
+                className="inline-flex items-center rounded-xl bg-slate-700 px-4 py-2 text-sm font-semibold text-slate-300 opacity-60 shadow-sm"
+              >
+                Analyze Fit
+              </button>
+              <p className="text-xs text-slate-500">Coming in MVP 0.3</p>
+            </div>
+          </div>
+        </section>
+
         <ScorePanel jobId={job.id} initialScore={job.aiScore || null} />
-
-
 
         <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
