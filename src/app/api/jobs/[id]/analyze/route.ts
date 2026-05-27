@@ -40,6 +40,8 @@ type UserProfile = {
 
 type RecommendedAction = 'apply' | 'maybe' | 'skip'
 
+type DeepAnalysisPriority = 'high' | 'medium' | 'low'
+
 type AnalyzeResponse = {
   jobId: string
   source: 'local-placeholder'
@@ -57,6 +59,9 @@ type AnalyzeResponse = {
     jobTitle: string
     company: string
     profileVersion: number
+    deepAnalysisRecommended: boolean
+    deepAnalysisPriority?: DeepAnalysisPriority
+    deepAnalysisReason?: string
   }
 }
 
@@ -103,6 +108,92 @@ function recommendedActionLabel(action: RecommendedAction): string {
       return '暫不建議'
     default:
       return action
+  }
+}
+
+function buildDeepAnalysisMetadata(
+  score: number,
+  jobText: string,
+  gaps: string[]
+): Pick<
+  AnalyzeResponse['metadata'],
+  'deepAnalysisRecommended' | 'deepAnalysisPriority' | 'deepAnalysisReason'
+> {
+  const confirmationTopics: string[] = []
+
+  if (includesAny(jobText, ['夜勤', 'ナイトフロント'])) {
+    confirmationTopics.push('夜勤')
+  }
+  if (includesAny(jobText, ['ビザ', 'visa', 'sponsor', 'sponsorship'])) {
+    confirmationTopics.push('簽證條件')
+  }
+  if (
+    includesAny(jobText, [
+      'senior',
+      'lead',
+      'manager',
+      '店長',
+      '支配人',
+      'マネージャー',
+      '責任者',
+      'リーダー経験必須',
+      'シニア',
+    ])
+  ) {
+    confirmationTopics.push('管理職或資深要求')
+  }
+  if (
+    includesAny(jobText, [
+      '実務経験3年以上',
+      '実務経験５年以上',
+      '実務経験5年以上',
+      '実務経験７年以上',
+      '実務経験7年以上',
+      '5+ years',
+      '7+ years',
+      '10+ years',
+    ])
+  ) {
+    confirmationTopics.push('年資要求')
+  }
+  if (
+    includesAny(jobText, [
+      'ネイティブレベル',
+      'native japanese',
+      'ビジネスレベル日本語必須',
+      'ビジネス日本語',
+    ])
+  ) {
+    confirmationTopics.push('較高日文要求')
+  }
+
+  const needsConfirmation = confirmationTopics.length > 0 || gaps.length > 0
+  const highLocalScore = score >= 65
+
+  if (!highLocalScore || !needsConfirmation) {
+    return { deepAnalysisRecommended: false }
+  }
+
+  let deepAnalysisPriority: DeepAnalysisPriority = 'medium'
+  if (score >= 75 && (confirmationTopics.includes('夜勤') || confirmationTopics.length >= 2)) {
+    deepAnalysisPriority = 'high'
+  } else if (score < 70) {
+    deepAnalysisPriority = 'low'
+  }
+
+  const reasonParts: string[] = ['本地適合度分數較高']
+  if (confirmationTopics.length > 0) {
+    reasonParts.push(
+      `且職缺包含${confirmationTopics.slice(0, 3).join('、')}等需要確認的條件`
+    )
+  } else if (gaps.length > 0) {
+    reasonParts.push('且初步分析指出部分需留意的落差')
+  }
+
+  return {
+    deepAnalysisRecommended: true,
+    deepAnalysisPriority,
+    deepAnalysisReason: `${reasonParts.join('，')}，建議進行 Gemini 深度分析。`,
   }
 }
 
@@ -619,6 +710,7 @@ function makeAnalysis(job: Job, profile: UserProfile): AnalyzeResponse {
       jobTitle,
       company,
       profileVersion,
+      ...buildDeepAnalysisMetadata(score, jobText, gaps),
     },
   }
 }

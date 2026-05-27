@@ -21,6 +21,9 @@ type JobFitAnalysis = {
     jobTitle?: string
     company?: string
     profileVersion?: number
+    deepAnalysisRecommended?: boolean
+    deepAnalysisPriority?: 'high' | 'medium' | 'low'
+    deepAnalysisReason?: string
   }
 }
 
@@ -46,6 +49,19 @@ function formatSource(source: string): string {
     return '本地規則分析'
   }
   return source
+}
+
+function formatDeepAnalysisPriority(priority: 'high' | 'medium' | 'low'): string {
+  switch (priority) {
+    case 'high':
+      return '高'
+    case 'medium':
+      return '中'
+    case 'low':
+      return '低'
+    default:
+      return priority
+  }
 }
 
 function SectionList({
@@ -169,6 +185,27 @@ export function AnalyzeFitPanel({ jobId }: Props) {
       {error && (
         <div className="mt-4 rounded-xl border border-red-800 bg-red-950/60 p-4 text-sm text-red-200">
           {error}
+        </div>
+      )}
+
+      {analysis?.metadata?.deepAnalysisRecommended && (
+        <div className="mt-4 rounded-xl border border-amber-700/60 bg-amber-950/40 p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-semibold text-amber-200">建議進行深度分析</p>
+            {analysis.metadata.deepAnalysisPriority && (
+              <span className="rounded-full border border-amber-600/60 bg-amber-900/50 px-2 py-0.5 text-xs text-amber-100">
+                優先度：{formatDeepAnalysisPriority(analysis.metadata.deepAnalysisPriority)}
+              </span>
+            )}
+          </div>
+          {analysis.metadata.deepAnalysisReason && (
+            <p className="mt-2 text-sm text-amber-100/90">
+              {analysis.metadata.deepAnalysisReason}
+            </p>
+          )}
+          <p className="mt-2 text-xs text-amber-200/70">
+            深度分析（Gemini）尚未接入；目前僅為本地規則的後續建議標記。
+          </p>
         </div>
       )}
 
