@@ -21,50 +21,53 @@ Also in place from earlier work:
 
 ## Current Focus: MVP 0.3 — Job Fit Analysis — In Progress
 
-The current phase targets **true AI job-fit analysis** (profile-aware scoring), not more status UI.
+The current phase targets **profile-aware job-fit analysis** using `user_profile.json`, local rule-based analysis, and optional Gemini deep analysis.
 
-### TASK-007 — Done
+### MVP 0.3 — TASK-015 Complete
 
-- `user_profile.json` now exists at the project root.
-- It was generated from the user's real resume, work history, job search direction, and career goals.
-- This is the first user profile data source for future job-fit analysis.
-- No source code was changed; `jobs_temp.json` was not modified.
+**MVP 0.3 Job Fit Analysis** has completed **TASK-015** (Gemini deep analysis integration).
 
-### TASK-008 — Done
+Current behavior:
 
-- Job detail page now includes an **AI Job Fit Analysis** section.
-- A disabled **Analyze Fit** button placeholder is visible on each job detail page.
-- The button is currently disabled and does not call any API.
-- No analyze API existed yet at the time of this task and no AI analysis logic had been implemented.
-- No data files (`jobs_temp.json`, `user_profile.json`) were modified for this task.
+- The job detail page is wired to **Gemini deep analysis**.
+- Users can manually click **「開始 Gemini 深度分析」** or **「重新分析」** (`AnalyzeFitPanel`).
+- API endpoint: **`POST /api/jobs/[id]/analyze/deep`** (`src/app/api/jobs/[id]/analyze/deep/route.ts`).
+- Gemini model remains **`gemini-3.5-flash`** (API key in `.env.local` only; never commit).
+- On success, the result is persisted on the job as **`deepAnalysis`** in `jobs_temp.json`.
+- The detail page **prefers `deepAnalysis`** when present; otherwise it shows the local rule-based analysis from `POST /api/jobs/[id]/analyze`.
+- Gemini JSON parsing has been hardened:
+  - `responseMimeType: application/json`
+  - Low temperature (`0.1`)
+  - Prompt JSON rules (no markdown fences, no trailing commas)
+  - Markdown fence stripping
+  - Trailing-comma repair
+  - Control-character cleanup
+  - JSON object extraction from noisy responses
+  - On parse failure: error response includes **`details`** and **`preview`** for debugging
 
-### TASK-009 — Done
+### Earlier MVP 0.3 milestones (summary)
 
-- `POST /api/jobs/[id]/analyze` now exists at `src/app/api/jobs/[id]/analyze/route.ts`.
-- The endpoint reads `jobs_temp.json` and `user_profile.json`, finds the target job by `id`, and returns a structured job-fit analysis JSON object.
-- The analysis is implemented as a deterministic local placeholder / rule-based analysis; no external AI API is called and no API keys are required.
-- When the job `id` is missing, the endpoint returns a JSON 404 response.
-- The endpoint does **not** modify any data files (`jobs_temp.json`, `user_profile.json`); behavior is read-only.
-- No frontend wiring was added yet; the **Analyze Fit** button on the job detail page is still not connected to this API.
+- **TASK-007:** `user_profile.json` at project root.
+- **TASK-008–009:** Analyze Fit UI placeholder and local `POST /api/jobs/[id]/analyze` (read-only rule-based analysis).
+- **TASK-010+:** Analyze Fit button wired; local analysis display; persistence and UI iterations through TASK-014.
 
-### MVP 0.3 Data Preparation — Status
+### Repository state
 
-User profile data and a first-pass local analysis API are in place. The next step is to wire the UI button to the new endpoint and render the returned analysis, still without involving any external AI.
+- Git working tree confirmed **clean** after TASK-015.
 
 ## Immediate Next Task
 
-- **TASK-010:** Connect Analyze Fit button to the analyze API and render results.
-  - On click, call `POST /api/jobs/[id]/analyze` for the current job `id`.
-  - Display the returned structured analysis (scores, strengths, concerns, recommendations, etc.) in a simple, local-state-based UI on the job detail page.
-  - Do **not** integrate any external AI yet; continue to rely only on the local placeholder / rule-based analysis implemented in the API.
-  - Do **not** modify `jobs_temp.json` or `user_profile.json`; this task must keep data access read-only.
-  - Keep the UI small, focused, and client-local (no new global state mechanisms or complex abstractions).
+- **TASK-016:** Add **deepAnalysis cache / TTL** to avoid repeated Gemini API usage when a fresh result already exists.
+  - If a job already has `deepAnalysis` and it has not expired, return the cached result.
+  - Support **`force: true`** (or equivalent) to bypass cache and re-call Gemini when the user clicks **重新分析**.
+  - Suggested metadata fields: `metadata.createdAt`, `metadata.model`, `metadata.profileVersion`, optional `cacheExpiresAt`.
+  - API keys stay in `.env.local` only; do not commit secrets.
 
 ## Do Not Do Yet
 
-- Real AI API integration (until profile data and scoring flow are defined)
 - Database migration
-- Login
+- Login / authentication
 - Cloud sync
-- Calendar
-- Resume generation
+- Calendar integration
+- Resume / cover letter generation
+- Large UI redesign

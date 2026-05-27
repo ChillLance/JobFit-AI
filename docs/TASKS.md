@@ -2,46 +2,55 @@
 
 ## Current Phase: MVP 0.3 — Job Fit Analysis
 
-Focus: move from mock AI scoring toward real job-fit analysis using a local user profile data source.
+Focus: profile-aware job-fit analysis with local rules and optional Gemini deep analysis.
 
 ## Current Task
 
-### TASK-010 Connect Analyze Button to Analyze API
+### TASK-016 Add deepAnalysis cache / TTL
 
-Goal:
+**Status:** Next
 
-- Wire the existing **Analyze Fit** button on the job detail page to the new `POST /api/jobs/[id]/analyze` API.
-- Display the returned **structured job-fit analysis JSON** in the existing AI Job Fit Analysis section.
+**Goal:**
 
-Behavior (high level):
+- If a job already has `deepAnalysis` and it has **not expired**, return the cached result without calling Gemini again.
+- When the user explicitly re-runs analysis (**重新分析**), allow **`force: true`** (or equivalent request flag) to bypass cache and call Gemini again.
+- Reduce duplicate Gemini API consumption and cost.
 
-- On click, call `POST /api/jobs/[id]/analyze` for the current job `id`.
-- Render the analysis result (scores, strengths, concerns, recommendations, etc.) in a simple, local-state-based UI on the job detail page.
-- Handle loading and error states locally in the client component.
+**Suggested fields:**
 
-Constraints:
+- `metadata.createdAt` — when the deep analysis was generated
+- `metadata.model` — e.g. `gemini-3.5-flash`
+- `metadata.profileVersion` — tie cache validity to profile changes
+- Optional `cacheExpiresAt` — explicit TTL expiry timestamp on the stored `deepAnalysis` object
 
-- Do **not** integrate any external AI APIs yet; only use the existing local placeholder / rule-based analysis.
-- Do **not** modify `jobs_temp.json` or `user_profile.json`; this task is read-only with respect to data files.
-- Keep the UI implementation simple, focused, and local-state based (no global state or new complex abstractions).
+**Constraints:**
 
-Likely files:
+- API key must remain in **`.env.local` only**; never commit `.env.local` or secrets.
+- Preserve existing `deepAnalysis` display priority on the detail page.
+- Keep `POST /api/jobs/[id]/analyze/deep` as the deep-analysis endpoint.
+
+**Likely files:**
 
 ```txt
-src/app/jobs/[id]/page.tsx
+src/app/api/jobs/[id]/analyze/deep/route.ts
+src/app/jobs/[id]/AnalyzeFitPanel.tsx
 ```
-
----
-
-## Next Tasks
-
-_(To be expanded after TASK-010 — e.g. iterate on analysis UI/UX, introduce more profile-aware rules, or prepare for optional external AI integration.)_
 
 ---
 
 ## Completed Tasks
 
-### MVP 0.3 — Job Fit Analysis — In Progress
+### MVP 0.3 — Job Fit Analysis
+
+#### TASK-015 Gemini Deep Analysis API and UI — Done
+
+**Completion summary:**
+
+- Added **Gemini deep analysis API**: `POST /api/jobs/[id]/analyze/deep` (`src/app/api/jobs/[id]/analyze/deep/route.ts`), model **`gemini-3.5-flash`**.
+- **`AnalyzeFitPanel`** wired to the API; manual **「開始 Gemini 深度分析」** / **「重新分析」** buttons.
+- **`page.tsx`** passes **`initialDeepAnalysis`** from the job record into the panel.
+- Successful runs **persist `deepAnalysis`** on the job in `jobs_temp.json`; detail page **shows deep analysis first**, local rule-based analysis as fallback.
+- **JSON parsing and error handling** strengthened (`responseMimeType`, low temperature, prompt rules, fence/comma/control-char cleanup, object extraction, `details`/`preview` on parse failure).
 
 #### TASK-007 Create user_profile.json Data Source — Done
 
@@ -67,6 +76,8 @@ _(To be expanded after TASK-010 — e.g. iterate on analysis UI/UX, introduce mo
 - It does **not** modify `jobs_temp.json` or `user_profile.json`; behavior is read-only.
 - It does **not** use any external AI APIs and requires no API keys.
 - No frontend connection was added yet; the **Analyze Fit** button on the detail page remains disconnected from this API.
+
+_(TASK-010 through TASK-014: UI wiring, local analysis display, and related MVP 0.3 iterations — completed in prior sessions.)_
 
 ---
 
@@ -102,7 +113,7 @@ _(To be expanded after TASK-010 — e.g. iterate on analysis UI/UX, introduce mo
 
 ## Backlog
 
-- Wire `user_profile.json` into job-fit scoring.
+- Wire `user_profile.json` into job-fit scoring (ongoing / iterative).
 - Replace mock AI scoring with profile-aware analysis.
 - Search jobs by title and raw text.
 - Sort by collected date.
@@ -110,5 +121,4 @@ _(To be expanded after TASK-010 — e.g. iterate on analysis UI/UX, introduce mo
 - Delete confirmation dialog.
 - Extract shared job types.
 - Extract `jobs_temp.json` read/write helpers.
-- Add real AI API integration.
 - Move from JSON to database.
