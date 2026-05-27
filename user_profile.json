@@ -1,0 +1,415 @@
+{
+    "profileVersion": 1,
+    "summary": "Taiwanese early-career candidate currently based in Fukuoka, Japan. Native Chinese speaker with JLPT N2 Japanese and practical English communication ability. Has experience in hotel front desk support, guest service, cafe operations, multilingual customer service, SNS/community management, event planning, and basic PC/data work. Also has an academic background in Information Management and is currently building JobFit-AI with Next.js as a personal AI-assisted development project.",
+    "longTermPositioning": "A multilingual, Japan-based early-career professional who can connect people, places, cultures, and technology through hospitality, community building, SNS communication, and AI-assisted product development.",
+    "personalBackground": {
+      "nationality": "Taiwan",
+      "currentLocation": "Fukuoka, Japan",
+      "education": [
+        {
+          "school": "Tamkang University",
+          "country": "Taiwan",
+          "department": "Information Management",
+          "degree": "Bachelor's degree",
+          "startDate": "2019-09",
+          "endDate": "2023-06"
+        }
+      ],
+      "experienceLevel": "early-career",
+      "availability": "Flexible for interviews, trials, and work start date"
+    },
+    "careerGoals": [
+      "Build a stable foundation for living and working in Japan.",
+      "Gain practical Japanese workplace communication experience.",
+      "Turn multilingual ability into real value in hospitality, tourism, customer service, SNS, and community-related work.",
+      "Learn how welcoming spaces such as guesthouses, hostels, cafes, and community venues are operated.",
+      "Connect online community management experience with offline hospitality, events, and SNS/PR work.",
+      "Use real workplace experience to discover practical problems that can later be solved with AI, web tools, or product development.",
+      "Develop a unique career position combining multilingual communication, hospitality, community building, SNS operation, and AI-assisted web/product skills."
+    ],
+    "targetRoles": [
+      "Hotel front desk staff",
+      "Guesthouse staff",
+      "Hostel staff",
+      "Cafe bar staff",
+      "Multilingual customer service staff",
+      "Inbound tourism staff",
+      "Reception staff",
+      "Event assistant",
+      "SNS operation assistant",
+      "PR assistant",
+      "Community manager assistant",
+      "Junior web developer",
+      "Junior frontend developer",
+      "AI-assisted developer"
+    ],
+    "careerDirections": {
+      "primary": [
+        "Hospitality",
+        "Guesthouse / hostel / hotel operations",
+        "Cafe and customer service",
+        "Inbound tourism",
+        "Multilingual guest support",
+        "Event and community-related work",
+        "SNS / PR assistant work"
+      ],
+      "secondary": [
+        "Junior web development",
+        "Frontend development",
+        "AI-assisted product building",
+        "Internal tools",
+        "Productivity tools"
+      ]
+    },
+    "experienceLevel": "junior / early-career",
+    "workExperience": [
+      {
+        "company": "Hotel Hakuba Goryu Base",
+        "location": "Hakuba, Nagano, Japan",
+        "startDate": "2025-12",
+        "endDate": "2026-03",
+        "role": "Hotel / cafe staff",
+        "employmentType": "contract / seasonal",
+        "responsibilities": [
+          "Supported front desk operations and guest reception.",
+          "Assisted with check-in and facility guidance.",
+          "Explained hotel facilities and usage rules to domestic and international guests.",
+          "Provided customer service in Japanese, English, and Chinese.",
+          "Worked in the hotel cafe, including drink preparation and simple latte art.",
+          "Supported kitchen tasks, facility organization, and cleaning."
+        ],
+        "highlights": [
+          "Gained practical experience in multilingual hospitality service.",
+          "Learned to communicate clearly and politely with guests from different backgrounds.",
+          "Contributed to creating a comfortable and welcoming stay for guests."
+        ]
+      },
+      {
+        "company": "Freelance",
+        "location": "Taiwan / Online",
+        "startDate": "2024-06",
+        "endDate": "2025-06",
+        "role": "SNS and community management freelancer",
+        "employmentType": "freelance",
+        "responsibilities": [
+          "Managed SNS and LINE OpenChat communities.",
+          "Handled participant communication and community moderation.",
+          "Created announcements and managed posts.",
+          "Organized community rules and maintained a positive atmosphere.",
+          "Supported online community growth and engagement."
+        ],
+        "highlights": [
+          "Grew a LINE OpenChat community from 0 to around 3,000 members.",
+          "Developed experience in community atmosphere building.",
+          "Practiced communication, moderation, and basic content operation."
+        ]
+      },
+      {
+        "company": "Military service in Taiwan",
+        "location": "Taiwan",
+        "startDate": "2023-12",
+        "endDate": "2024-03",
+        "role": "Mandatory military service",
+        "employmentType": "mandatory service",
+        "responsibilities": [
+          "Completed mandatory military service in Taiwan."
+        ],
+        "highlights": [
+          "Completed service period responsibly."
+        ]
+      }
+    ],
+    "skills": {
+      "strong": [
+        "Native Chinese communication",
+        "Japanese customer service communication",
+        "Multilingual guest support",
+        "Hospitality service",
+        "Hotel front desk support",
+        "Guest guidance",
+        "Cafe customer service",
+        "Drink preparation",
+        "Community management",
+        "SNS operation",
+        "Event planning",
+        "Participant support",
+        "Creating a welcoming atmosphere",
+        "AI-assisted development workflow",
+        "Step-by-step problem solving with AI"
+      ],
+      "familiar": [
+        "Japanese JLPT N2",
+        "English customer service communication",
+        "Cafe operations",
+        "Simple latte art",
+        "Reception work",
+        "Inbound customer support",
+        "Photography",
+        "Instagram content support",
+        "Canva",
+        "Basic video editing",
+        "Google Workspace",
+        "Word",
+        "Excel",
+        "Basic PC operations",
+        "Data entry",
+        "React",
+        "Next.js",
+        "TypeScript",
+        "JavaScript",
+        "HTML",
+        "CSS",
+        "Tailwind CSS",
+        "REST API concepts",
+        "JSON file-based persistence",
+        "Git basics",
+        "PowerShell basics",
+        "Cursor",
+        "ChatGPT"
+      ],
+      "learning": [
+        "Professional Japanese workplace communication",
+        "Advanced business Japanese",
+        "Backend API design",
+        "Database integration",
+        "Authentication",
+        "Testing",
+        "Deployment",
+        "Production web development workflow",
+        "Advanced TypeScript",
+        "System design basics"
+      ]
+    },
+    "languages": [
+      {
+        "language": "Traditional Chinese / Mandarin Chinese",
+        "level": "native",
+        "notes": "Native speaker from Taiwan."
+      },
+      {
+        "language": "Japanese",
+        "level": "JLPT N2",
+        "notes": "Able to handle practical customer service communication and daily workplace communication. Still improving advanced business Japanese."
+      },
+      {
+        "language": "English",
+        "level": "B2 equivalent / practical communication",
+        "notes": "Able to handle basic to intermediate customer service and guest communication."
+      }
+    ],
+    "certifications": [
+      {
+        "name": "JLPT N2",
+        "issuer": "Japan Foundation / Japan Educational Exchanges and Services",
+        "date": "2025-07"
+      },
+      {
+        "name": "Taiwan ordinary automobile driver's license",
+        "issuer": "Taiwan",
+        "date": "2021-09",
+        "notes": "Japanese translation obtained. Able to drive in Japan. Automatic transmission only."
+      }
+    ],
+    "projects": [
+      {
+        "name": "JobFit-AI",
+        "type": "personal project",
+        "description": "A job tracking and AI job-fit analysis tool built with Next.js to support job search, application status tracking, and future AI-based job matching.",
+        "techStack": [
+          "Next.js",
+          "React",
+          "TypeScript",
+          "JSON persistence",
+          "Git",
+          "Cursor",
+          "ChatGPT"
+        ],
+        "highlights": [
+          "Built a home page job list and job detail pages.",
+          "Implemented persistent job application status updates using a PATCH API.",
+          "Added status badges and status-based filtering on the home page.",
+          "Practiced small-task development, manual testing, and clean Git commits.",
+          "Used AI coding tools to plan, implement, review, and debug features.",
+          "Currently preparing a user profile data source for future job-fit analysis."
+        ],
+        "positioning": "Main portfolio project for AI-assisted development and practical product-building ability."
+      },
+      {
+        "name": "LINE OpenChat community operation",
+        "type": "community management project",
+        "description": "Managed and grew an online community using LINE OpenChat.",
+        "techStack": [
+          "LINE OpenChat",
+          "SNS operation",
+          "Community moderation",
+          "Announcement writing",
+          "Participant support"
+        ],
+        "highlights": [
+          "Grew the community from 0 to around 3,000 members.",
+          "Created rules, managed posts, and supported participant communication.",
+          "Maintained a safe and positive atmosphere for members."
+        ],
+        "positioning": "Useful experience for hospitality, community, event, SNS, and customer-facing roles."
+      },
+      {
+        "name": "Nihongo Bubble",
+        "type": "concept / planned project",
+        "description": "A Japanese learning assistant concept focused on contextual vocabulary and practical learning support.",
+        "techStack": [
+          "Product planning",
+          "Language learning design",
+          "AI-assisted learning"
+        ],
+        "highlights": [
+          "Designed the concept for a Japanese learning support tool.",
+          "Explored how AI can assist with vocabulary, context, and study flow."
+        ],
+        "positioning": "Supports interest in language learning, AI tools, and product thinking."
+      }
+    ],
+    "workPreferences": {
+      "locations": [
+        "Fukuoka",
+        "Japan",
+        "Remote",
+        "Hybrid"
+      ],
+      "workStyle": [
+        "Junior-friendly team",
+        "Clear tasks and feedback loops",
+        "Supportive workplace",
+        "Multicultural environment",
+        "Customer-facing environment",
+        "Product-focused environment",
+        "Mentorship available"
+      ],
+      "rolePreferences": [
+        "Guesthouse, hostel, or hotel roles using multilingual customer service",
+        "Cafe bar or reception roles where communication skills are valued",
+        "Inbound tourism roles involving Japanese, English, and Chinese",
+        "SNS operation assistant or PR assistant roles",
+        "Event support roles",
+        "Frontend-heavy junior web development roles",
+        "Web application development",
+        "Internal tools",
+        "AI tooling or productivity tools",
+        "Roles where practical project experience is valued"
+      ],
+      "availabilityPreferences": [
+        "Flexible start date",
+        "Open to interviews and trials",
+        "Open to shift work",
+        "Open to weekend work",
+        "Open to evening work",
+        "Open to part-time, full-time, or W-work depending on conditions"
+      ],
+      "avoid": [
+        "Senior-only engineering roles",
+        "Roles requiring deep backend ownership from day one",
+        "Roles requiring advanced infrastructure experience",
+        "Roles requiring fluent business Japanese from day one without support",
+        "Highly ambiguous roles with no mentorship",
+        "Positions where language support or onboarding is insufficient"
+      ]
+    },
+    "constraints": [
+      "Needs roles that are realistic for an early-career candidate.",
+      "Japanese is JLPT N2 level and practical for many customer service situations, but advanced business Japanese is still a growth area.",
+      "Professional software engineering experience is limited; web development should be evaluated as junior or trainee level.",
+      "Backend, database, testing, and deployment experience should be considered growth areas.",
+      "For hospitality roles, the strongest match is multilingual guest support, hotel/cafe operations, reception, inbound tourism, event support, and SNS support.",
+      "For engineering roles, the strongest match is junior-friendly frontend or AI-assisted development roles where practical project experience is valued.",
+      "The candidate is looking for work that can support stable life in Japan while also building future career options."
+    ],
+    "jobFitCriteria": {
+      "highFit": [
+        "Hotel, hostel, guesthouse, cafe, or reception roles that value multilingual customer service.",
+        "Inbound tourism roles involving Chinese, Japanese, and English communication.",
+        "Customer-facing roles where hospitality, clear explanation, and guest support are important.",
+        "SNS operation assistant, PR assistant, event assistant, or community support roles.",
+        "Roles where experience in hospitality, cafe work, SNS/community management, and event planning can be combined.",
+        "Roles that help the candidate gain practical Japanese workplace communication experience.",
+        "Roles that involve traveler interaction, local culture, community spaces, events, or welcoming atmosphere creation.",
+        "Junior-friendly frontend or web application roles using React, Next.js, TypeScript, or JavaScript.",
+        "Roles involving AI tools, productivity tools, internal tools, or product prototyping.",
+        "Teams open to candidates who use AI tools responsibly to improve productivity."
+      ],
+      "mediumFit": [
+        "General customer service roles with moderate Japanese requirements.",
+        "Sales or retail roles focused on inbound customers or multilingual support.",
+        "Hotel roles requiring some night shifts or broader operations if training is available.",
+        "Cafe or restaurant roles where customer communication and atmosphere building are valued.",
+        "Full-stack roles with manageable backend requirements.",
+        "Frontend roles requiring some testing, deployment, or API integration.",
+        "Japanese workplace roles where language expectations are moderate or support is available.",
+        "Roles where SNS or event support is only a minor part of the job but still available."
+      ],
+      "lowFit": [
+        "Senior frontend or senior full-stack roles.",
+        "Backend-heavy roles requiring strong database, infrastructure, or system design experience.",
+        "Roles requiring fluent business Japanese from day one.",
+        "Roles requiring many years of professional engineering experience.",
+        "Hospitality management roles requiring extensive management experience.",
+        "Sales roles with heavy individual quota pressure and little training.",
+        "Jobs with no clear training, no feedback, and no opportunity to develop communication or practical workplace skills.",
+        "Jobs that do not help the candidate build a stable foundation in Japan or future career options."
+      ]
+    },
+    "resumePositioning": [
+      "For hospitality roles, emphasize multilingual customer service, hotel front desk support, cafe work, guest guidance, and creating a welcoming atmosphere.",
+      "For guesthouse, hostel, and cafe bar roles, emphasize interest in spaces where travelers and local people can interact.",
+      "For SNS, PR, and event assistant roles, emphasize SNS/community management, LINE OpenChat growth to around 3,000 members, photography, Canva, simple video editing, and event planning.",
+      "For inbound tourism or sales roles, emphasize native Chinese, JLPT N2 Japanese, English communication, and cross-cultural customer support.",
+      "For junior web roles, position JobFit-AI as the main portfolio project.",
+      "For web development applications, emphasize practical implementation: Next.js pages, API route, status persistence, UI state, and Git workflow.",
+      "Emphasize AI-assisted development as a productivity skill, not as a replacement for understanding.",
+      "Frame current gaps honestly as learning areas: backend, database, testing, deployment, advanced TypeScript, and advanced business Japanese.",
+      "Position the candidate as someone who can connect multilingual communication, hospitality, community operation, SNS content, and AI/web tool thinking."
+    ],
+    "interviewTalkingPoints": [
+      "I can support guests in Chinese, Japanese, and English.",
+      "At Hotel Hakuba Goryu Base, I supported front desk work, facility guidance, cafe operations, and guest communication.",
+      "I care about explaining things clearly so guests can feel comfortable and safe.",
+      "I have experience growing and managing an online community from 0 to around 3,000 members.",
+      "I am interested in creating spaces where travelers, locals, and community members can interact comfortably.",
+      "I want to gain more practical Japanese workplace communication experience and build a stable foundation for working in Japan.",
+      "I have an Information Management background and am also building a Next.js job-fit analysis tool as a personal project.",
+      "I use AI tools to improve planning, learning, debugging, and productivity while continuing to understand the implementation myself.",
+      "In the future, I want to connect hospitality, multilingual communication, SNS/community experience, and AI/web tools."
+    ],
+    "recommendedApplicationAngles": {
+      "hospitality": [
+        "Multilingual guest support",
+        "Hotel and cafe experience",
+        "Clear and polite communication",
+        "Interest in guesthouse, hostel, traveler community, and local exchange",
+        "SNS/photo/event support as an extra contribution",
+        "Desire to create a welcoming and comfortable atmosphere for guests"
+      ],
+      "snsPrEvent": [
+        "Community growth experience",
+        "SNS operation support",
+        "Photography and Canva",
+        "Event planning and participant support",
+        "Multilingual communication",
+        "Ability to connect online communication with offline events or physical spaces"
+      ],
+      "inboundSalesCustomerService": [
+        "Native Chinese plus Japanese N2 and English communication",
+        "Cross-cultural customer support",
+        "Experience explaining services to international guests",
+        "Basic PC and data entry ability",
+        "Interest in supporting travelers and international customers in Japan"
+      ],
+      "juniorWebDeveloper": [
+        "Information Management degree",
+        "JobFit-AI as portfolio",
+        "Next.js, React, TypeScript learning and implementation",
+        "AI-assisted development workflow",
+        "Strong product thinking from real job-search pain point",
+        "Potential to build tools based on real hospitality, job search, language learning, or community problems"
+      ]
+    }
+  }
+  
