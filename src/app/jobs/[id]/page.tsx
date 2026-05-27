@@ -16,6 +16,29 @@ type AiScore = {
   generatedAt: string
 }
 
+type DeepAnalysis = {
+  jobId: string
+  analysisType: 'gemini-deep'
+  analysisVersion: string
+  fitScore: number
+  recommendedAction: string
+  summary: string
+  strengths: string[]
+  gaps: string[]
+  riskFactors: string[]
+  requiredSkills: string[]
+  bonusSkills: string[]
+  resumeAdvice: string[]
+  interviewPrep: string[]
+  questionsToAskEmployer: string[]
+  metadata: {
+    source: 'gemini'
+    model: string
+    profileVersion: string | number
+    createdAt: string
+  }
+}
+
 type Job = {
   id: string
   title?: string
@@ -26,6 +49,8 @@ type Job = {
   status?: JobStatus
   statusUpdatedAt?: string
   aiScore?: AiScore
+  deepAnalysis?: DeepAnalysis
+  analysis?: Record<string, unknown>
 }
 
 function resolveStatus(status?: string): JobStatus {
@@ -193,7 +218,10 @@ export default async function JobDetailPage({
           </div>
         </section>
 
-        <AnalyzeFitPanel jobId={job.id} />
+        <AnalyzeFitPanel
+          jobId={job.id}
+          initialDeepAnalysis={job.deepAnalysis ?? null}
+        />
 
         <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">

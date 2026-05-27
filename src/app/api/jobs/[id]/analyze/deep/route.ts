@@ -5,7 +5,7 @@ import { hasGeminiApiKey } from '@/lib/aiConfig'
 
 // Server-side Gemini deep analysis only — manual POST; never auto-called.
 
-const GEMINI_MODEL = 'gemini-1.5-flash'
+const GEMINI_MODEL = 'gemini-3.5-flash'
 const GEMINI_API_BASE =
   'https://generativelanguage.googleapis.com/v1beta/models'
 
@@ -13,40 +13,6 @@ type Params = {
   params: Promise<{
     id: string
   }>
-}
-
-type Job = {
-  id: string
-  title?: string
-  url?: string
-  rawText?: string
-  source?: string
-  collectedAt?: string
-  company?: string
-  location?: string
-  salary?: string
-  employmentType?: string
-}
-
-type UserProfile = {
-  profileVersion?: number | string
-  summary?: string
-  targetRoles?: string[]
-  careerDirections?: {
-    primary?: string[]
-    secondary?: string[]
-  }
-  skills?: {
-    strong?: string[]
-    familiar?: string[]
-    learning?: string[]
-  }
-  languages?: Array<{
-    language?: string
-    level?: string
-    notes?: string
-  }>
-  [key: string]: unknown
 }
 
 type RecommendedAction = 'apply' | 'maybe' | 'skip'
@@ -74,6 +40,42 @@ type DeepAnalysisResponse = {
   }
 }
 
+type Job = {
+  id: string
+  title?: string
+  url?: string
+  rawText?: string
+  source?: string
+  collectedAt?: string
+  company?: string
+  location?: string
+  salary?: string
+  employmentType?: string
+  deepAnalysis?: DeepAnalysisResponse
+  [key: string]: unknown
+}
+
+type UserProfile = {
+  profileVersion?: number | string
+  summary?: string
+  targetRoles?: string[]
+  careerDirections?: {
+    primary?: string[]
+    secondary?: string[]
+  }
+  skills?: {
+    strong?: string[]
+    familiar?: string[]
+    learning?: string[]
+  }
+  languages?: Array<{
+    language?: string
+    level?: string
+    notes?: string
+  }>
+  [key: string]: unknown
+}
+
 const jobsFilePath = path.join(process.cwd(), 'jobs_temp.json')
 const profileFilePath = path.join(process.cwd(), 'user_profile.json')
 
@@ -88,6 +90,10 @@ async function readJsonFile<T>(filePath: string, label: string): Promise<T> {
     const message = error instanceof Error ? error.message : String(error)
     throw new Error(`Failed to read ${label}: ${message}`)
   }
+}
+
+async function writeJsonFile<T>(filePath: string, data: T): Promise<void> {
+  await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8')
 }
 
 function clampScore(n: number): number {
@@ -120,19 +126,107 @@ function sanitizePreview(text: string, maxLen = 240): string {
 }
 
 function extractJsonFromText(text: string): string {
-  const trimmed = text.trim()
-  if (trimmed.startsWith('{')) return trimmed
+  let trimmed = text.trim()
 
+  // Remove BOM if present
+  trimmed = trimmed.replace(/^\uFEFF/, '').trim()
+
+  // Remove markdown fences if Gemini ignored the instruction
   const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i)
-  if (fenceMatch?.[1]) return fenceMatch[1].trim()
+  if (fenceMatch?.[1]) {
+    trimmed = fenceMatch[1].trim()
+  }
 
+  // If response contains extra text, extract the largest JSON object by brace matching.
   const firstBrace = trimmed.indexOf('{')
+  if (firstBrace < 0) return trimmed
+
+  let depth = 0
+  let inString = false
+  let escaped = false
+  let end = -1
+
+  for (let i = firstBrace; i < trimmed.length; i += 1) {
+    const ch = trimmed[i]
+
+    if (escaped) {
+      escaped = false
+      continue
+    }
+
+    if (ch === '\\') {
+      escaped = true
+      continue
+    }
+
+    if (ch === '"') {
+      inString = !inString
+      continue
+    }
+
+    if (inString) continue
+
+    if (ch === '{') {
+      depth += 1
+    } else if (ch === '}') {
+      depth -= 1
+      if (depth === 0) {
+        end = i
+        break
+      }
+    }
+  }
+
+  if (end >= firstBrace) {
+    return trimmed.slice(firstBrace, end + 1).trim()
+  }
+
+  // Fallback to simple last brace extraction
   const lastBrace = trimmed.lastIndexOf('}')
-  if (firstBrace >= 0 && lastBrace > firstBrace) {
-    return trimmed.slice(firstBrace, lastBrace + 1)
+  if (lastBrace > firstBrace) {
+    return trimmed.slice(firstBrace, lastBrace + 1).trim()
   }
 
   return trimmed
+}
+
+function parseGeminiJson(text: string): Record<string, unknown> {
+  const jsonText = extractJsonFromText(text)
+
+  try {
+    const parsed = JSON.parse(jsonText) as unknown
+
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new Error('Parsed value is not a JSON object')
+    }
+
+    return parsed as Record<string, unknown>
+  } catch (firstError) {
+    // Common cleanup for slightly invalid model output
+    const repaired = jsonText
+      .replace(/,\s*}/g, '}')
+      .replace(/,\s*]/g, ']')
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ')
+
+    try {
+      const parsed = JSON.parse(repaired) as unknown
+
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error('Parsed repaired value is not a JSON object')
+      }
+
+      return parsed as Record<string, unknown>
+    } catch (secondError) {
+      const firstMessage =
+        firstError instanceof Error ? firstError.message : String(firstError)
+      const secondMessage =
+        secondError instanceof Error ? secondError.message : String(secondError)
+
+      throw new Error(
+        `Unable to parse Gemini JSON. First parse error: ${firstMessage}; repaired parse error: ${secondMessage}`
+      )
+    }
+  }
 }
 
 function buildGeminiPrompt(job: Job, profile: UserProfile): string {
@@ -161,7 +255,12 @@ function buildGeminiPrompt(job: Job, profile: UserProfile): string {
 2. recommendedAction 只能使用英文小寫：apply、maybe、skip（不可使用中文）。
 3. fitScore 為 0 到 100 的整數。
 4. 分析要務實、具體，需考量：職稱、公司、地點、薪資、雇用形態、職缺描述、求職者背景、日文能力、旅宿／前台適性、語言優勢、夜勤風險、派遣／契約風險（若有）、入門友善度、履歷與面試策略。
-5. 只輸出「單一 JSON 物件」，不要 markdown、不要程式碼區塊、不要額外說明文字。
+5. 只輸出「單一合法 JSON 物件」，不要 markdown、不要程式碼區塊、不要額外說明文字。
+6. JSON 必須可以被 JavaScript JSON.parse() 直接解析。
+7. 所有字串內若需要使用雙引號，必須轉義為 \\"。
+8. 不要在 JSON 字串中輸出未轉義的換行。
+9. 不要輸出 trailing comma。
+10. 請輸出 compact/minified JSON，不要格式化排版。
 
 請輸出符合以下結構的 JSON（欄位名稱必須完全一致）：
 {
@@ -185,7 +284,9 @@ function buildGeminiPrompt(job: Job, profile: UserProfile): string {
 ${JSON.stringify(jobPayload, null, 2)}
 
 求職者個人檔案（JSON，profileVersion=${profileVersion}）：
-${JSON.stringify(profile, null, 2)}`
+${JSON.stringify(profile, null, 2)}
+
+再次提醒：你的最終輸出必須只是一個可以被 JSON.parse() 解析的 minified JSON object。第一個字元必須是 {，最後一個字元必須是 }。`
 }
 
 async function callGemini(
@@ -200,7 +301,10 @@ async function callGemini(
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
-        temperature: 0.35,
+        temperature: 0.1,
+        topP: 0.8,
+        topK: 20,
+        maxOutputTokens: 4096,
         responseMimeType: 'application/json',
       },
     }),
@@ -374,24 +478,64 @@ export async function POST(_request: Request, context: Params) {
 
     let parsed: Record<string, unknown>
     try {
-      const jsonText = extractJsonFromText(geminiText)
-      parsed = JSON.parse(jsonText) as Record<string, unknown>
-      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-        throw new Error('Parsed value is not a JSON object')
-      }
+      parsed = parseGeminiJson(geminiText)
     } catch (error) {
-      return NextResponse.json(
-        {
+      console.error('Gemini returned invalid JSON for deep analysis')
+      console.error('Parse error:', error)
+      console.error('Gemini raw text preview:', sanitizePreview(geminiText, 1200))
+
+      return new Response(
+        JSON.stringify({
           error: 'Gemini returned invalid JSON for deep analysis',
           details: error instanceof Error ? error.message : String(error),
-          preview: sanitizePreview(geminiText),
-        },
-        { status: 502 }
+          preview: sanitizePreview(geminiText, 1200),
+        }),
+        {
+          status: 502,
+          headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+          },
+        }
       )
     }
 
     const result = normalizeDeepAnalysis(parsed, id, profileVersion, model)
-    return NextResponse.json(result)
+
+    const updatedJobs = jobs.map((j) => {
+      if (j.id !== id) return j
+
+      return {
+        ...j,
+        deepAnalysis: result,
+      }
+    })
+
+    try {
+      await writeJsonFile(jobsFilePath, updatedJobs)
+    } catch (error) {
+      console.error('Failed to persist deep analysis result:', error)
+
+      return new Response(
+        JSON.stringify({
+          error: 'Gemini analysis succeeded, but failed to save result',
+          details: error instanceof Error ? error.message : String(error),
+          result,
+        }),
+        {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+          },
+        }
+      )
+    }
+
+    return new Response(JSON.stringify(result), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+      },
+    })
   } catch (error) {
     console.error('POST /api/jobs/[id]/analyze/deep failed:', error)
     return NextResponse.json(
