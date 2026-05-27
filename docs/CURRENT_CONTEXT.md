@@ -35,19 +35,30 @@ The current phase targets **true AI job-fit analysis** (profile-aware scoring), 
 - Job detail page now includes an **AI Job Fit Analysis** section.
 - A disabled **Analyze Fit** button placeholder is visible on each job detail page.
 - The button is currently disabled and does not call any API.
-- No analyze API exists yet and no AI analysis logic has been implemented.
+- No analyze API existed yet at the time of this task and no AI analysis logic had been implemented.
 - No data files (`jobs_temp.json`, `user_profile.json`) were modified for this task.
 
-### MVP 0.3 Data Preparation — Started
+### TASK-009 — Done
 
-User profile data is in place. Next step is UI scaffolding before wiring analysis logic.
+- `POST /api/jobs/[id]/analyze` now exists at `src/app/api/jobs/[id]/analyze/route.ts`.
+- The endpoint reads `jobs_temp.json` and `user_profile.json`, finds the target job by `id`, and returns a structured job-fit analysis JSON object.
+- The analysis is implemented as a deterministic local placeholder / rule-based analysis; no external AI API is called and no API keys are required.
+- When the job `id` is missing, the endpoint returns a JSON 404 response.
+- The endpoint does **not** modify any data files (`jobs_temp.json`, `user_profile.json`); behavior is read-only.
+- No frontend wiring was added yet; the **Analyze Fit** button on the job detail page is still not connected to this API.
+
+### MVP 0.3 Data Preparation — Status
+
+User profile data and a first-pass local analysis API are in place. The next step is to wire the UI button to the new endpoint and render the returned analysis, still without involving any external AI.
 
 ## Immediate Next Task
 
-- **TASK-009:** Add `POST /api/jobs/[id]/analyze` API route.
-  - The route will carefully read `jobs_temp.json` and `user_profile.json`.
-  - It should generate a structured job-fit analysis object and return it as JSON.
-  - Implementation must be kept small and focused, without modifying existing data files unless explicitly required by the task spec.
+- **TASK-010:** Connect Analyze Fit button to the analyze API and render results.
+  - On click, call `POST /api/jobs/[id]/analyze` for the current job `id`.
+  - Display the returned structured analysis (scores, strengths, concerns, recommendations, etc.) in a simple, local-state-based UI on the job detail page.
+  - Do **not** integrate any external AI yet; continue to rely only on the local placeholder / rule-based analysis implemented in the API.
+  - Do **not** modify `jobs_temp.json` or `user_profile.json`; this task must keep data access read-only.
+  - Keep the UI small, focused, and client-local (no new global state mechanisms or complex abstractions).
 
 ## Do Not Do Yet
 

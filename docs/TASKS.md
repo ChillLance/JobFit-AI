@@ -6,36 +6,36 @@ Focus: move from mock AI scoring toward real job-fit analysis using a local user
 
 ## Current Task
 
-### TASK-009 Add Analyze API Endpoint
+### TASK-010 Connect Analyze Button to Analyze API
 
 Goal:
 
-- Add a `POST /api/jobs/[id]/analyze` API route that prepares for profile-aware job-fit analysis.
-- The endpoint should be small and focused, returning a structured JSON analysis response without overcomplicating the implementation.
+- Wire the existing **Analyze Fit** button on the job detail page to the new `POST /api/jobs/[id]/analyze` API.
+- Display the returned **structured job-fit analysis JSON** in the existing AI Job Fit Analysis section.
 
 Behavior (high level):
 
-- Read the target job from `jobs_temp.json` using the given `id`.
-- Read user profile data from `user_profile.json`.
-- Generate a **structured job-fit analysis object** (e.g. scores, strengths, gaps, recommendations) and return it as JSON.
-- Keep side effects minimal; avoid modifying `jobs_temp.json` or `user_profile.json` unless a later task explicitly allows it.
+- On click, call `POST /api/jobs/[id]/analyze` for the current job `id`.
+- Render the analysis result (scores, strengths, concerns, recommendations, etc.) in a simple, local-state-based UI on the job detail page.
+- Handle loading and error states locally in the client component.
 
-Notes:
+Constraints:
 
-- No real external AI API integration in this task.
-- Keep the data shape and implementation small so it remains easy to iterate on in later tasks.
+- Do **not** integrate any external AI APIs yet; only use the existing local placeholder / rule-based analysis.
+- Do **not** modify `jobs_temp.json` or `user_profile.json`; this task is read-only with respect to data files.
+- Keep the UI implementation simple, focused, and local-state based (no global state or new complex abstractions).
 
 Likely files:
 
 ```txt
-src/app/api/jobs/[id]/analyze/route.ts
+src/app/jobs/[id]/page.tsx
 ```
 
 ---
 
 ## Next Tasks
 
-_(To be added after TASK-008 — e.g. wire profile into scoring API, replace mock AI with profile-aware analysis.)_
+_(To be expanded after TASK-010 — e.g. iterate on analysis UI/UX, introduce more profile-aware rules, or prepare for optional external AI integration.)_
 
 ---
 
@@ -55,8 +55,18 @@ _(To be added after TASK-008 — e.g. wire profile into scoring API, replace moc
 - Job detail page now shows an **AI Job Fit Analysis** section.
 - A disabled **Analyze Fit** button placeholder is visible on each job detail page.
 - The button is disabled for now and does not make any network request.
-- No analyze API exists yet and no AI analysis logic has been implemented.
+- No analyze API existed yet at the time of this task and no AI analysis logic had been implemented.
 - No data files (`jobs_temp.json`, `user_profile.json`) were modified.
+
+#### TASK-009 Add Analyze API Endpoint — Done
+
+- Added `POST /api/jobs/[id]/analyze` at `src/app/api/jobs/[id]/analyze/route.ts`.
+- The endpoint reads `jobs_temp.json` and `user_profile.json` and finds the target job by `id`.
+- It returns a **structured job-fit analysis JSON** object using deterministic local placeholder / rule-based analysis.
+- It returns a 404 JSON response when the job `id` is missing.
+- It does **not** modify `jobs_temp.json` or `user_profile.json`; behavior is read-only.
+- It does **not** use any external AI APIs and requires no API keys.
+- No frontend connection was added yet; the **Analyze Fit** button on the detail page remains disconnected from this API.
 
 ---
 
