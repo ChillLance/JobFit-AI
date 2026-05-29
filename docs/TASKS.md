@@ -1,46 +1,57 @@
 # JobFit-AI Tasks
 
-## Current Phase: MVP 0.3 — Job Fit Analysis
+## Current Phase: MVP 0.3 — AI Analysis Hub
 
-Focus: profile-aware job-fit analysis with local rules and optional Gemini deep analysis.
+Focus: the AI input pipeline (TASK-021 series) is complete; next is TASK-022 Model Comparison & Final Recommendation.
 
 ## Current Task
 
-### TASK-016 Add deepAnalysis cache / TTL
+### TASK-022 Model Comparison & Final Recommendation
 
 **Status:** Next
 
 **Goal:**
 
-- If a job already has `deepAnalysis` and it has **not expired**, return the cached result without calling Gemini again.
-- When the user explicitly re-runs analysis (**重新分析**), allow **`force: true`** (or equivalent request flag) to bypass cache and call Gemini again.
-- Reduce duplicate Gemini API consumption and cost.
-
-**Suggested fields:**
-
-- `metadata.createdAt` — when the deep analysis was generated
-- `metadata.model` — e.g. `gemini-3.5-flash`
-- `metadata.profileVersion` — tie cache validity to profile changes
-- Optional `cacheExpiresAt` — explicit TTL expiry timestamp on the stored `deepAnalysis` object
-
-**Constraints:**
-
-- API key must remain in **`.env.local` only**; never commit `.env.local` or secrets.
-- Preserve existing `deepAnalysis` display priority on the detail page.
-- Keep `POST /api/jobs/[id]/analyze/deep` as the deep-analysis endpoint.
-
-**Likely files:**
-
-```txt
-src/app/api/jobs/[id]/analyze/deep/route.ts
-src/app/jobs/[id]/AnalyzeFitPanel.tsx
-```
+- Do **not** make any additional AI API calls — work only with results already produced by Local / Gemini / Groq analysis.
+- Compare the analysis results from **Local / Gemini / Groq**.
+- Display **average score**, **score gap (分數差距)**, and **model agreement / consistency (模型一致性)**.
+- Consolidate **common strengths (共同優勢)**, **common risks (共同風險)**, and **common capability gaps (共同能力落差)**.
+- Produce **pre-interview / pre-application confirmation items (面試/投遞前確認事項)**.
+- Produce a **final recommendation (最終建議)**.
 
 ---
 
 ## Completed Tasks
 
+### MVP 0.3 — AI Analysis Hub — Input Pipeline
+
+#### TASK-021 Compact Input Builder — Done
+
+- Introduced a compact input builder shared across providers via `buildAnalysisInput` / `buildJobFitPrompt`.
+- Runs analysis on a compact digest (`inputMode: digest`) instead of full raw job text.
+
+#### TASK-021.2 Input Coverage Report — Done
+
+- Added `inputCoverage` diagnostics used to detect truncation and tail-section (尾段) risk.
+- Coverage info is retained for diagnostics rather than driving extra AI calls.
+
+#### TASK-021.3 Conservative Relevant Job Digest — Done
+
+- Implemented `tokenStrategy: relevant_job_digest_v1`, a conservative relevance-driven digest.
+- Wired `jobDigest`, `evidenceSnippets`, and `fallbackImportantText` into the prompt.
+
+#### TASK-021.3.1 Input Digest Polish — Done
+
+- Completed phrase-level boilerplate cleanup.
+- UI shows digest stats: summary items (摘要項目), removed noise (已移除雜訊), recovered tail-section evidence (補回尾段證據), and fallback line count (fallback 條數).
+- `tsc --noEmit` passes.
+
 ### MVP 0.3 — Job Fit Analysis
+
+#### TASK-016 Add deepAnalysis cache / TTL — Superseded
+
+- Originally planned to cache `deepAnalysis` with TTL and a `force: true` bypass.
+- Superseded by the TASK-021 input pipeline work; not the active focus.
 
 #### TASK-015 Gemini Deep Analysis API and UI — Done
 

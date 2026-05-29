@@ -19,52 +19,40 @@ Also in place from earlier work:
 - Home page lists jobs with AI score/level and links to `/jobs/[id]`.
 - Job detail page includes AI score panel (`ScorePanel`) and mock scoring API with persistence.
 
-## Current Focus: MVP 0.3 — Job Fit Analysis — In Progress
+## Current Focus: MVP 0.3 — AI Analysis Hub — TASK-022 Next
 
-The current phase targets **profile-aware job-fit analysis** using `user_profile.json`, local rule-based analysis, and optional Gemini deep analysis.
+The AI input pipeline work (TASK-021 series) is **complete** and `tsc --noEmit` passes. The next step is **not** to keep changing the input pipeline, but to build **TASK-022: Model Comparison & Final Recommendation**.
 
-### MVP 0.3 — TASK-015 Complete
+### AI input pipeline — current state (TASK-021 series complete)
 
-**MVP 0.3 Job Fit Analysis** has completed **TASK-015** (Gemini deep analysis integration).
+- **Gemini and Groq share** `buildAnalysisInput` / `buildJobFitPrompt` — a single input/prompt path for both providers.
+- **`inputMode: digest`** — analysis runs on a compact digest rather than raw job text.
+- **`tokenStrategy: relevant_job_digest_v1`** — conservative, relevance-driven digest strategy.
+- **`jobDigest` / `evidenceSnippets` / `fallbackImportantText`** are wired into the prompt.
+- **`inputCoverage`** is retained for diagnostics — used to detect truncation and tail-section (尾段) risk.
+- **Phrase-level boilerplate cleanup** is complete.
+- **UI shows digest stats**, including: summary items (摘要項目), removed noise (已移除雜訊), recovered tail-section evidence (補回尾段證據), and fallback line count (fallback 條數).
 
-Current behavior:
+### Decision
 
-- The job detail page is wired to **Gemini deep analysis**.
-- Users can manually click **「開始 Gemini 深度分析」** or **「重新分析」** (`AnalyzeFitPanel`).
-- API endpoint: **`POST /api/jobs/[id]/analyze/deep`** (`src/app/api/jobs/[id]/analyze/deep/route.ts`).
-- Gemini model remains **`gemini-3.5-flash`** (API key in `.env.local` only; never commit).
-- On success, the result is persisted on the job as **`deepAnalysis`** in `jobs_temp.json`.
-- The detail page **prefers `deepAnalysis`** when present; otherwise it shows the local rule-based analysis from `POST /api/jobs/[id]/analyze`.
-- Gemini JSON parsing has been hardened:
-  - `responseMimeType: application/json`
-  - Low temperature (`0.1`)
-  - Prompt JSON rules (no markdown fences, no trailing commas)
-  - Markdown fence stripping
-  - Trailing-comma repair
-  - Control-character cleanup
-  - JSON object extraction from noisy responses
-  - On parse failure: error response includes **`details`** and **`preview`** for debugging
+- The **TASK-021 series is complete**. Unless a major bug is found, **do not keep refactoring the input pipeline**.
+- The next task is **TASK-022: Model Comparison & Final Recommendation**.
 
-### Earlier MVP 0.3 milestones (summary)
+### Completed history — MVP 0.3 milestones (summary)
 
 - **TASK-007:** `user_profile.json` at project root.
 - **TASK-008–009:** Analyze Fit UI placeholder and local `POST /api/jobs/[id]/analyze` (read-only rule-based analysis).
 - **TASK-010+:** Analyze Fit button wired; local analysis display; persistence and UI iterations through TASK-014.
-
-### Repository state
-
-- Git working tree confirmed **clean** after TASK-015.
-
-## Immediate Next Task
-
-- **TASK-016:** Add **deepAnalysis cache / TTL** to avoid repeated Gemini API usage when a fresh result already exists.
-  - If a job already has `deepAnalysis` and it has not expired, return the cached result.
-  - Support **`force: true`** (or equivalent) to bypass cache and re-call Gemini when the user clicks **重新分析**.
-  - Suggested metadata fields: `metadata.createdAt`, `metadata.model`, `metadata.profileVersion`, optional `cacheExpiresAt`.
-  - API keys stay in `.env.local` only; do not commit secrets.
+- **TASK-015 (completed, now historical):** Gemini deep analysis integration via `POST /api/jobs/[id]/analyze/deep` (`AnalyzeFitPanel`), with persisted `deepAnalysis`, hardened JSON parsing, and deep-analysis display priority on the detail page. This is no longer the active focus.
+- **TASK-021 series:** Compact Input Builder, Input Coverage Report, Conservative Relevant Job Digest, and Input Digest Polish — all complete.
 
 ## Do Not Do Yet
 
+- Do not add more AI providers (不要新增更多 AI provider).
+- Do not redo the digest prompt (不要重做 digest prompt).
+- Do not raise `MAX_JOB_TEXT_CHARS` (不要提高 `MAX_JOB_TEXT_CHARS`).
+- Do not store full raw/cleaned/evidence text into metadata (不要把完整 raw/cleaned/evidence text 存進 metadata).
+- Do not build auto-apply / auto-submit features yet (不要先做自動投遞功能).
 - Database migration
 - Login / authentication
 - Cloud sync
