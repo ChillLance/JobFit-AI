@@ -18,7 +18,7 @@ type AiScore = {
 
 type DeepAnalysis = {
   jobId: string
-  analysisType: 'gemini-deep'
+  analysisType: 'gemini-deep' | 'groq-deep'
   analysisVersion: string
   fitScore: number
   recommendedAction: string
@@ -32,10 +32,14 @@ type DeepAnalysis = {
   interviewPrep: string[]
   questionsToAskEmployer: string[]
   metadata: {
-    source: 'gemini'
+    source?: 'gemini' | 'groq'
+    provider?: 'gemini' | 'groq'
     model: string
     profileVersion: string | number
     createdAt: string
+    cacheExpiresAt?: string
+    inputMode?: string
+    tokenStrategy?: string
   }
 }
 
@@ -50,6 +54,7 @@ type Job = {
   statusUpdatedAt?: string
   aiScore?: AiScore
   deepAnalysis?: DeepAnalysis
+  groqAnalysis?: DeepAnalysis
   analysis?: Record<string, unknown>
 }
 
@@ -201,26 +206,10 @@ export default async function JobDetailPage({
           initialStatus={resolveStatus(job.status)}
         />
 
-        <section className="mb-6 grid gap-4 md:grid-cols-3">
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-            <p className="text-sm text-slate-400">AI 適合度</p>
-            <p className="mt-3 text-3xl font-bold text-slate-500">待評分</p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-            <p className="text-sm text-slate-400">摘要狀態</p>
-            <p className="mt-3 text-3xl font-bold text-slate-500">待生成</p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-            <p className="text-sm text-slate-400">履歷匹配</p>
-            <p className="mt-3 text-3xl font-bold text-slate-500">待分析</p>
-          </div>
-        </section>
-
         <AnalyzeFitPanel
           jobId={job.id}
           initialDeepAnalysis={job.deepAnalysis ?? null}
+          initialGroqAnalysis={job.groqAnalysis ?? null}
         />
 
         <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6">

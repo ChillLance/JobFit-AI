@@ -1,112 +1,101 @@
 'use client'
 
 import { useState } from 'react'
+import type { AnalysisResult, AnalysisProvider, FitLevel } from '@/types/analysis'
+import {
+  PROVIDER_DEFAULT_MODEL,
+  getFitLevelLabel,
+  getProviderLabel,
+  getPrimaryAnalysis,
+  normalizeAnalysisResult,
+} from '@/lib/analysis/normalizeAnalysis'
 
-type RecommendedAction = 'apply' | 'maybe' | 'skip' | string
+// Raw provider responses kept loose; normalizeAnalysisResult maps them to AnalysisResult.
+type RawAnalysisObject = Record<string, unknown>
 
-type LocalJobFitAnalysis = {
-  jobId: string
-  source: string
-  analysisVersion: number | string
-  analysisType?: string
-  fitScore: number
-  recommendedAction: RecommendedAction
-  summary: string
-  strengths: string[]
-  gaps: string[]
-  riskFactors?: string[]
-  requiredSkills: string[]
-  bonusSkills: string[]
-  resumeAdvice: string[]
-  interviewPrep: string[]
-  questionsToAskEmployer?: string[]
-  metadata?: {
-    jobTitle?: string
-    company?: string
-    profileVersion?: number | string
-    source?: string
-    model?: string
-    createdAt?: string
-    deepAnalysisRecommended?: boolean
-    deepAnalysisPriority?: 'high' | 'medium' | 'low'
-    deepAnalysisReason?: string
-  }
+type DeepAnalyzeApiResponse = {
+  ok?: boolean
+  source?: 'cache' | 'fresh'
+  analysis?: RawAnalysisObject
+  error?: string
+  details?: string
 }
-
-type DeepJobFitAnalysis = {
-  jobId: string
-  analysisType: 'gemini-deep'
-  analysisVersion: string
-  fitScore: number
-  recommendedAction: RecommendedAction
-  summary: string
-  strengths: string[]
-  gaps: string[]
-  riskFactors: string[]
-  requiredSkills: string[]
-  bonusSkills: string[]
-  resumeAdvice: string[]
-  interviewPrep: string[]
-  questionsToAskEmployer: string[]
-  metadata: {
-    source: 'gemini'
-    model: string
-    profileVersion: string | number
-    createdAt: string
-  }
-}
-
-type DisplayAnalysis = LocalJobFitAnalysis | DeepJobFitAnalysis
 
 type Props = {
   jobId: string
-  initialDeepAnalysis?: DeepJobFitAnalysis | null
-  initialLocalAnalysis?: LocalJobFitAnalysis | null
+  initialDeepAnalysis?: RawAnalysisObject | null
+  initialGroqAnalysis?: RawAnalysisObject | null
+  initialLocalAnalysis?: RawAnalysisObject | null
 }
 
-function formatRecommendedAction(action?: RecommendedAction): string {
-  switch (action) {
-    case 'apply':
-      return '建議投遞'
-    case 'maybe':
-      return '可以考慮'
-    case 'skip':
-      return '暫不建議'
+const PROVIDER_LABELS: Record<AnalysisProvider, string> = {
+  local: '本地分析',
+  gemini: 'Gemini',
+  groq: 'Groq 70B',
+}
+
+const PROVIDER_RESULT_HEADINGS: Record<AnalysisProvider, string> = {
+  local: '本地分析結果',
+  gemini: 'Gemini 分析結果',
+  groq: 'Groq Llama 70B 分析結果',
+}
+
+const PROVIDER_START_LABELS: Record<AnalysisProvider, string> = {
+  local: '執行本地分析',
+  gemini: '開始 Gemini 分析',
+  groq: '開始 Groq Llama 70B 分析',
+}
+
+type LevelTheme = {
+  scoreText: string
+  ring: string
+  chipBg: string
+  chipText: string
+  chipBorder: string
+}
+
+function fitLevelTheme(level: FitLevel): LevelTheme {
+  switch (level) {
+    case 'excellent':
+      return {
+        scoreText: 'text-emerald-300',
+        ring: 'border-emerald-700/70',
+        chipBg: 'bg-emerald-950/50',
+        chipText: 'text-emerald-200',
+        chipBorder: 'border-emerald-700/70',
+      }
+    case 'good':
+      return {
+        scoreText: 'text-amber-300',
+        ring: 'border-amber-700/70',
+        chipBg: 'bg-amber-950/50',
+        chipText: 'text-amber-200',
+        chipBorder: 'border-amber-700/70',
+      }
+    case 'fair':
+      return {
+        scoreText: 'text-sky-300',
+        ring: 'border-sky-700/70',
+        chipBg: 'bg-sky-950/50',
+        chipText: 'text-sky-200',
+        chipBorder: 'border-sky-700/70',
+      }
+    case 'poor':
+      return {
+        scoreText: 'text-rose-300',
+        ring: 'border-rose-700/70',
+        chipBg: 'bg-rose-950/50',
+        chipText: 'text-rose-200',
+        chipBorder: 'border-rose-700/70',
+      }
     default:
-      return '待判斷'
-  }
-}
-
-function isDeepAnalysis(
-  analysis: DisplayAnalysis | null | undefined
-): analysis is DeepJobFitAnalysis {
-  if (!analysis) return false
-  return (
-    analysis.analysisType === 'gemini-deep' ||
-    analysis.metadata?.source === 'gemini'
-  )
-}
-
-function formatAnalysisSource(analysis: DisplayAnalysis | null | undefined): string {
-  if (isDeepAnalysis(analysis)) {
-    return 'Gemini 深度分析'
-  }
-  if (analysis && 'source' in analysis && analysis.source === 'local-placeholder') {
-    return '本地規則分析'
-  }
-  return '本地規則分析'
-}
-
-function formatDeepAnalysisPriority(priority: 'high' | 'medium' | 'low'): string {
-  switch (priority) {
-    case 'high':
-      return '高'
-    case 'medium':
-      return '中'
-    case 'low':
-      return '低'
-    default:
-      return priority
+      return {
+        scoreText: 'text-slate-400',
+        ring: 'border-slate-700',
+        chipBg: 'bg-slate-800/80',
+        chipText: 'text-slate-300',
+        chipBorder: 'border-slate-600',
+      }
   }
 }
 
@@ -119,21 +108,121 @@ function formatMetadataDate(value?: string): string {
   }
 }
 
-function SectionList({
-  title,
-  items,
+const COVERAGE_DISPLAY: Record<
+  'ok' | 'partial' | 'risky',
+  { label: string; box: string; text: string }
+> = {
+  ok: {
+    label: '輸入覆蓋：良好',
+    box: 'border-emerald-800/60 bg-emerald-950/30',
+    text: 'text-emerald-200',
+  },
+  partial: {
+    label: '輸入覆蓋：部分截斷',
+    box: 'border-amber-800/60 bg-amber-950/30',
+    text: 'text-amber-200',
+  },
+  risky: {
+    label: '輸入覆蓋：可能漏重要資訊',
+    box: 'border-rose-800/60 bg-rose-950/40',
+    text: 'text-rose-200',
+  },
+}
+
+function InputCoverageNotice({
+  metadata,
 }: {
-  title: string
-  items?: string[]
+  metadata: AnalysisResult['metadata']
 }) {
-  if (!items || items.length === 0) {
-    return null
+  const coverage = metadata.inputCoverage
+  if (!coverage) return null
+
+  const digestStats = metadata.digestStats
+
+  // Digest stats chips (TASK-021.3): only shown for the relevant-digest strategy.
+  const isDigest =
+    metadata.inputMode === 'digest' ||
+    metadata.tokenStrategy === 'relevant_job_digest_v1' ||
+    digestStats?.inputStrategy === 'relevant_job_digest_v1' ||
+    digestStats?.extractedItemCount !== undefined
+
+  // When the digest strategy recovered tail evidence, a truncation warning is
+  // no longer alarming — the important late text was re-surfaced (TASK-021.3.1).
+  const tailEvidenceCount = digestStats?.tailEvidenceSnippetCount ?? 0
+  const recoveredTailEvidence = isDigest && tailEvidenceCount > 0
+  const isTruncatedLevel =
+    coverage.warningLevel === 'partial' || coverage.warningLevel === 'risky'
+
+  let display = COVERAGE_DISPLAY[coverage.warningLevel]
+  let label = display.label
+  let warnings = coverage.warnings.slice(0, 3)
+
+  if (recoveredTailEvidence && isTruncatedLevel) {
+    display = COVERAGE_DISPLAY.partial
+    label = '輸入覆蓋：部分截斷，已補回尾段證據'
+    warnings = [
+      '原始文字有截斷，但 Relevant Digest 已補回部分尾段重要證據。',
+      '請仍以完整職缺內容作最後人工確認。',
+    ]
   }
 
   return (
-    <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-      <h3 className="text-sm font-semibold text-slate-200">{title}</h3>
-      <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-300">
+    <div className={`mt-4 rounded-xl border ${display.box} p-3`}>
+      <p className={`text-xs font-semibold ${display.text}`}>{label}</p>
+      {warnings.length > 0 && (
+        <ul className="mt-1.5 list-disc space-y-1 pl-5 text-xs text-slate-300">
+          {warnings.map((warning, index) => (
+            <li key={index}>{warning}</li>
+          ))}
+        </ul>
+      )}
+      {isDigest && digestStats && (
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
+          <span>輸入策略：Relevant Digest</span>
+          <span>摘要項目：{digestStats.extractedItemCount ?? 0}</span>
+          <span>
+            已移除雜訊：行 {digestStats.boilerplateRemovedLineCount ?? 0} / 片段{' '}
+            {digestStats.boilerplateRemovedPhraseCount ?? 0}
+          </span>
+          <span>補回尾段證據：{digestStats.tailEvidenceSnippetCount ?? 0}</span>
+          <span>fallback：{digestStats.fallbackItemCount ?? 0} 條</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AccentList({
+  title,
+  items,
+  accent,
+}: {
+  title: string
+  items: string[]
+  accent: 'emerald' | 'amber' | 'rose' | 'violet'
+}) {
+  if (!items || items.length === 0) return null
+
+  const accentMap: Record<typeof accent, string> = {
+    emerald: 'border-l-emerald-500',
+    amber: 'border-l-amber-500',
+    rose: 'border-l-rose-500',
+    violet: 'border-l-violet-500',
+  }
+
+  const titleColor: Record<typeof accent, string> = {
+    emerald: 'text-emerald-300',
+    amber: 'text-amber-300',
+    rose: 'text-rose-300',
+    violet: 'text-violet-300',
+  }
+
+  return (
+    <div
+      className={`rounded-xl border border-slate-800 border-l-4 ${accentMap[accent]} bg-slate-950/60 p-4`}
+    >
+      <h4 className={`text-sm font-semibold ${titleColor[accent]}`}>{title}</h4>
+      <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm text-slate-200">
         {items.map((item, index) => (
           <li key={index}>{item}</li>
         ))}
@@ -142,43 +231,214 @@ function SectionList({
   )
 }
 
+// Renders a standardized AnalysisResult only — no provider-specific fallbacks here.
+function AnalysisResultCard({
+  heading,
+  data,
+  onRegenerate,
+  isRegenerating,
+  staleNotice,
+}: {
+  heading: string
+  data: AnalysisResult
+  onRegenerate?: () => void
+  isRegenerating?: boolean
+  staleNotice?: boolean
+}) {
+  const theme = fitLevelTheme(data.fitLevel)
+
+  return (
+    <div className="rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-lg">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-lg font-bold text-slate-50">{heading}</h3>
+          <p className="mt-1 text-xs text-slate-400">
+            {getProviderLabel(data.metadata.provider)}
+            {data.metadata.model && (
+              <span className="ml-2">模型：{data.metadata.model}</span>
+            )}
+          </p>
+        </div>
+
+        {onRegenerate && (
+          <button
+            type="button"
+            onClick={onRegenerate}
+            disabled={isRegenerating}
+            className="inline-flex items-center gap-1 rounded-lg border border-slate-700 px-2.5 py-1 text-xs font-medium text-slate-400 transition hover:border-slate-500 hover:text-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isRegenerating ? '重新產生中…' : '↻ 重新產生'}
+          </button>
+        )}
+      </div>
+
+      {staleNotice && (
+        <div className="mt-3 rounded-lg border border-amber-800/60 bg-amber-950/40 px-3 py-2 text-xs text-amber-200">
+          重新產生失敗，以下仍顯示上一次的分析結果。
+        </div>
+      )}
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <div className={`rounded-xl border ${theme.ring} bg-slate-950/60 p-4`}>
+          <p className="text-xs text-slate-400">適合度分數</p>
+          <p className={`mt-1 text-3xl font-bold ${theme.scoreText}`}>
+            {data.fitScore ?? '—'}
+            <span className="ml-1 text-sm text-slate-500">/ 100</span>
+          </p>
+        </div>
+        <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+          <p className="text-xs text-slate-400">推薦程度</p>
+          <span
+            className={`mt-2 inline-flex rounded-full border px-3 py-1 text-sm font-semibold ${theme.chipBorder} ${theme.chipBg} ${theme.chipText}`}
+          >
+            {getFitLevelLabel(data.fitLevel)}
+          </span>
+        </div>
+        <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+          <p className="text-xs text-slate-400">模型建議</p>
+          <p className="mt-2 text-lg font-semibold text-slate-100">
+            {data.recommendation || '—'}
+          </p>
+        </div>
+      </div>
+
+      {data.summary && (
+        <div className="mt-4 rounded-xl border border-violet-800/50 bg-violet-950/20 p-4">
+          <h4 className="text-sm font-semibold text-violet-200">分析摘要</h4>
+          <p className="mt-2 text-sm leading-6 text-slate-200">{data.summary}</p>
+        </div>
+      )}
+
+      <div className="mt-4 grid gap-3">
+        <AccentList title="適合優勢" items={data.strengths} accent="emerald" />
+        <AccentList title="能力落差" items={data.gaps} accent="amber" />
+        <AccentList title="風險因素" items={data.risks} accent="rose" />
+        <AccentList
+          title="建議行動"
+          items={data.suggestedActions}
+          accent="violet"
+        />
+      </div>
+
+      {data.metadata.inputCoverage && (
+        <InputCoverageNotice metadata={data.metadata} />
+      )}
+
+      {data.metadata.createdAt && (
+        <p className="mt-4 text-xs text-slate-500">
+          最後分析時間：{formatMetadataDate(data.metadata.createdAt)}
+          {data.metadata.inputMode && (
+            <span className="ml-3">輸入模式：{data.metadata.inputMode}</span>
+          )}
+          {data.metadata.tokenStrategy && (
+            <span className="ml-3">策略：{data.metadata.tokenStrategy}</span>
+          )}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function EmptyState({
+  description,
+  buttonLabel,
+  onStart,
+  isLoading,
+  error,
+}: {
+  description: string
+  buttonLabel: string
+  onStart: () => void
+  isLoading: boolean
+  error?: string | null
+}) {
+  return (
+    <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-950/40 p-8 text-center">
+      <p className="text-sm text-slate-400">{description}</p>
+      <button
+        type="button"
+        onClick={onStart}
+        disabled={isLoading}
+        className="mt-4 inline-flex items-center rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {isLoading ? '分析中…' : buttonLabel}
+      </button>
+      {error && (
+        <div className="mt-4 rounded-xl border border-rose-800 bg-rose-950/50 p-3 text-sm text-rose-200">
+          {error}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function AnalyzeFitPanel({
   jobId,
   initialDeepAnalysis = null,
+  initialGroqAnalysis = null,
   initialLocalAnalysis = null,
 }: Props) {
-  const [localAnalysis, setLocalAnalysis] = useState<LocalJobFitAnalysis | null>(
+  const [localAnalysis, setLocalAnalysis] = useState<RawAnalysisObject | null>(
     initialLocalAnalysis
   )
-  const [deepAnalysis, setDeepAnalysis] = useState<DeepJobFitAnalysis | null>(
+  const [geminiAnalysis, setGeminiAnalysis] = useState<RawAnalysisObject | null>(
     initialDeepAnalysis
   )
-  const [isLocalLoading, setIsLocalLoading] = useState(false)
-  const [isDeepAnalyzing, setIsDeepAnalyzing] = useState(false)
-  const [localError, setLocalError] = useState<string | null>(null)
-  const [deepAnalyzeError, setDeepAnalyzeError] = useState<string | null>(null)
+  const [groqAnalysis, setGroqAnalysis] = useState<RawAnalysisObject | null>(
+    initialGroqAnalysis
+  )
 
-  const analysis: DisplayAnalysis | null = deepAnalysis ?? localAnalysis
-  const showingDeep = isDeepAnalysis(analysis)
+  const [activeTab, setActiveTab] = useState<AnalysisProvider>(() => {
+    if (initialDeepAnalysis) return 'gemini'
+    if (initialGroqAnalysis) return 'groq'
+    if (initialLocalAnalysis) return 'local'
+    return 'gemini'
+  })
 
-  const localMetadata =
-    !showingDeep && localAnalysis?.metadata ? localAnalysis.metadata : undefined
+  const [loading, setLoading] = useState<Record<AnalysisProvider, boolean>>({
+    local: false,
+    gemini: false,
+    groq: false,
+  })
+  const [errors, setErrors] = useState<Record<AnalysisProvider, string | null>>({
+    local: null,
+    gemini: null,
+    groq: null,
+  })
+  const [staleNotice, setStaleNotice] = useState<Record<AnalysisProvider, boolean>>({
+    local: false,
+    gemini: false,
+    groq: false,
+  })
 
-  async function handleLocalAnalyze() {
-    setIsLocalLoading(true)
-    setLocalError(null)
+  function setProviderLoading(provider: AnalysisProvider, value: boolean) {
+    setLoading((prev) => ({ ...prev, [provider]: value }))
+  }
+
+  function setProviderError(provider: AnalysisProvider, value: string | null) {
+    setErrors((prev) => ({ ...prev, [provider]: value }))
+  }
+
+  function setProviderStale(provider: AnalysisProvider, value: boolean) {
+    setStaleNotice((prev) => ({ ...prev, [provider]: value }))
+  }
+
+  async function runLocalAnalyze() {
+    setProviderLoading('local', true)
+    setProviderError('local', null)
+    setProviderStale('local', false)
+
+    const hadResult = Boolean(localAnalysis)
 
     try {
       const response = await fetch(`/api/jobs/${jobId}/analyze`, {
         method: 'POST',
       })
 
-      let payload: unknown = null
       const contentType = response.headers.get('content-type') || ''
-
-      if (contentType.includes('application/json')) {
-        payload = await response.json()
-      }
+      const payload = contentType.includes('application/json')
+        ? await response.json()
+        : null
 
       if (!response.ok) {
         const message =
@@ -187,211 +447,260 @@ export function AnalyzeFitPanel({
           'error' in payload &&
           typeof (payload as { error: unknown }).error === 'string'
             ? (payload as { error: string }).error
-            : '分析時發生錯誤，請稍後再試一次。'
-        setLocalError(message)
+            : '本地分析時發生錯誤，請稍後再試一次。'
+
+        if (hadResult) {
+          setProviderStale('local', true)
+        } else {
+          setProviderError('local', message)
+        }
         return
       }
 
-      setLocalAnalysis(payload as LocalJobFitAnalysis)
+      setLocalAnalysis(payload as RawAnalysisObject)
+      setProviderError('local', null)
     } catch {
-      setLocalError('無法連線到分析服務，請確認本地伺服器是否仍在執行。')
+      const message = '無法連線到本地分析服務，請確認本地伺服器是否仍在執行。'
+      if (hadResult) {
+        setProviderStale('local', true)
+      } else {
+        setProviderError('local', message)
+      }
     } finally {
-      setIsLocalLoading(false)
+      setProviderLoading('local', false)
     }
   }
 
-  async function handleDeepAnalyze() {
-    try {
-      setIsDeepAnalyzing(true)
-      setDeepAnalyzeError(null)
+  async function runDeepAnalyze(provider: 'gemini' | 'groq', force: boolean) {
+    const endpoint =
+      provider === 'gemini'
+        ? `/api/jobs/${jobId}/analyze/deep`
+        : `/api/jobs/${jobId}/analyze/groq`
 
-      const res = await fetch(`/api/jobs/${jobId}/analyze/deep`, {
+    const hadResult =
+      provider === 'gemini' ? Boolean(geminiAnalysis) : Boolean(groqAnalysis)
+
+    setProviderLoading(provider, true)
+    setProviderError(provider, null)
+    setProviderStale(provider, false)
+
+    try {
+      const res = await fetch(endpoint, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ force }),
       })
 
-      const data = await res.json()
+      const data = (await res.json()) as DeepAnalyzeApiResponse
 
-      if (!res.ok) {
+      if (!res.ok || !data.analysis) {
+        const baseLabel =
+          provider === 'gemini' ? 'Gemini 分析失敗' : 'Groq Llama 70B 分析失敗'
         const message =
           typeof data.details === 'string'
-            ? `${data.error || 'Gemini 深度分析失敗'}：${data.details}`
+            ? `${data.error || baseLabel}：${data.details}`
             : typeof data.error === 'string'
               ? data.error
-              : 'Gemini 深度分析失敗'
+              : baseLabel
 
-        throw new Error(message)
+        if (hadResult) {
+          setProviderStale(provider, true)
+        } else {
+          setProviderError(provider, message)
+        }
+        return
       }
 
-      setDeepAnalysis(data as DeepJobFitAnalysis)
+      if (provider === 'gemini') {
+        setGeminiAnalysis(data.analysis)
+      } else {
+        setGroqAnalysis(data.analysis)
+      }
+      setProviderError(provider, null)
     } catch (error) {
-      console.error(error)
-      setDeepAnalyzeError(
-        error instanceof Error ? error.message : 'Gemini 深度分析失敗'
-      )
+      const message =
+        error instanceof Error
+          ? error.message
+          : provider === 'gemini'
+            ? 'Gemini 分析失敗'
+            : 'Groq Llama 70B 分析失敗'
+
+      if (hadResult) {
+        setProviderStale(provider, true)
+      } else {
+        setProviderError(provider, message)
+      }
     } finally {
-      setIsDeepAnalyzing(false)
+      setProviderLoading(provider, false)
     }
   }
 
-  const localButtonLabel = isLocalLoading
-    ? '分析中...'
-    : localAnalysis
-      ? '重新本地分析'
-      : '開始本地分析'
+  // Normalized results, computed once per render from raw provider state.
+  const localResult: AnalysisResult | null = localAnalysis
+    ? normalizeAnalysisResult(localAnalysis, 'local', PROVIDER_DEFAULT_MODEL.local)
+    : null
+  const geminiResult: AnalysisResult | null = geminiAnalysis
+    ? normalizeAnalysisResult(geminiAnalysis, 'gemini', PROVIDER_DEFAULT_MODEL.gemini)
+    : null
+  const groqResult: AnalysisResult | null = groqAnalysis
+    ? normalizeAnalysisResult(groqAnalysis, 'groq', PROVIDER_DEFAULT_MODEL.groq)
+    : null
 
-  const deepButtonLabel = isDeepAnalyzing
-    ? '分析中...'
-    : deepAnalysis
-      ? '重新分析'
-      : '開始 Gemini 深度分析'
+  // Best available analysis for the overview card: gemini > groq > local > none.
+  const overview = getPrimaryAnalysis({
+    deepAnalysis: geminiAnalysis ?? undefined,
+    groqAnalysis: groqAnalysis ?? undefined,
+    localAnalysis: localAnalysis ?? undefined,
+  })
+
+  const overviewTheme = fitLevelTheme(overview?.fitLevel ?? 'unknown')
+
+  const hasResult: Record<AnalysisProvider, boolean> = {
+    local: Boolean(localResult),
+    gemini: Boolean(geminiResult),
+    groq: Boolean(groqResult),
+  }
+
+  const tabs: AnalysisProvider[] = ['local', 'gemini', 'groq']
 
   return (
     <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold">AI 職缺適合度分析</h2>
-          <p className="mt-1 text-sm text-slate-400">
-            可先進行本地規則分析，再依建議觸發 Gemini 深度分析；深度分析結果會保存至{' '}
-            <span className="font-semibold">jobs_temp.json</span>。
-          </p>
-          {localMetadata && (
-            <p className="mt-2 text-xs text-slate-500">
-              {localMetadata.jobTitle && (
-                <span className="mr-3">職缺：{localMetadata.jobTitle}</span>
-              )}
-              {localMetadata.company && (
-                <span className="mr-3">公司：{localMetadata.company}</span>
-              )}
-              {localMetadata.profileVersion !== undefined && (
-                <span>個人檔案版本 v{localMetadata.profileVersion}</span>
-              )}
-            </p>
-          )}
-          {showingDeep && analysis?.metadata && (
-            <p className="mt-2 text-xs text-slate-500">
-              {analysis.metadata.model && (
-                <span className="mr-3">模型：{analysis.metadata.model}</span>
-              )}
-              {analysis.metadata.createdAt && (
-                <span>
-                  分析時間：{formatMetadataDate(analysis.metadata.createdAt)}
-                </span>
-              )}
-            </p>
-          )}
-        </div>
-
-        <div className="flex flex-col items-end gap-2">
-          <button
-            type="button"
-            onClick={handleLocalAnalyze}
-            disabled={isLocalLoading || isDeepAnalyzing}
-            className="inline-flex items-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {localButtonLabel}
-          </button>
-          <button
-            type="button"
-            onClick={handleDeepAnalyze}
-            disabled={isDeepAnalyzing || isLocalLoading}
-            className="inline-flex items-center rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {deepButtonLabel}
-          </button>
-          {isLocalLoading && (
-            <p className="text-xs text-slate-500">本地規則分析執行中...</p>
-          )}
-        </div>
+      <div>
+        <h2 className="text-xl font-bold text-slate-50">AI 分析中心</h2>
+        <p className="mt-1 text-sm text-slate-400">
+          選擇分析來源檢視結果。各分析來源獨立保存，互不覆蓋。
+        </p>
       </div>
 
-      {localError && (
-        <div className="mt-4 rounded-xl border border-red-800 bg-red-950/60 p-4 text-sm text-red-200">
-          {localError}
-        </div>
-      )}
-
-      {deepAnalyzeError && (
-        <p className="mt-4 text-sm text-red-400">{deepAnalyzeError}</p>
-      )}
-
-      {!showingDeep && localMetadata?.deepAnalysisRecommended && (
-        <div className="mt-4 rounded-xl border border-amber-700/60 bg-amber-950/40 p-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-semibold text-amber-200">建議進行深度分析</p>
-            {localMetadata.deepAnalysisPriority && (
-              <span className="rounded-full border border-amber-600/60 bg-amber-900/50 px-2 py-0.5 text-xs text-amber-100">
-                優先度：{formatDeepAnalysisPriority(localMetadata.deepAnalysisPriority)}
+      {/* Overview card */}
+      <div className="mt-5 rounded-2xl border border-violet-800/40 bg-gradient-to-br from-slate-950 to-violet-950/20 p-5">
+        <p className="text-xs font-semibold uppercase tracking-wide text-violet-300">
+          AI 分析總覽
+        </p>
+        {overview ? (
+          <div className="mt-3 flex flex-wrap items-end gap-x-8 gap-y-3">
+            <div>
+              <p className="text-xs text-slate-400">適合度分數</p>
+              <p className={`text-4xl font-bold ${overviewTheme.scoreText}`}>
+                {overview.fitScore ?? '—'}
+                <span className="ml-1 text-base text-slate-500">/ 100</span>
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400">推薦程度</p>
+              <span
+                className={`mt-1 inline-flex rounded-full border px-3 py-1 text-sm font-semibold ${overviewTheme.chipBorder} ${overviewTheme.chipBg} ${overviewTheme.chipText}`}
+              >
+                {getFitLevelLabel(overview.fitLevel)}
               </span>
+            </div>
+            <div>
+              <p className="text-xs text-slate-400">分析來源</p>
+              <p className="mt-1.5 text-sm font-semibold text-slate-100">
+                {getProviderLabel(overview.metadata.provider)}
+              </p>
+            </div>
+            {overview.metadata.createdAt && (
+              <div>
+                <p className="text-xs text-slate-400">最後分析時間</p>
+                <p className="mt-1.5 text-sm text-slate-300">
+                  {formatMetadataDate(overview.metadata.createdAt)}
+                </p>
+              </div>
             )}
           </div>
-          {localMetadata.deepAnalysisReason && (
-            <p className="mt-2 text-sm text-amber-100/90">
-              {localMetadata.deepAnalysisReason}
-            </p>
-          )}
-          {deepAnalysis ? (
-            <p className="mt-2 text-xs text-amber-200/70">
-              已完成 Gemini 深度分析，以下為深度分析結果。
-            </p>
+        ) : (
+          <p className="mt-3 text-2xl font-bold text-slate-500">尚未分析</p>
+        )}
+      </div>
+
+      {/* Tabs */}
+      <div className="mt-5 flex flex-wrap gap-2">
+        {tabs.map((provider) => {
+          const isActive = activeTab === provider
+          return (
+            <button
+              key={provider}
+              type="button"
+              onClick={() => setActiveTab(provider)}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                isActive
+                  ? 'bg-violet-600 text-white shadow-sm'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              {PROVIDER_LABELS[provider]}
+              {hasResult[provider] && (
+                <span
+                  className={`ml-1.5 ${isActive ? 'text-violet-100' : 'text-emerald-400'}`}
+                >
+                  ✓
+                </span>
+              )}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Tab content */}
+      <div className="mt-5">
+        {activeTab === 'local' &&
+          (localResult ? (
+            <AnalysisResultCard
+              heading={PROVIDER_RESULT_HEADINGS.local}
+              data={localResult}
+              onRegenerate={runLocalAnalyze}
+              isRegenerating={loading.local}
+              staleNotice={staleNotice.local}
+            />
           ) : (
-            <p className="mt-2 text-xs text-amber-200/70">
-              本地適合度分數較高，且職缺包含需要確認的條件，建議進行 Gemini
-              深度分析。
-            </p>
-          )}
-        </div>
-      )}
+            <EmptyState
+              description="尚未執行本地分析。本地分析使用關鍵字規則，立即可用、不需 API。"
+              buttonLabel={PROVIDER_START_LABELS.local}
+              onStart={runLocalAnalyze}
+              isLoading={loading.local}
+              error={errors.local}
+            />
+          ))}
 
-      {showingDeep && (
-        <p className="mt-4 text-sm text-violet-200/90">
-          已完成 Gemini 深度分析，以下為深度分析結果。
-        </p>
-      )}
+        {activeTab === 'gemini' &&
+          (geminiResult ? (
+            <AnalysisResultCard
+              heading={PROVIDER_RESULT_HEADINGS.gemini}
+              data={geminiResult}
+              onRegenerate={() => runDeepAnalyze('gemini', true)}
+              isRegenerating={loading.gemini}
+              staleNotice={staleNotice.gemini}
+            />
+          ) : (
+            <EmptyState
+              description="尚未進行 Gemini 深度分析。Gemini 會根據完整職缺內容與你的個人檔案產生深度建議。"
+              buttonLabel={PROVIDER_START_LABELS.gemini}
+              onStart={() => runDeepAnalyze('gemini', false)}
+              isLoading={loading.gemini}
+              error={errors.gemini}
+            />
+          ))}
 
-      {analysis && (
-        <div className="mt-6 space-y-4">
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-              <p className="text-xs text-slate-400">適合度分數</p>
-              <p className="mt-2 text-3xl font-bold text-emerald-400">
-                {analysis.fitScore}
-                <span className="ml-1 text-sm text-slate-400">/ 100</span>
-              </p>
-            </div>
-            <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-              <p className="text-xs text-slate-400">建議行動</p>
-              <p className="mt-2 text-lg font-semibold text-slate-100">
-                {formatRecommendedAction(analysis.recommendedAction)}
-              </p>
-            </div>
-            <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-              <p className="text-xs text-slate-400">分析來源</p>
-              <p className="mt-2 text-sm text-slate-200">
-                {formatAnalysisSource(analysis)}
-              </p>
-            </div>
-          </div>
-
-          {analysis.summary && (
-            <div className="mt-2 rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-              <h3 className="text-sm font-semibold text-slate-200">分析摘要</h3>
-              <p className="mt-2 text-sm text-slate-200">{analysis.summary}</p>
-            </div>
-          )}
-
-          <SectionList title="適合優勢" items={analysis.strengths} />
-          <SectionList title="可能落差" items={analysis.gaps} />
-          <SectionList title="風險因素" items={analysis.riskFactors} />
-          <SectionList title="職缺要求技能" items={analysis.requiredSkills} />
-          <SectionList title="加分技能" items={analysis.bonusSkills} />
-          <SectionList title="履歷建議" items={analysis.resumeAdvice} />
-          <SectionList title="面試準備" items={analysis.interviewPrep} />
-          <SectionList
-            title="建議向雇主確認"
-            items={analysis.questionsToAskEmployer}
-          />
-        </div>
-      )}
+        {activeTab === 'groq' &&
+          (groqResult ? (
+            <AnalysisResultCard
+              heading={PROVIDER_RESULT_HEADINGS.groq}
+              data={groqResult}
+              onRegenerate={() => runDeepAnalyze('groq', true)}
+              isRegenerating={loading.groq}
+              staleNotice={staleNotice.groq}
+            />
+          ) : (
+            <EmptyState
+              description="尚未進行 Groq Llama 70B 分析。Groq 使用精簡輸入，速度快，可作為另一個分析視角。"
+              buttonLabel={PROVIDER_START_LABELS.groq}
+              onStart={() => runDeepAnalyze('groq', false)}
+              isLoading={loading.groq}
+              error={errors.groq}
+            />
+          ))}
+      </div>
     </section>
   )
 }

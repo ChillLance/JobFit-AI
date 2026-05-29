@@ -2,18 +2,13 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-
-type AiScore = {
-  score: number
-  level: string
-  summary: string
-  strengths: string[]
-  concerns: string[]
-  requiredSkills: string[]
-  bonusSkills: string[]
-  applicationAdvice: string[]
-  generatedAt: string
-}
+import type { FitLevel } from '@/types/analysis'
+import {
+  getFitLevelLabel,
+  getProviderLabel,
+  getPrimaryAnalysis,
+  getScoreColorClass,
+} from '@/lib/analysis/normalizeAnalysis'
 
 type JobStatus =
   | 'not_applied'
@@ -36,7 +31,10 @@ type Job = {
   source?: string
   collectedAt?: string
   status?: string
-  aiScore?: AiScore
+  aiScore?: unknown
+  deepAnalysis?: unknown
+  groqAnalysis?: unknown
+  localAnalysis?: unknown
 }
 
 function resolveStatus(status?: string): JobStatus {
@@ -93,36 +91,19 @@ function getStatusBadgeClass(status: JobStatus) {
   }
 }
 
-function getScoreColor(score?: number) {
-  if (!score) {
-    return 'text-slate-500'
+function getScoreBoxClass(level: FitLevel) {
+  switch (level) {
+    case 'excellent':
+      return 'border-emerald-800 bg-emerald-950/20'
+    case 'good':
+      return 'border-amber-800 bg-amber-950/20'
+    case 'fair':
+      return 'border-sky-800 bg-sky-950/20'
+    case 'poor':
+      return 'border-rose-800 bg-rose-950/20'
+    default:
+      return 'border-slate-700 bg-slate-950'
   }
-
-  if (score >= 85) {
-    return 'text-emerald-300'
-  }
-
-  if (score >= 75) {
-    return 'text-yellow-300'
-  }
-
-  return 'text-slate-300'
-}
-
-function getScoreBoxClass(score?: number) {
-  if (!score) {
-    return 'border-slate-700 bg-slate-950'
-  }
-
-  if (score >= 85) {
-    return 'border-emerald-800 bg-emerald-950/20'
-  }
-
-  if (score >= 75) {
-    return 'border-yellow-800 bg-yellow-950/20'
-  }
-
-  return 'border-slate-700 bg-slate-950'
 }
 
 
@@ -315,6 +296,8 @@ export default function HomePage() {
           <section className="space-y-5">
             {filteredJobs.map((job) => {
               const status = resolveStatus(job.status)
+              const primary = getPrimaryAnalysis(job)
+              const fitLevel = primary?.fitLevel ?? 'unknown'
 
               return (
               <article
@@ -367,51 +350,56 @@ export default function HomePage() {
                   </a>
                 )}
 
-                <div className="flex flex-wrap gap-3">
+                <div
+                  className={`mb-4 rounded-xl border p-4 ${getScoreBoxClass(
+                    fitLevel
+                  )}`}
+                >
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    AI 適合度
+                  </p>
+
+                  {primary && primary.fitScore !== null ? (
+                    <>
+                      <div className="mt-2 flex flex-wrap items-end gap-2">
+                        <span
+                          className={`text-3xl font-bold ${getScoreColorClass(
+                            primary.fitScore
+                          )}`}
+                        >
+                          {primary.fitScore}
+                        </span>
+
+                        <span className="pb-1 text-sm text-slate-400">/ 100</span>
+
+                        <span className="pb-1 text-sm font-semibold text-slate-200">
+                          {getFitLevelLabel(primary.fitLevel)}
+                        </span>
+                      </div>
+
+                      <p className="mt-2 text-xs font-semibold text-slate-400">
+                        {getProviderLabel(primary.metadata.provider)}
+                      </p>
+
+                      {primary.metadata.createdAt && (
+                        <p className="mt-1 text-xs text-slate-500">
+                          分析時間：
+                          {new Date(primary.metadata.createdAt).toLocaleString()}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="mt-2 text-sm text-slate-500">待分析</p>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
                   <Link
                     href={`/jobs/${encodeURIComponent(job.id)}`}
-                    className="rounded-xl bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-500"
+                    className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500"
                   >
-                    查看詳情 / AI 分析
+                    查看詳情 / 分析中心
                   </Link>
-                  <div
-  className={`mt-4 rounded-xl border p-4 ${getScoreBoxClass(
-    job.aiScore?.score
-  )}`}
->
-  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-    AI 適合度
-  </p>
-
-  {job.aiScore ? (
-    <>
-      <div className="mt-2 flex flex-wrap items-end gap-2">
-        <span
-          className={`text-3xl font-bold ${getScoreColor(
-            job.aiScore.score
-          )}`}
-        >
-          {job.aiScore.score}
-        </span>
-
-        <span className="pb-1 text-sm text-slate-400">/ 100</span>
-
-        <span className="pb-1 text-sm font-semibold text-slate-200">
-          {job.aiScore.level}
-        </span>
-      </div>
-
-      {job.aiScore.generatedAt && (
-        <p className="mt-2 text-xs text-slate-500">
-          分析時間：{new Date(job.aiScore.generatedAt).toLocaleString()}
-        </p>
-      )}
-    </>
-  ) : (
-    <p className="mt-2 text-sm text-slate-500">待分析</p>
-  )}
-</div>
-
 
                   <button
                     type="button"
