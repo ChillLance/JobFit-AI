@@ -210,6 +210,7 @@ export default async function JobDetailPage({
           jobId={job.id}
           initialDeepAnalysis={job.deepAnalysis ?? null}
           initialGroqAnalysis={job.groqAnalysis ?? null}
+          initialLocalAnalysis={job.analysis ?? job.aiScore ?? null}
         />
 
         <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6">

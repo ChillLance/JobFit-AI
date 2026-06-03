@@ -9,6 +9,14 @@ import {
   getPrimaryAnalysis,
   normalizeAnalysisResult,
 } from '@/lib/analysis/normalizeAnalysis'
+import {
+  buildAnalysisComparison,
+  type AnalysisComparison,
+  type AnalysisConsistency,
+  type ConsensusRecommendation,
+} from '@/lib/analysis/compareAnalysis'
+
+type ActiveTab = AnalysisProvider | 'summary'
 
 // Raw provider responses kept loose; normalizeAnalysisResult maps them to AnalysisResult.
 type RawAnalysisObject = Record<string, unknown>
@@ -372,6 +380,209 @@ function EmptyState({
   )
 }
 
+const CONSISTENCY_DISPLAY: Record<
+  AnalysisConsistency,
+  { label: string; chip: string }
+> = {
+  high: {
+    label: '高',
+    chip: 'border-emerald-700/70 bg-emerald-950/50 text-emerald-200',
+  },
+  medium: {
+    label: '中',
+    chip: 'border-amber-700/70 bg-amber-950/50 text-amber-200',
+  },
+  low: {
+    label: '低',
+    chip: 'border-rose-700/70 bg-rose-950/50 text-rose-200',
+  },
+  insufficient: {
+    label: '資料不足',
+    chip: 'border-slate-600 bg-slate-800/80 text-slate-300',
+  },
+}
+
+const RECOMMENDATION_DISPLAY: Record<
+  ConsensusRecommendation,
+  { label: string; chip: string }
+> = {
+  strong_apply: {
+    label: '優先投遞',
+    chip: 'border-emerald-700/70 bg-emerald-950/50 text-emerald-200',
+  },
+  apply_with_checks: {
+    label: '可投遞，需確認條件',
+    chip: 'border-amber-700/70 bg-amber-950/50 text-amber-200',
+  },
+  consider: {
+    label: '可考慮',
+    chip: 'border-sky-700/70 bg-sky-950/50 text-sky-200',
+  },
+  not_priority: {
+    label: '非優先',
+    chip: 'border-rose-700/70 bg-rose-950/50 text-rose-200',
+  },
+  insufficient: {
+    label: '需先分析',
+    chip: 'border-slate-600 bg-slate-800/80 text-slate-300',
+  },
+}
+
+function ScoreCell({ label, value }: { label: string; value?: number }) {
+  return (
+    <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3 text-center">
+      <p className="text-xs text-slate-400">{label}</p>
+      <p className="mt-1 text-2xl font-bold text-slate-100">
+        {typeof value === 'number' ? value : '未分析'}
+      </p>
+    </div>
+  )
+}
+
+function ComparisonList({
+  title,
+  items,
+  emptyText,
+  accent,
+}: {
+  title: string
+  items: string[]
+  emptyText: string
+  accent: 'emerald' | 'rose' | 'amber' | 'sky'
+}) {
+  const accentMap: Record<typeof accent, string> = {
+    emerald: 'border-l-emerald-500',
+    rose: 'border-l-rose-500',
+    amber: 'border-l-amber-500',
+    sky: 'border-l-sky-500',
+  }
+  const titleColor: Record<typeof accent, string> = {
+    emerald: 'text-emerald-300',
+    rose: 'text-rose-300',
+    amber: 'text-amber-300',
+    sky: 'text-sky-300',
+  }
+
+  return (
+    <div
+      className={`rounded-xl border border-slate-800 border-l-4 ${accentMap[accent]} bg-slate-950/60 p-4`}
+    >
+      <h4 className={`text-sm font-semibold ${titleColor[accent]}`}>{title}</h4>
+      {items.length > 0 ? (
+        <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm text-slate-200">
+          {items.map((item, index) => (
+            <li key={index}>{item}</li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-2 text-sm text-slate-500">{emptyText}</p>
+      )}
+    </div>
+  )
+}
+
+function ComparisonView({ comparison }: { comparison: AnalysisComparison }) {
+  if (comparison.availableSources.length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-950/40 p-8 text-center">
+        <p className="text-sm text-slate-400">
+          尚無足夠分析結果。請先執行 Gemini 或 Groq 分析。
+        </p>
+      </div>
+    )
+  }
+
+  const consistency = CONSISTENCY_DISPLAY[comparison.consistency]
+  const recommendation =
+    RECOMMENDATION_DISPLAY[comparison.consensusRecommendation]
+
+  return (
+    <div className="rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-lg">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="text-lg font-bold text-slate-50">模型比較與最終建議</h3>
+          <p className="mt-1 text-xs text-slate-400">
+            綜合現有 Local / Gemini / Groq 分析結果，不額外呼叫 AI。
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <span className="inline-flex flex-col items-center rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-1.5">
+            <span className="text-[10px] text-slate-400">模型一致性</span>
+            <span
+              className={`mt-1 inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${consistency.chip}`}
+            >
+              {consistency.label}
+            </span>
+          </span>
+          <span className="inline-flex flex-col items-center rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-1.5">
+            <span className="text-[10px] text-slate-400">最終建議</span>
+            <span
+              className={`mt-1 inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${recommendation.chip}`}
+            >
+              {recommendation.label}
+            </span>
+          </span>
+        </div>
+      </div>
+
+      {/* Score comparison */}
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <ScoreCell label="本地" value={comparison.scores.local} />
+        <ScoreCell label="Gemini" value={comparison.scores.gemini} />
+        <ScoreCell label="Groq" value={comparison.scores.groq} />
+        <div className="rounded-xl border border-violet-800/50 bg-violet-950/30 p-3 text-center">
+          <p className="text-xs text-violet-300">平均分數</p>
+          <p className="mt-1 text-2xl font-bold text-violet-100">
+            {comparison.averageScore ?? '—'}
+          </p>
+        </div>
+      </div>
+
+      {typeof comparison.scoreSpread === 'number' && (
+        <p className="mt-2 text-xs text-slate-500">
+          分數差距：{comparison.scoreSpread} 分
+        </p>
+      )}
+
+      {/* Final summary */}
+      <div className="mt-4 rounded-xl border border-violet-800/50 bg-violet-950/20 p-4">
+        <h4 className="text-sm font-semibold text-violet-200">最終建議</h4>
+        <p className="mt-2 text-sm leading-6 text-slate-200">
+          {comparison.finalSummary}
+        </p>
+      </div>
+
+      {/* Consolidated lists */}
+      <div className="mt-4 grid gap-3">
+        <ComparisonList
+          title="共同優勢"
+          items={comparison.commonStrengths}
+          emptyText="尚無足夠資料"
+          accent="emerald"
+        />
+        <ComparisonList
+          title="共同風險"
+          items={comparison.commonRisks}
+          emptyText="未偵測到共同風險"
+          accent="rose"
+        />
+        <ComparisonList
+          title="共同能力落差"
+          items={comparison.commonGaps}
+          emptyText="尚無明顯共同落差"
+          accent="amber"
+        />
+        <ComparisonList
+          title="面試/投遞前建議確認事項"
+          items={comparison.suggestedChecks}
+          emptyText="目前沒有額外確認事項"
+          accent="sky"
+        />
+      </div>
+    </div>
+  )
+}
+
 export function AnalyzeFitPanel({
   jobId,
   initialDeepAnalysis = null,
@@ -388,12 +599,7 @@ export function AnalyzeFitPanel({
     initialGroqAnalysis
   )
 
-  const [activeTab, setActiveTab] = useState<AnalysisProvider>(() => {
-    if (initialDeepAnalysis) return 'gemini'
-    if (initialGroqAnalysis) return 'groq'
-    if (initialLocalAnalysis) return 'local'
-    return 'gemini'
-  })
+  const [activeTab, setActiveTab] = useState<ActiveTab>('summary')
 
   const [loading, setLoading] = useState<Record<AnalysisProvider, boolean>>({
     local: false,
@@ -555,13 +761,20 @@ export function AnalyzeFitPanel({
 
   const overviewTheme = fitLevelTheme(overview?.fitLevel ?? 'unknown')
 
+  // Model comparison derived purely from the current results — no AI call.
+  const comparison = buildAnalysisComparison({
+    localAnalysis: localAnalysis ?? undefined,
+    deepAnalysis: geminiAnalysis ?? undefined,
+    groqAnalysis: groqAnalysis ?? undefined,
+  })
+
   const hasResult: Record<AnalysisProvider, boolean> = {
     local: Boolean(localResult),
     gemini: Boolean(geminiResult),
     groq: Boolean(groqResult),
   }
 
-  const tabs: AnalysisProvider[] = ['local', 'gemini', 'groq']
+  const providerTabs: AnalysisProvider[] = ['local', 'gemini', 'groq']
 
   return (
     <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-6">
@@ -616,7 +829,18 @@ export function AnalyzeFitPanel({
 
       {/* Tabs */}
       <div className="mt-5 flex flex-wrap gap-2">
-        {tabs.map((provider) => {
+        <button
+          type="button"
+          onClick={() => setActiveTab('summary')}
+          className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+            activeTab === 'summary'
+              ? 'bg-violet-600 text-white shadow-sm'
+              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+          }`}
+        >
+          模型比較
+        </button>
+        {providerTabs.map((provider) => {
           const isActive = activeTab === provider
           return (
             <button
@@ -644,6 +868,8 @@ export function AnalyzeFitPanel({
 
       {/* Tab content */}
       <div className="mt-5">
+        {activeTab === 'summary' && <ComparisonView comparison={comparison} />}
+
         {activeTab === 'local' &&
           (localResult ? (
             <AnalysisResultCard

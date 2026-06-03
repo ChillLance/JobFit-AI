@@ -19,9 +19,16 @@ Also in place from earlier work:
 - Home page lists jobs with AI score/level and links to `/jobs/[id]`.
 - Job detail page includes AI score panel (`ScorePanel`) and mock scoring API with persistence.
 
-## Current Focus: MVP 0.3 — AI Analysis Hub — TASK-022 Next
+## Current Focus: MVP 0.3 — Portfolio Readiness — TASK-023 Next
 
-The AI input pipeline work (TASK-021 series) is **complete** and `tsc --noEmit` passes. The next step is **not** to keep changing the input pipeline, but to build **TASK-022: Model Comparison & Final Recommendation**.
+The AI input pipeline work (TASK-021 series) and **TASK-022: Model Comparison & Final Recommendation** are **complete** and `tsc --noEmit` passes. The next step is **TASK-023: Job List Search / Filter / Sort**.
+
+### TASK-022 Model Comparison & Final Recommendation — complete
+
+- Added `src/lib/analysis/compareAnalysis.ts` (`AnalysisComparison` + `buildAnalysisComparison`).
+- Consolidates the **already-stored** Local / Gemini / Groq results via `normalizeAnalysisResult` — **no extra AI API calls**.
+- Surfaces score comparison, average score, score spread, model consistency, consensus recommendation, common strengths/risks/gaps, and pre-application confirmation items.
+- New **「模型比較」** tab in `AnalyzeFitPanel`; existing per-provider tabs untouched.
 
 ### AI input pipeline — current state (TASK-021 series complete)
 

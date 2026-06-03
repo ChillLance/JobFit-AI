@@ -2,26 +2,28 @@
 
 ## Current Phase: MVP 0.3 — AI Analysis Hub
 
-Focus: the AI input pipeline (TASK-021 series) is complete; next is TASK-022 Model Comparison & Final Recommendation.
+Focus: TASK-022 Model Comparison & Final Recommendation is complete; next is TASK-023 Job List Search / Filter / Sort.
 
 ## Current Task
 
-### TASK-022 Model Comparison & Final Recommendation
+### TASK-023 Job List Search / Filter / Sort
 
 **Status:** Next
-
-**Goal:**
-
-- Do **not** make any additional AI API calls — work only with results already produced by Local / Gemini / Groq analysis.
-- Compare the analysis results from **Local / Gemini / Groq**.
-- Display **average score**, **score gap (分數差距)**, and **model agreement / consistency (模型一致性)**.
-- Consolidate **common strengths (共同優勢)**, **common risks (共同風險)**, and **common capability gaps (共同能力落差)**.
-- Produce **pre-interview / pre-application confirmation items (面試/投遞前確認事項)**.
-- Produce a **final recommendation (最終建議)**.
 
 ---
 
 ## Completed Tasks
+
+### MVP 0.3 — AI Analysis Hub — Model Comparison
+
+#### TASK-022 Model Comparison & Final Recommendation — Done
+
+- Added `src/lib/analysis/compareAnalysis.ts` with the `AnalysisComparison` type and a pure `buildAnalysisComparison(job)` helper.
+- The helper **reuses `normalizeAnalysisResult`** to read the existing Local (`localAnalysis` / `analysis` / `aiScore`), Gemini (`deepAnalysis`), and Groq (`groqAnalysis`) results — it makes **no additional AI API calls**.
+- Computes **average score**, **score spread (分數差距)**, **model consistency (模型一致性)**, a **consensus recommendation (最終建議)**, consolidated **common strengths / risks / gaps**, and **pre-interview/pre-application confirmation items** via simple keyword grouping (no embeddings).
+- Added a **「模型比較」** tab (first tab) in `AnalyzeFitPanel`; existing Local / Gemini / Groq tabs and displays are unchanged.
+- `page.tsx` now passes `initialLocalAnalysis` so the local score is included in the comparison on load.
+- `tsc --noEmit` passes.
 
 ### MVP 0.3 — AI Analysis Hub — Input Pipeline
 
