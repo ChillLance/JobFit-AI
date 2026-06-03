@@ -318,6 +318,13 @@ export default function HomePage() {
               Manage Profiles
             </Link>
 
+            <Link
+              href="/profiles/import"
+              className="rounded-xl border border-violet-600 bg-violet-600/10 px-5 py-3 font-semibold text-violet-200 transition hover:bg-violet-600/20"
+            >
+              Import from AI
+            </Link>
+
             <button
               type="button"
               onClick={loadJobs}

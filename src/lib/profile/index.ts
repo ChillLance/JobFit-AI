@@ -8,3 +8,4 @@
 export * from './types'
 export * from './defaultProfile'
 export * from './profileStore'
+export * from './profilePrompt'
