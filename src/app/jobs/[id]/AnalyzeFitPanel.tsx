@@ -190,29 +190,37 @@ function InputCoverageNotice({
     ]
   }
 
+  // Diagnostic / debug detail — collapsed by default to keep the result clean.
   return (
-    <div className={`mt-4 rounded-xl border ${display.box} p-3`}>
-      <p className={`text-xs font-semibold ${display.text}`}>{label}</p>
-      {warnings.length > 0 && (
-        <ul className="mt-1.5 list-disc space-y-1 pl-5 text-xs text-slate-300">
-          {warnings.map((warning, index) => (
-            <li key={index}>{warning}</li>
-          ))}
-        </ul>
-      )}
-      {isDigest && digestStats && (
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
-          <span>輸入策略：Relevant Digest</span>
-          <span>摘要項目：{digestStats.extractedItemCount ?? 0}</span>
-          <span>
-            已移除雜訊：行 {digestStats.boilerplateRemovedLineCount ?? 0} / 片段{' '}
-            {digestStats.boilerplateRemovedPhraseCount ?? 0}
-          </span>
-          <span>補回尾段證據：{digestStats.tailEvidenceSnippetCount ?? 0}</span>
-          <span>fallback：{digestStats.fallbackItemCount ?? 0} 條</span>
-        </div>
-      )}
-    </div>
+    <details className={`group mt-4 rounded-xl border ${display.box}`}>
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5">
+        <span className={`text-xs font-semibold ${display.text}`}>{label}</span>
+        <span className="text-xs font-normal text-slate-500 transition group-open:rotate-180">
+          ▾
+        </span>
+      </summary>
+      <div className="px-3 pb-3">
+        {warnings.length > 0 && (
+          <ul className="list-disc space-y-1 pl-5 text-xs text-slate-300">
+            {warnings.map((warning, index) => (
+              <li key={index}>{warning}</li>
+            ))}
+          </ul>
+        )}
+        {isDigest && digestStats && (
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
+            <span>輸入策略：Relevant Digest</span>
+            <span>摘要項目：{digestStats.extractedItemCount ?? 0}</span>
+            <span>
+              已移除雜訊：行 {digestStats.boilerplateRemovedLineCount ?? 0} / 片段{' '}
+              {digestStats.boilerplateRemovedPhraseCount ?? 0}
+            </span>
+            <span>補回尾段證據：{digestStats.tailEvidenceSnippetCount ?? 0}</span>
+            <span>fallback：{digestStats.fallbackItemCount ?? 0} 條</span>
+          </div>
+        )}
+      </div>
+    </details>
   )
 }
 
@@ -302,6 +310,15 @@ function AnalysisResultCard({
         </div>
       )}
 
+      {/* 1. Recommendation summary first. */}
+      {data.summary && (
+        <div className="mt-4 rounded-xl border border-violet-800/50 bg-violet-950/20 p-4">
+          <h4 className="text-sm font-semibold text-violet-200">最終建議摘要</h4>
+          <p className="mt-2 text-sm leading-6 text-slate-200">{data.summary}</p>
+        </div>
+      )}
+
+      {/* 2. Fit score / verdict. */}
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
         <div className={`rounded-xl border ${theme.ring} bg-slate-950/60 p-4`}>
           <p className="text-xs text-slate-400">適合度分數</p>
@@ -326,22 +343,16 @@ function AnalysisResultCard({
         </div>
       </div>
 
-      {data.summary && (
-        <div className="mt-4 rounded-xl border border-violet-800/50 bg-violet-950/20 p-4">
-          <h4 className="text-sm font-semibold text-violet-200">分析摘要</h4>
-          <p className="mt-2 text-sm leading-6 text-slate-200">{data.summary}</p>
-        </div>
-      )}
-
+      {/* 3–5. Key reasons → risks → suggested actions → gaps. */}
       <div className="mt-4 grid gap-3">
-        <AccentList title="適合優勢" items={data.strengths} accent="emerald" />
-        <AccentList title="能力落差" items={data.gaps} accent="amber" />
+        <AccentList title="主要理由" items={data.strengths} accent="emerald" />
         <AccentList title="風險因素" items={data.risks} accent="rose" />
         <AccentList
           title="建議行動"
           items={data.suggestedActions}
           accent="violet"
         />
+        <AccentList title="能力落差" items={data.gaps} accent="amber" />
       </div>
 
       {data.metadata.inputCoverage && (
@@ -497,7 +508,100 @@ function ComparisonList({
   )
 }
 
-function ComparisonView({ comparison }: { comparison: AnalysisComparison }) {
+// Compact per-model breakdown shown inside an expandable <details>. Surfaces
+// each model's score, verdict, and a few top reasons / concerns without
+// leaving the comparison summary.
+function ModelBreakdown({
+  models,
+}: {
+  models: { provider: AnalysisProvider; result: AnalysisResult }[]
+}) {
+  if (models.length === 0) return null
+
+  return (
+    <details className="group mt-4 rounded-xl border border-slate-800 bg-slate-950/40">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-slate-200 transition hover:bg-slate-900/60">
+        <span>各模型詳細結果（{models.length}）</span>
+        <span className="text-xs font-normal text-slate-500 transition group-open:rotate-180">
+          ▾
+        </span>
+      </summary>
+
+      <div className="space-y-3 px-4 pb-4">
+        {models.map(({ provider, result }) => {
+          const theme = fitLevelTheme(result.fitLevel)
+          const topReasons = result.strengths.slice(0, 3)
+          const topConcerns = [...result.risks, ...result.gaps].slice(0, 3)
+
+          return (
+            <div
+              key={provider}
+              className="rounded-xl border border-slate-800 bg-slate-900/60 p-4"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-semibold text-slate-100">
+                  {PROVIDER_LABELS[provider]}
+                </p>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xl font-bold ${theme.scoreText}`}>
+                    {result.fitScore ?? '—'}
+                    <span className="ml-0.5 text-xs text-slate-500">/100</span>
+                  </span>
+                  <span
+                    className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${theme.chipBorder} ${theme.chipBg} ${theme.chipText}`}
+                  >
+                    {getFitLevelLabel(result.fitLevel)}
+                  </span>
+                </div>
+              </div>
+
+              {(topReasons.length > 0 || topConcerns.length > 0) && (
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <p className="text-xs font-semibold text-emerald-300">
+                      主要理由
+                    </p>
+                    {topReasons.length > 0 ? (
+                      <ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-slate-300">
+                        {topReasons.map((reason, index) => (
+                          <li key={index}>{reason}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-1 text-xs text-slate-500">—</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-rose-300">
+                      主要顧慮
+                    </p>
+                    {topConcerns.length > 0 ? (
+                      <ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-slate-300">
+                        {topConcerns.map((concern, index) => (
+                          <li key={index}>{concern}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-1 text-xs text-slate-500">—</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </details>
+  )
+}
+
+function ComparisonView({
+  comparison,
+  models,
+}: {
+  comparison: AnalysisComparison
+  models: { provider: AnalysisProvider; result: AnalysisResult }[]
+}) {
   if (comparison.availableSources.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-950/40 p-8 text-center">
@@ -514,73 +618,76 @@ function ComparisonView({ comparison }: { comparison: AnalysisComparison }) {
 
   return (
     <div className="rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-lg">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h3 className="text-lg font-bold text-slate-50">模型比較與最終建議</h3>
-          <p className="mt-1 text-xs text-slate-400">
-            綜合現有 Local / Gemini / Groq 分析結果，不額外呼叫 AI。
+      {/* 1. Final recommendation summary — most prominent. */}
+      <div className="rounded-xl border border-violet-800/50 bg-violet-950/20 p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-violet-300">
+            最終建議
           </p>
+          <span
+            className={`inline-flex rounded-full border px-3 py-1 text-sm font-semibold ${recommendation.chip}`}
+          >
+            {recommendation.label}
+          </span>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <span className="inline-flex flex-col items-center rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-1.5">
-            <span className="text-[10px] text-slate-400">模型一致性</span>
+        <p className="mt-3 text-sm leading-6 text-slate-100">
+          {comparison.finalSummary}
+        </p>
+        <p className="mt-3 text-xs text-slate-500">
+          綜合現有 Local / Gemini / Groq 分析結果，不額外呼叫 AI。
+        </p>
+      </div>
+
+      {/* 2. Fit score / verdict. */}
+      <div className="mt-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h4 className="text-sm font-semibold text-slate-200">分數與一致性</h4>
+          <span className="inline-flex items-center gap-1.5 text-xs text-slate-400">
+            模型一致性
             <span
-              className={`mt-1 inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${consistency.chip}`}
+              className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${consistency.chip}`}
             >
               {consistency.label}
             </span>
           </span>
-          <span className="inline-flex flex-col items-center rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-1.5">
-            <span className="text-[10px] text-slate-400">最終建議</span>
-            <span
-              className={`mt-1 inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${recommendation.chip}`}
-            >
-              {recommendation.label}
-            </span>
-          </span>
         </div>
-      </div>
-
-      {/* Score comparison */}
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <ScoreCell label="本地" value={comparison.scores.local} />
-        <ScoreCell label="Gemini" value={comparison.scores.gemini} />
-        <ScoreCell label="Groq" value={comparison.scores.groq} />
-        <div className="rounded-xl border border-violet-800/50 bg-violet-950/30 p-3 text-center">
-          <p className="text-xs text-violet-300">平均分數</p>
-          <p className="mt-1 text-2xl font-bold text-violet-100">
-            {comparison.averageScore ?? '—'}
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <ScoreCell label="本地" value={comparison.scores.local} />
+          <ScoreCell label="Gemini" value={comparison.scores.gemini} />
+          <ScoreCell label="Groq" value={comparison.scores.groq} />
+          <div className="rounded-xl border border-violet-800/50 bg-violet-950/30 p-3 text-center">
+            <p className="text-xs text-violet-300">平均分數</p>
+            <p className="mt-1 text-2xl font-bold text-violet-100">
+              {comparison.averageScore ?? '—'}
+            </p>
+          </div>
+        </div>
+        {typeof comparison.scoreSpread === 'number' && (
+          <p className="mt-2 text-xs text-slate-500">
+            分數差距：{comparison.scoreSpread} 分
           </p>
-        </div>
+        )}
       </div>
 
-      {typeof comparison.scoreSpread === 'number' && (
-        <p className="mt-2 text-xs text-slate-500">
-          分數差距：{comparison.scoreSpread} 分
-        </p>
-      )}
-
-      {/* Final summary */}
-      <div className="mt-4 rounded-xl border border-violet-800/50 bg-violet-950/20 p-4">
-        <h4 className="text-sm font-semibold text-violet-200">最終建議</h4>
-        <p className="mt-2 text-sm leading-6 text-slate-200">
-          {comparison.finalSummary}
-        </p>
-      </div>
-
-      {/* Consolidated lists */}
+      {/* 3–5. Key reasons → risks → suggested actions / gaps. */}
       <div className="mt-4 grid gap-3">
         <ComparisonList
-          title="共同優勢"
+          title="主要理由（共同優勢）"
           items={comparison.commonStrengths}
           emptyText="尚無足夠資料"
           accent="emerald"
         />
         <ComparisonList
-          title="共同風險"
+          title="風險與顧慮（共同風險）"
           items={comparison.commonRisks}
           emptyText="未偵測到共同風險"
           accent="rose"
+        />
+        <ComparisonList
+          title="建議行動（投遞前確認事項）"
+          items={comparison.suggestedChecks}
+          emptyText="目前沒有額外確認事項"
+          accent="sky"
         />
         <ComparisonList
           title="共同能力落差"
@@ -588,13 +695,10 @@ function ComparisonView({ comparison }: { comparison: AnalysisComparison }) {
           emptyText="尚無明顯共同落差"
           accent="amber"
         />
-        <ComparisonList
-          title="面試/投遞前建議確認事項"
-          items={comparison.suggestedChecks}
-          emptyText="目前沒有額外確認事項"
-          accent="sky"
-        />
       </div>
+
+      {/* 6. Per-model breakdown, collapsed by default. */}
+      <ModelBreakdown models={models} />
     </div>
   )
 }
@@ -790,6 +894,19 @@ export function AnalyzeFitPanel({
     groq: Boolean(groqResult),
   }
 
+  // Normalized per-model results used by the comparison's expandable breakdown.
+  const comparisonModels: { provider: AnalysisProvider; result: AnalysisResult }[] =
+    [
+      localResult ? { provider: 'local' as const, result: localResult } : null,
+      geminiResult
+        ? { provider: 'gemini' as const, result: geminiResult }
+        : null,
+      groqResult ? { provider: 'groq' as const, result: groqResult } : null,
+    ].filter(
+      (entry): entry is { provider: AnalysisProvider; result: AnalysisResult } =>
+        entry !== null
+    )
+
   const providerTabs: AnalysisProvider[] = ['local', 'gemini', 'groq']
 
   return (
@@ -884,7 +1001,9 @@ export function AnalyzeFitPanel({
 
       {/* Tab content */}
       <div className="mt-5">
-        {activeTab === 'summary' && <ComparisonView comparison={comparison} />}
+        {activeTab === 'summary' && (
+          <ComparisonView comparison={comparison} models={comparisonModels} />
+        )}
 
         {activeTab === 'local' &&
           (localResult ? (

@@ -50,12 +50,38 @@ type Job = {
   rawText?: string
   source?: string
   collectedAt?: string
+  // Optional structured fields — only present for some sources. Rendered when
+  // available and otherwise skipped (current postings keep these inside rawText).
+  company?: string
+  location?: string
+  employmentType?: string
+  salary?: string
   status?: JobStatus
   statusUpdatedAt?: string
   aiScore?: AiScore
   deepAnalysis?: DeepAnalysis
   groqAnalysis?: DeepAnalysis
   analysis?: Record<string, unknown>
+}
+
+const STATUS_LABELS: Record<JobStatus, string> = {
+  not_applied: '未投遞',
+  applied: '已投遞',
+  interview: '面試中',
+  not_interested: '不感興趣',
+}
+
+function getStatusBadgeClass(status: JobStatus) {
+  switch (status) {
+    case 'applied':
+      return 'border-blue-800 bg-blue-950/40 text-blue-300'
+    case 'interview':
+      return 'border-amber-800 bg-amber-950/40 text-amber-300'
+    case 'not_interested':
+      return 'border-slate-600 bg-slate-800/80 text-slate-400'
+    default:
+      return 'border-slate-700 bg-slate-800 text-slate-300'
+  }
 }
 
 function resolveStatus(status?: string): JobStatus {
@@ -148,6 +174,27 @@ export default async function JobDetailPage({
     )
   }
 
+  const status = resolveStatus(job.status)
+
+  // Structured fields are only shown when actually present on the record.
+  const overviewItems: { label: string; value: string }[] = [
+    job.company ? { label: '公司', value: job.company } : null,
+    job.location ? { label: '地點', value: job.location } : null,
+    job.employmentType
+      ? { label: '雇用形態', value: job.employmentType }
+      : null,
+    job.salary ? { label: '薪資', value: job.salary } : null,
+    job.source ? { label: '來源', value: job.source } : null,
+    { label: '採集時間', value: formatDate(job.collectedAt) },
+    {
+      label: '內容字數',
+      value: `${job.rawText ? job.rawText.length.toLocaleString() : 0} 字`,
+    },
+    { label: 'ID', value: job.id },
+  ].filter(
+    (item): item is { label: string; value: string } => item !== null
+  )
+
   return (
     <main className="min-h-screen bg-slate-950 px-6 py-8 text-white">
       <div className="mx-auto max-w-5xl">
@@ -171,41 +218,70 @@ export default async function JobDetailPage({
           )}
         </div>
 
+        {/* Title header — keeps the user oriented; full overview lives lower. */}
         <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg">
-          <p className="text-sm font-semibold text-blue-400">
-            JobFit AI 職缺詳情
-          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-sm font-semibold text-blue-400">
+              JobFit AI 職缺詳情
+            </p>
+            <span
+              className={`rounded-full border px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(status)}`}
+            >
+              {STATUS_LABELS[status]}
+            </span>
+          </div>
 
           <h1 className="mt-3 text-3xl font-bold leading-relaxed">
             {job.title || '未命名職缺'}
           </h1>
 
-          <div className="mt-5 flex flex-wrap gap-2 text-sm text-slate-400">
-            <span className="rounded-full bg-slate-800 px-3 py-1">
-              ID：{job.id}
-            </span>
-
-            <span className="rounded-full bg-slate-800 px-3 py-1">
-              採集時間：{formatDate(job.collectedAt)}
-            </span>
-
-            {job.source && (
+          <div className="mt-4 flex flex-wrap gap-2 text-sm text-slate-400">
+            {job.company && (
               <span className="rounded-full bg-slate-800 px-3 py-1">
-                來源：{job.source}
+                {job.company}
               </span>
             )}
-
+            {job.location && (
+              <span className="rounded-full bg-slate-800 px-3 py-1">
+                {job.location}
+              </span>
+            )}
+            {job.employmentType && (
+              <span className="rounded-full bg-slate-800 px-3 py-1">
+                {job.employmentType}
+              </span>
+            )}
+            {job.salary && (
+              <span className="rounded-full bg-slate-800 px-3 py-1">
+                {job.salary}
+              </span>
+            )}
             <span className="rounded-full bg-slate-800 px-3 py-1">
-              內容字數：{job.rawText ? job.rawText.length.toLocaleString() : 0} 字
+              採集時間：{formatDate(job.collectedAt)}
             </span>
           </div>
         </section>
 
-        <StatusSelect
-          jobId={job.id}
-          initialStatus={resolveStatus(job.status)}
-        />
+        {/* Analysis Profile placeholder (TASK-025) — UI only, no profile schema. */}
+        <section className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-violet-900/50 bg-violet-950/20 px-5 py-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-violet-300">
+              分析設定檔
+            </p>
+            <p className="mt-1 text-sm font-semibold text-slate-100">
+              Default Japan Career Profile
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              未來可切換不同分析設定檔以調整評分重點（即將推出）。
+            </p>
+          </div>
+          <span className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs text-slate-400">
+            預設
+          </span>
+        </section>
 
+        {/* AI analysis: recommendation, score / verdict, reasons, risks,
+            actions, and model comparison. Renders gracefully when missing. */}
         <AnalyzeFitPanel
           jobId={job.id}
           initialDeepAnalysis={job.deepAnalysis ?? null}
@@ -213,30 +289,57 @@ export default async function JobDetailPage({
           initialLocalAnalysis={job.analysis ?? job.aiScore ?? null}
         />
 
-        <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <StatusSelect jobId={job.id} initialStatus={status} />
+
+        {/* Job overview — structured details + metadata. */}
+        <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-6">
+          <h2 className="text-xl font-bold">職缺概覽</h2>
+          <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {overviewItems.map((item) => (
+              <div
+                key={item.label}
+                className="rounded-xl border border-slate-800 bg-slate-950/60 p-4"
+              >
+                <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  {item.label}
+                </dt>
+                <dd className="mt-1.5 break-words text-sm text-slate-100">
+                  {item.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+
+        {/* Original job posting — collapsed by default with a show/hide toggle. */}
+        <details className="group rounded-2xl border border-slate-800 bg-slate-900">
+          <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 rounded-2xl p-6 transition hover:bg-slate-900/60">
             <div>
-              <h2 className="text-xl font-bold">完整職缺內容</h2>
+              <h2 className="text-xl font-bold">完整原始職缺內容</h2>
               <p className="mt-1 text-sm text-slate-400">
-                這是 Chrome Extension 採集到的原始文字內容。
+                這是 Chrome Extension 採集到的原始文字內容，預設收合。
               </p>
             </div>
-
-            <span className="rounded-full bg-slate-800 px-3 py-1 text-sm text-slate-400">
-              {job.rawText ? job.rawText.length.toLocaleString() : 0} 字
+            <span className="flex items-center gap-2 rounded-full bg-slate-800 px-3 py-1 text-sm text-slate-300">
+              <span>{job.rawText ? job.rawText.length.toLocaleString() : 0} 字</span>
+              <span className="text-slate-500 transition group-open:rotate-180">
+                ▾
+              </span>
             </span>
-          </div>
+          </summary>
 
-          {job.rawText ? (
-            <div className="max-h-screen overflow-auto whitespace-pre-wrap rounded-xl border border-slate-800 bg-slate-950 p-5 text-sm leading-7 text-slate-200">
-              {job.rawText}
-            </div>
-          ) : (
-            <div className="rounded-xl border border-slate-800 bg-slate-950 p-5 text-sm text-slate-400">
-              這筆職缺沒有原始內容。
-            </div>
-          )}
-        </section>
+          <div className="px-6 pb-6">
+            {job.rawText ? (
+              <div className="max-h-[70vh] overflow-auto whitespace-pre-wrap rounded-xl border border-slate-800 bg-slate-950 p-5 text-sm leading-7 text-slate-200">
+                {job.rawText}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-slate-800 bg-slate-950 p-5 text-sm text-slate-400">
+                這筆職缺沒有原始內容。
+              </div>
+            )}
+          </div>
+        </details>
       </div>
     </main>
   )

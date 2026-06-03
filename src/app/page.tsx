@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import type { FitLevel } from '@/types/analysis'
 import {
+  getFitLevel,
   getFitLevelLabel,
   getProviderLabel,
   getPrimaryAnalysis,
@@ -41,11 +42,17 @@ type Job = {
   rawText?: string
   source?: string
   collectedAt?: string
+  // Optional structured fields — rendered only when present on the record.
+  company?: string
+  location?: string
+  employmentType?: string
+  salary?: string
   status?: string
   aiScore?: unknown
   deepAnalysis?: unknown
   groqAnalysis?: unknown
   localAnalysis?: unknown
+  analysis?: unknown
 }
 
 function resolveStatus(status?: string): JobStatus {
@@ -461,16 +468,35 @@ export default function HomePage() {
         )}
 
         {jobs.length === 0 ? (
-          <section className="rounded-2xl border border-slate-800 bg-slate-900 p-10 text-center text-slate-400">
-            目前沒有職缺資料。請先使用 Chrome Extension 採集職缺。
+          <section className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 p-12 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-slate-700 bg-slate-800 text-xl text-slate-400">
+              ◎
+            </div>
+            <h2 className="mt-4 text-lg font-bold text-slate-200">
+              目前還沒有職缺資料
+            </h2>
+            <p className="mt-2 text-sm text-slate-400">
+              請先使用 Chrome Extension 採集職缺，採集後回到這裡點「重新整理」。
+            </p>
+            <button
+              type="button"
+              onClick={loadJobs}
+              disabled={isLoading}
+              className="mt-5 rounded-xl border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isLoading ? '重新整理中...' : '重新整理'}
+            </button>
           </section>
         ) : filteredJobs.length === 0 ? (
-          <section className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 p-10 text-center">
-            <h2 className="text-lg font-bold text-slate-200">
+          <section className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 p-12 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-slate-700 bg-slate-800 text-xl text-slate-400">
+              ⌕
+            </div>
+            <h2 className="mt-4 text-lg font-bold text-slate-200">
               找不到符合條件的職缺
             </h2>
             <p className="mt-2 text-sm text-slate-400">
-              請調整搜尋字詞或清除篩選條件。
+              目前的搜尋與篩選條件沒有對應的職缺，請調整條件或清除篩選。
             </p>
             <button
               type="button"
@@ -481,125 +507,133 @@ export default function HomePage() {
             </button>
           </section>
         ) : (
-          <section className="space-y-5">
+          <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             {filteredJobs.map((job) => {
               const status = resolveStatus(job.status)
-              const primary = getPrimaryAnalysis(job)
-              const fitLevel = primary?.fitLevel ?? 'unknown'
+              // Resolve analysis once. Local results may live under `analysis`,
+              // so normalize the input the shared helpers expect.
+              const analysisInput = {
+                deepAnalysis: job.deepAnalysis,
+                groqAnalysis: job.groqAnalysis,
+                localAnalysis: job.localAnalysis ?? job.analysis,
+                aiScore: job.aiScore,
+              }
+              const primary = getPrimaryAnalysis(analysisInput)
+              // Use the same canonical score the filters / sort / dashboard use.
+              const displayScore = getJobDisplayScore(analysisInput).score
+              const fitLevel = getFitLevel(displayScore)
+              const recommendation =
+                primary?.recommendation || getFitLevelLabel(fitLevel)
+
+              const metaChips = [
+                job.company,
+                job.location,
+                job.employmentType,
+                job.salary,
+                job.source ? `來源：${job.source}` : null,
+                `採集：${formatDate(job.collectedAt)}`,
+              ].filter((value): value is string => Boolean(value))
 
               return (
-              <article
-                key={job.id}
-                className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg"
-              >
-                <div className="mb-4">
-                  <div className="flex flex-wrap items-start gap-3">
-                    <h2 className="text-2xl font-bold leading-relaxed">
+                <article
+                  key={job.id}
+                  className="flex h-full flex-col rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-lg transition hover:border-slate-700"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <h2 className="line-clamp-2 text-lg font-bold leading-snug">
                       {job.title || '未命名職缺'}
                     </h2>
                     <span
-                      className={`mt-1 rounded-full border px-3 py-1 text-sm font-semibold ${getStatusBadgeClass(status)}`}
+                      className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${getStatusBadgeClass(status)}`}
                     >
                       {STATUS_LABELS[status]}
                     </span>
                   </div>
 
-                  <div className="mt-3 flex flex-wrap gap-2 text-sm text-slate-400">
-                    <span className="rounded-full bg-slate-800 px-3 py-1">
-                      採集時間：{formatDate(job.collectedAt)}
-                    </span>
-
-                    <span className="rounded-full bg-slate-800 px-3 py-1">
-                      ID：{job.id}
-                    </span>
-
-                    {job.source && (
-                      <span className="rounded-full bg-slate-800 px-3 py-1">
-                        來源：{job.source}
+                  <div className="mt-3 flex flex-wrap gap-1.5 text-xs text-slate-400">
+                    {metaChips.map((chip, index) => (
+                      <span
+                        key={index}
+                        className="max-w-[16rem] truncate rounded-full bg-slate-800 px-2.5 py-1"
+                      >
+                        {chip}
                       </span>
+                    ))}
+                  </div>
+
+                  <div
+                    className={`mt-4 flex items-center justify-between gap-3 rounded-xl border p-4 ${getScoreBoxClass(
+                      fitLevel
+                    )}`}
+                  >
+                    {displayScore !== null ? (
+                      <>
+                        <div className="flex items-end gap-2">
+                          <span
+                            className={`text-3xl font-bold ${getScoreColorClass(displayScore)}`}
+                          >
+                            {displayScore}
+                          </span>
+                          <span className="pb-1 text-xs text-slate-400">/ 100</span>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-slate-100">
+                            {recommendation}
+                          </p>
+                          {primary && (
+                            <p className="mt-0.5 text-xs text-slate-400">
+                              {getProviderLabel(primary.metadata.provider)}
+                            </p>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-sm font-semibold text-slate-300">
+                          AI 適合度
+                        </span>
+                        <span className="text-sm text-slate-500">待分析</span>
+                      </>
                     )}
                   </div>
-                </div>
 
-                {job.rawText && (
-                  <p className="mb-5 line-clamp-3 text-sm leading-7 text-slate-300">
-                    {job.rawText}
-                  </p>
-                )}
-
-                {job.url && (
-                  <a
-                    href={job.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mb-5 inline-block text-sm font-semibold text-blue-400 hover:text-blue-300"
-                  >
-                    開啟原始頁面
-                  </a>
-                )}
-
-                <div
-                  className={`mb-4 rounded-xl border p-4 ${getScoreBoxClass(
-                    fitLevel
-                  )}`}
-                >
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                    AI 適合度
-                  </p>
-
-                  {primary && primary.fitScore !== null ? (
-                    <>
-                      <div className="mt-2 flex flex-wrap items-end gap-2">
-                        <span
-                          className={`text-3xl font-bold ${getScoreColorClass(
-                            primary.fitScore
-                          )}`}
-                        >
-                          {primary.fitScore}
-                        </span>
-
-                        <span className="pb-1 text-sm text-slate-400">/ 100</span>
-
-                        <span className="pb-1 text-sm font-semibold text-slate-200">
-                          {getFitLevelLabel(primary.fitLevel)}
-                        </span>
-                      </div>
-
-                      <p className="mt-2 text-xs font-semibold text-slate-400">
-                        {getProviderLabel(primary.metadata.provider)}
-                      </p>
-
-                      {primary.metadata.createdAt && (
-                        <p className="mt-1 text-xs text-slate-500">
-                          分析時間：
-                          {new Date(primary.metadata.createdAt).toLocaleString()}
-                        </p>
-                      )}
-                    </>
-                  ) : (
-                    <p className="mt-2 text-sm text-slate-500">待分析</p>
+                  {primary?.summary && (
+                    <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-400">
+                      {primary.summary}
+                    </p>
                   )}
-                </div>
 
-                <div className="flex flex-wrap items-center gap-3">
-                  <Link
-                    href={`/jobs/${encodeURIComponent(job.id)}`}
-                    className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500"
-                  >
-                    查看詳情 / 分析中心
-                  </Link>
+                  <div className="mt-auto flex flex-wrap items-center gap-2 pt-4">
+                    <Link
+                      href={`/jobs/${encodeURIComponent(job.id)}`}
+                      className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500"
+                    >
+                      查看詳情 / 分析中心
+                    </Link>
 
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteJob(job.id)}
-                    disabled={deletingId === job.id}
-                    className="rounded-xl border border-red-500/60 px-4 py-2 text-sm font-semibold text-red-300 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {deletingId === job.id ? '刪除中...' : '刪除'}
-                  </button>
-                </div>
-              </article>
-            )})}
+                    {job.url && (
+                      <a
+                        href={job.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-800"
+                      >
+                        原始頁面
+                      </a>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteJob(job.id)}
+                      disabled={deletingId === job.id}
+                      className="ml-auto rounded-xl border border-red-500/60 px-4 py-2 text-sm font-semibold text-red-300 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {deletingId === job.id ? '刪除中...' : '刪除'}
+                    </button>
+                  </div>
+                </article>
+              )
+            })}
           </section>
         )}
       </div>
