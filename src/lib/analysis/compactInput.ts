@@ -449,9 +449,8 @@ export function buildCompactProfileInput(
 // buildLocalSignals (conservative, auxiliary-only keyword scan)
 // ---------------------------------------------------------------------------
 
-const POSITIVE_KEYWORDS = [
-  '福岡',
-  '博多',
+// Generic Japanese job-market signals (not tied to a specific candidate).
+const BASE_POSITIVE_KEYWORDS = [
   'ホテル',
   'フロント',
   '接客',
@@ -476,8 +475,6 @@ const RISK_KEYWORDS = [
 
 // Human-readable interpretation for matched positive keywords.
 const POSITIVE_SIGNAL_LABELS: Record<string, string> = {
-  福岡: '工作地點可能位於福岡地區（符合地點偏好）',
-  博多: '工作地點可能位於博多／福岡地區（符合地點偏好）',
   ホテル: '屬於旅宿相關職務（符合主要方向）',
   フロント: '包含前台／櫃台工作（符合接待經驗）',
   接客: '需要接客服務能力（符合服務經驗）',
@@ -487,6 +484,25 @@ const POSITIVE_SIGNAL_LABELS: Record<string, string> = {
   翻訳: '可能涉及翻譯工作（符合多語言能力）',
   事務: '包含事務／行政工作（符合基礎辦公能力）',
   カスタマーサポート: '屬於客戶支援工作（符合服務經驗）',
+}
+
+// Build a profile-specific positive keyword list from the active career profile
+// (TASK-029). Falls back to generic market keywords when the profile is empty.
+function buildProfilePositiveKeywords(profile: unknown): string[] {
+  const p = asRecord(profile)
+  const workPreferences = asRecord(p.workPreferences)
+
+  const fromProfile = [
+    ...getStringArray(p.preferredKeywords, 24),
+    ...firstStringArray(p.targetRoles, p.desiredRoles),
+    ...firstStringArray(p.locationPreference, p.preferredLocations, workPreferences.locations),
+    ...getStringArray(p.industries, 12),
+  ]
+
+  const merged = Array.from(
+    new Set([...fromProfile, ...BASE_POSITIVE_KEYWORDS].map((s) => s.trim()).filter(Boolean))
+  )
+  return merged.slice(0, 40)
 }
 
 // Human-readable interpretation for matched risk keywords.
@@ -510,32 +526,57 @@ export function buildLocalSignals(
   const bodyText = getJobBodyText(j)
 
   const text = `${getString(j.title)}\n${getString(j.company)}\n${bodyText}`
+  const textLower = text.toLowerCase()
 
-  const matchedKeywords = POSITIVE_KEYWORDS.filter((kw) => text.includes(kw))
-  const riskKeywords = RISK_KEYWORDS.filter((kw) => text.includes(kw))
+  const positiveKeywords = buildProfilePositiveKeywords(profile)
+  const matchedKeywords = positiveKeywords.filter((kw) =>
+    textLower.includes(kw.toLowerCase())
+  )
 
-  const positiveSignals = matchedKeywords
-    .map((kw) => POSITIVE_SIGNAL_LABELS[kw])
-    .filter(Boolean)
-
-  // Conservative profile-aware enrichment: if the job text mentions one of the
-  // candidate's preferred locations, note it as an extra positive signal.
   const p = asRecord(profile)
   const workPreferences = asRecord(p.workPreferences)
+  const dealBreakerTerms = [
+    ...firstStringArray(p.dealBreakers, p.avoidConditions, workPreferences.avoid),
+  ]
+
+  const riskKeywords = Array.from(
+    new Set([
+      ...RISK_KEYWORDS.filter((kw) => text.includes(kw)),
+      ...dealBreakerTerms.filter((term) =>
+        term.length >= 2 && textLower.includes(term.toLowerCase())
+      ),
+    ])
+  )
+
+  const positiveSignals: string[] = matchedKeywords
+    .map((kw) => POSITIVE_SIGNAL_LABELS[kw] ?? `職缺出現與你的設定檔相關的關鍵字：${kw}`)
+    .filter(Boolean)
+
   const preferredLocations = firstStringArray(
     p.locationPreference,
     p.preferredLocations,
     workPreferences.locations
   )
   for (const loc of preferredLocations) {
-    if (loc && text.toLowerCase().includes(loc.toLowerCase())) {
+    if (loc && textLower.includes(loc.toLowerCase())) {
       positiveSignals.push(`工作地點符合偏好地區（${loc}）`)
     }
   }
 
-  const negativeSignals = riskKeywords
-    .map((kw) => RISK_SIGNAL_LABELS[kw])
-    .filter(Boolean)
+  const negativeSignals = [
+    ...riskKeywords
+      .filter((kw) => RISK_KEYWORDS.includes(kw))
+      .map((kw) => RISK_SIGNAL_LABELS[kw])
+      .filter(Boolean),
+    ...dealBreakerTerms
+      .filter(
+        (term) =>
+          term.length >= 2 &&
+          textLower.includes(term.toLowerCase()) &&
+          !RISK_KEYWORDS.includes(term)
+      )
+      .map((term) => `職缺可能觸及你的設定檔地雷：${term}`),
+  ]
 
   // Conservative "we couldn't confirm this from the text" flags.
   const unknowns: string[] = []
@@ -1373,7 +1414,24 @@ export function buildAnalysisInput(
 // buildJobFitPrompt (shared user prompt for Gemini + Groq)
 // ---------------------------------------------------------------------------
 
-export function buildJobFitPrompt(input: CompactAnalysisInput): string {
+export function buildJobFitPrompt(
+  input: CompactAnalysisInput,
+  options?: { profileContext?: string }
+): string {
+  // Active career profile context becomes the primary decision baseline
+  // (TASK-029). When provided, it is injected as the highest-priority profile
+  // information and the prompt is told to prefer it over any assumption.
+  const profileContext = options?.profileContext?.trim()
+  const profileContextBlock = profileContext
+    ? `\n【0. 使用中的職涯設定檔（主要判斷基準，請優先採用）】\n${profileContext}\n`
+    : ''
+  const profileBaselineInstruction = profileContext
+    ? `0. 請以「使用中的職涯設定檔」作為主要的判斷基準（primary decision baseline）。不要對求職者做任何寫死的假設；一切以此設定檔為準。
+0a. 請明確區分「這個人是否做得來這份工作（can do）」與「依據這份設定檔是否值得投遞（should apply）」兩件事，並在 summary 與 recommendation 反映此區分。
+0b. 請特別注意設定檔中的：絕對地雷（dealBreakers）、未來願景（futureVision）、簽證需求（visa）、語言能力（language）、薪資（salary）、地點（location）、職種（role）以及工作型態限制（加班／輪班／夜班／轉勤／遠端）。
+`
+    : ''
+
   // 1. 基本職缺欄位（title/company/location/salary/employmentType）。
   const basicJobFields = {
     title: input.job.title,
@@ -1401,7 +1459,7 @@ export function buildJobFitPrompt(input: CompactAnalysisInput): string {
 
   return `你是一位熟悉日本就職市場的職涯顧問。請根據以下資料，分析這份職缺與求職者的整體匹配度。
 
-資料優先順序（由高到低）：
+${profileBaselineInstruction}資料優先順序（由高到低）：
 1. 基本職缺欄位（title/company/location/salary/employmentType）。
 2. jobDigest：從「完整職缺內容」保守抽取出的重點，是你主要的判斷依據。
 3. evidenceSnippets：原文證據片段；source 為 "tail" 代表原本位於職缺後段（過去常被截斷而看不到），請特別重視。
@@ -1435,7 +1493,7 @@ export function buildJobFitPrompt(input: CompactAnalysisInput): string {
   "risks": ["<繁體中文，例如夜勤、派遣、年資、簽證等風險>"],
   "suggestedActions": ["<繁體中文，建議的具體行動，例如履歷重點、面試準備、向雇主確認的問題>"]
 }
-
+${profileContextBlock}
 【1. 基本職缺欄位】
 ${JSON.stringify(basicJobFields, null, 2)}
 

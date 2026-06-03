@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { AnalysisResult, AnalysisProvider, FitLevel } from '@/types/analysis'
+import { getActiveProfile } from '@/lib/profile'
 import {
   PROVIDER_DEFAULT_MODEL,
   getFitLevelLabel,
@@ -357,6 +358,12 @@ function AnalysisResultCard({
 
       {data.metadata.inputCoverage && (
         <InputCoverageNotice metadata={data.metadata} />
+      )}
+
+      {data.metadata.analyzedProfileName && (
+        <p className="mt-3 text-xs text-violet-300">
+          分析設定檔：{data.metadata.analyzedProfileName}
+        </p>
       )}
 
       {data.metadata.createdAt && (
@@ -757,8 +764,13 @@ export function AnalyzeFitPanel({
     const hadResult = Boolean(localAnalysis)
 
     try {
+      // Always analyze against the active profile (falls back to the default
+      // profile inside the store when nothing is selected).
+      const profile = getActiveProfile()
       const response = await fetch(`/api/jobs/${jobId}/analyze`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile }),
       })
 
       const contentType = response.headers.get('content-type') || ''
@@ -811,10 +823,13 @@ export function AnalyzeFitPanel({
     setProviderStale(provider, false)
 
     try {
+      // Always analyze against the active profile (falls back to the default
+      // profile inside the store when nothing is selected).
+      const profile = getActiveProfile()
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ force }),
+        body: JSON.stringify({ force, profile }),
       })
 
       const data = (await res.json()) as DeepAnalyzeApiResponse

@@ -10,6 +10,13 @@ import {
   type InputCoverageReport,
   type JobDigest,
 } from '@/lib/analysis/compactInput'
+import {
+  defaultJapanCareerProfile,
+  flattenProfileForCompactInput,
+  JAPAN_CAREER_PROFILE_VERSION,
+  profileToAnalysisContext,
+  type JapanCareerProfile,
+} from '@/lib/profile'
 
 // Server-side Gemini deep analysis only — manual POST; never auto-called.
 
@@ -50,6 +57,10 @@ type DeepAnalysisResponse = {
     cacheExpiresAt: string
     inputMode: 'digest'
     tokenStrategy: 'relevant_job_digest_v1'
+    // Active JapanCareerProfile used as the analysis baseline (TASK-029).
+    analyzedProfileId?: string
+    analyzedProfileName?: string
+    analyzedAt?: string
     // Input stats + coverage diagnostics. Counts / keyword-type-source flags
     // only; never the full job text, cleaned text, or full evidence text.
     inputStats: InputStats
@@ -120,29 +131,22 @@ type Job = {
   [key: string]: unknown
 }
 
-type UserProfile = {
-  profileVersion?: number | string
-  summary?: string
-  targetRoles?: string[]
-  careerDirections?: {
-    primary?: string[]
-    secondary?: string[]
-  }
-  skills?: {
-    strong?: string[]
-    familiar?: string[]
-    learning?: string[]
-  }
-  languages?: Array<{
-    language?: string
-    level?: string
-    notes?: string
-  }>
-  [key: string]: unknown
-}
-
 const jobsFilePath = path.join(process.cwd(), 'jobs_temp.json')
-const profileFilePath = path.join(process.cwd(), 'user_profile.json')
+
+// Defensive shape check: require the fields the analysis baseline relies on.
+function isValidProfile(value: unknown): value is JapanCareerProfile {
+  if (!value || typeof value !== 'object') return false
+  const p = value as Record<string, unknown>
+  return (
+    typeof p.id === 'string' &&
+    p.version === JAPAN_CAREER_PROFILE_VERSION &&
+    typeof p.name === 'string' &&
+    typeof p.target === 'object' &&
+    p.target !== null &&
+    typeof p.conditions === 'object' &&
+    p.conditions !== null
+  )
+}
 
 async function readJsonFile<T>(filePath: string, label: string): Promise<T> {
   try {
@@ -410,7 +414,8 @@ function normalizeDeepAnalysis(
   jobId: string,
   profileVersion: string | number,
   model: string,
-  analysisInput: CompactAnalysisInput
+  analysisInput: CompactAnalysisInput,
+  profile: JapanCareerProfile
 ): DeepAnalysisResponse {
   const createdAtDate = new Date()
   const createdAt = createdAtDate.toISOString()
@@ -462,6 +467,9 @@ function normalizeDeepAnalysis(
       cacheExpiresAt,
       inputMode: 'digest',
       tokenStrategy: 'relevant_job_digest_v1',
+      analyzedProfileId: profile.id,
+      analyzedProfileName: profile.name,
+      analyzedAt: createdAt,
       inputStats: buildInputStats(analysisInput),
       inputCoverage: analysisInput.inputCoverage,
     },
@@ -476,12 +484,18 @@ export async function POST(request: Request, context: Params) {
       return NextResponse.json({ error: 'Missing job id' }, { status: 400 })
     }
 
-    // Parse optional { force: true } body. Missing/invalid body means force=false.
+    // Parse optional { force, profile } body. Missing/invalid body means
+    // force=false and the default profile baseline.
     let force = false
+    let profile: JapanCareerProfile = defaultJapanCareerProfile
     try {
-      const body = (await request.json()) as { force?: unknown } | null
-      if (body && typeof body === 'object' && body.force === true) {
-        force = true
+      const body = (await request.json()) as {
+        force?: unknown
+        profile?: unknown
+      } | null
+      if (body && typeof body === 'object') {
+        if (body.force === true) force = true
+        if (isValidProfile(body.profile)) profile = body.profile
       }
     } catch {
       force = false
@@ -514,23 +528,9 @@ export async function POST(request: Request, context: Params) {
       )
     }
 
-    let profile: UserProfile
-    try {
-      profile = await readJsonFile<UserProfile>(
-        profileFilePath,
-        'user_profile.json'
-      )
-    } catch (error) {
-      return NextResponse.json(
-        { error: error instanceof Error ? error.message : String(error) },
-        { status: 500 }
-      )
-    }
-
-    const profileVersion =
-      profile.profileVersion !== undefined && profile.profileVersion !== null
-        ? profile.profileVersion
-        : 1
+    // Profile version is derived from the active profile so the cache is
+    // invalidated whenever the user switches or edits their profile (TASK-029).
+    const profileVersion = `${profile.id}@${profile.updatedAt}`
 
     // TASK-016: serve cached deepAnalysis when valid and not force-refreshed.
     if (force !== true && isDeepCacheValid(job.deepAnalysis, profileVersion)) {
@@ -572,8 +572,15 @@ export async function POST(request: Request, context: Params) {
     }
 
     // Shared compact input so Gemini and Groq analyze the same data (TASK-021).
-    const analysisInput = buildAnalysisInput(job, profile)
-    const prompt = buildJobFitPrompt(analysisInput)
+    // The active profile (TASK-029) is flattened for the compact pipeline and
+    // its full context becomes the prompt's primary decision baseline.
+    const analysisInput = buildAnalysisInput(
+      job,
+      flattenProfileForCompactInput(profile)
+    )
+    const prompt = buildJobFitPrompt(analysisInput, {
+      profileContext: profileToAnalysisContext(profile),
+    })
 
     let geminiText: string
     let model: string
@@ -622,7 +629,8 @@ export async function POST(request: Request, context: Params) {
       id,
       profileVersion,
       model,
-      analysisInput
+      analysisInput,
+      profile
     )
 
     const updatedJobs = jobs.map((j) => {

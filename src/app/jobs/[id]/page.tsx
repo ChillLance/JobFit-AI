@@ -3,6 +3,7 @@ import fs from 'fs'
 import path from 'path'
 import { StatusSelect, type JobStatus } from './StatusSelect'
 import { AnalyzeFitPanel } from './AnalyzeFitPanel'
+import { ActiveProfileBanner } from './ActiveProfileBanner'
 
 type AiScore = {
   score: number
@@ -262,23 +263,8 @@ export default async function JobDetailPage({
           </div>
         </section>
 
-        {/* Analysis Profile placeholder (TASK-025) — UI only, no profile schema. */}
-        <section className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-violet-900/50 bg-violet-950/20 px-5 py-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-violet-300">
-              分析設定檔
-            </p>
-            <p className="mt-1 text-sm font-semibold text-slate-100">
-              Default Japan Career Profile
-            </p>
-            <p className="mt-1 text-xs text-slate-400">
-              未來可切換不同分析設定檔以調整評分重點（即將推出）。
-            </p>
-          </div>
-          <span className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs text-slate-400">
-            預設
-          </span>
-        </section>
+        {/* Active analysis profile (TASK-029) — actual active JapanCareerProfile. */}
+        <ActiveProfileBanner />
 
         {/* AI analysis: recommendation, score / verdict, reasons, risks,
             actions, and model comparison. Renders gracefully when missing. */}

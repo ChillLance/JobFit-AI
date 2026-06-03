@@ -9,6 +9,13 @@ import {
   type InputCoverageReport,
   type JobDigest,
 } from '@/lib/analysis/compactInput'
+import {
+  defaultJapanCareerProfile,
+  flattenProfileForCompactInput,
+  JAPAN_CAREER_PROFILE_VERSION,
+  profileToAnalysisContext,
+  type JapanCareerProfile,
+} from '@/lib/profile'
 
 // Server-side Groq Llama 70B deep analysis only — manual POST; never auto-called.
 // Uses Groq's OpenAI-compatible chat completions endpoint.
@@ -20,10 +27,6 @@ const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
 // groqAnalysis cache TTL. Cached Groq results are reused for this long.
 const CACHE_TTL_DAYS = 7
 const CACHE_TTL_MS = CACHE_TTL_DAYS * 24 * 60 * 60 * 1000
-
-// Fixed profile schema version for the compact Groq input. Bump if the
-// compact profile shape changes in a way that should invalidate caches.
-const GROQ_PROFILE_VERSION = 'v1'
 
 type Params = {
   params: Promise<{
@@ -55,6 +58,10 @@ type GroqAnalysisResponse = {
     cacheExpiresAt: string
     inputMode: 'digest'
     tokenStrategy: 'relevant_job_digest_v1'
+    // Active JapanCareerProfile used as the analysis baseline (TASK-029).
+    analyzedProfileId?: string
+    analyzedProfileName?: string
+    analyzedAt?: string
     // Input stats + coverage diagnostics. Counts / keyword-type-source flags
     // only; never the full job text, cleaned text, or full evidence text.
     inputStats: InputStats
@@ -127,39 +134,22 @@ type Job = {
   [key: string]: unknown
 }
 
-type UserProfile = {
-  profileVersion?: number | string
-  summary?: string
-  targetRoles?: string[]
-  experienceLevel?: string
-  personalBackground?: {
-    currentLocation?: string
-    experienceLevel?: string
-  }
-  careerDirections?: {
-    primary?: string[]
-    secondary?: string[]
-  }
-  skills?: {
-    strong?: string[]
-    familiar?: string[]
-    learning?: string[]
-  }
-  languages?: Array<{
-    language?: string
-    level?: string
-    notes?: string
-  }>
-  workPreferences?: {
-    locations?: string[]
-    rolePreferences?: string[]
-    avoid?: string[]
-  }
-  [key: string]: unknown
-}
-
 const jobsFilePath = path.join(process.cwd(), 'jobs_temp.json')
-const profileFilePath = path.join(process.cwd(), 'user_profile.json')
+
+// Defensive shape check: require the fields the analysis baseline relies on.
+function isValidProfile(value: unknown): value is JapanCareerProfile {
+  if (!value || typeof value !== 'object') return false
+  const p = value as Record<string, unknown>
+  return (
+    typeof p.id === 'string' &&
+    p.version === JAPAN_CAREER_PROFILE_VERSION &&
+    typeof p.name === 'string' &&
+    typeof p.target === 'object' &&
+    p.target !== null &&
+    typeof p.conditions === 'object' &&
+    p.conditions !== null
+  )
+}
 
 function getGroqModel(): string {
   const model = process.env.GROQ_MODEL?.trim()
@@ -315,12 +305,13 @@ function parseGroqJson(text: string): Record<string, unknown> {
 // Decide whether an existing groqAnalysis can be served from cache.
 function isGroqCacheValid(
   groqAnalysis: GroqAnalysisResponse | undefined,
-  model: string
+  model: string,
+  profileVersion: string
 ): boolean {
   const meta = groqAnalysis?.metadata
   if (!meta) return false
   if (meta.model !== model) return false
-  if (String(meta.profileVersion) !== GROQ_PROFILE_VERSION) return false
+  if (String(meta.profileVersion) !== profileVersion) return false
 
   // TASK-021.3: only the relevant-job-digest input strategy counts as a valid
   // cache. Older compact_job_input_v1 results are treated as stale.
@@ -428,7 +419,8 @@ function normalizeGroqAnalysis(
   parsed: Record<string, unknown>,
   jobId: string,
   model: string,
-  analysisInput: CompactAnalysisInput
+  analysisInput: CompactAnalysisInput,
+  profile: JapanCareerProfile
 ): GroqAnalysisResponse {
   const createdAtDate = new Date()
   const createdAt = createdAtDate.toISOString()
@@ -476,11 +468,14 @@ function normalizeGroqAnalysis(
       source: 'groq',
       provider: 'groq',
       model,
-      profileVersion: GROQ_PROFILE_VERSION,
+      profileVersion: `${profile.id}@${profile.updatedAt}`,
       createdAt,
       cacheExpiresAt,
       inputMode: 'digest',
       tokenStrategy: 'relevant_job_digest_v1',
+      analyzedProfileId: profile.id,
+      analyzedProfileName: profile.name,
+      analyzedAt: createdAt,
       inputStats: buildInputStats(analysisInput),
       inputCoverage: analysisInput.inputCoverage,
     },
@@ -495,12 +490,18 @@ export async function POST(request: Request, context: Params) {
       return NextResponse.json({ error: 'Missing job id' }, { status: 400 })
     }
 
-    // Parse optional { force: true } body. Missing/invalid body means force=false.
+    // Parse optional { force, profile } body. Missing/invalid body means
+    // force=false and the default profile baseline.
     let force = false
+    let profile: JapanCareerProfile = defaultJapanCareerProfile
     try {
-      const body = (await request.json()) as { force?: unknown } | null
-      if (body && typeof body === 'object' && body.force === true) {
-        force = true
+      const body = (await request.json()) as {
+        force?: unknown
+        profile?: unknown
+      } | null
+      if (body && typeof body === 'object') {
+        if (body.force === true) force = true
+        if (isValidProfile(body.profile)) profile = body.profile
       }
     } catch {
       force = false
@@ -535,8 +536,15 @@ export async function POST(request: Request, context: Params) {
 
     const model = getGroqModel()
 
+    // Profile version is derived from the active profile so the cache is
+    // invalidated whenever the user switches or edits their profile (TASK-029).
+    const profileVersion = `${profile.id}@${profile.updatedAt}`
+
     // Serve cached groqAnalysis when valid and not force-refreshed.
-    if (force !== true && isGroqCacheValid(job.groqAnalysis, model)) {
+    if (
+      force !== true &&
+      isGroqCacheValid(job.groqAnalysis, model, profileVersion)
+    ) {
       return new Response(
         JSON.stringify({
           ok: true,
@@ -563,24 +571,18 @@ export async function POST(request: Request, context: Params) {
       )
     }
 
-    let profile: UserProfile
-    try {
-      profile = await readJsonFile<UserProfile>(
-        profileFilePath,
-        'user_profile.json'
-      )
-    } catch (error) {
-      return NextResponse.json(
-        { error: error instanceof Error ? error.message : String(error) },
-        { status: 500 }
-      )
-    }
-
     // Shared compact input so Gemini and Groq analyze the same data (TASK-021).
-    const analysisInput = buildAnalysisInput(job, profile)
+    // The active profile (TASK-029) is flattened for the compact pipeline and
+    // its full context becomes the prompt's primary decision baseline.
+    const analysisInput = buildAnalysisInput(
+      job,
+      flattenProfileForCompactInput(profile)
+    )
 
     const systemPrompt = buildSystemPrompt()
-    const userPrompt = buildJobFitPrompt(analysisInput)
+    const userPrompt = buildJobFitPrompt(analysisInput, {
+      profileContext: profileToAnalysisContext(profile),
+    })
 
     let groqText: string
     try {
@@ -622,7 +624,7 @@ export async function POST(request: Request, context: Params) {
       )
     }
 
-    const result = normalizeGroqAnalysis(parsed, id, model, analysisInput)
+    const result = normalizeGroqAnalysis(parsed, id, model, analysisInput, profile)
 
     // Persist as `groqAnalysis` only — never touch `deepAnalysis` (Gemini).
     const updatedJobs = jobs.map((j) => {

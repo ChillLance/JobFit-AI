@@ -35,6 +35,10 @@ export type AnalysisMetadata = {
   source?: 'cache' | 'fresh'
   inputCoverage?: InputCoverageSummary
   digestStats?: DigestStatsSummary
+  // Active JapanCareerProfile used as the analysis baseline (TASK-029).
+  analyzedProfileId?: string
+  analyzedProfileName?: string
+  analyzedAt?: string
 }
 
 export type AnalysisResult = {

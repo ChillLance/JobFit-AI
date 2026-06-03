@@ -225,6 +225,10 @@ function normalizeMetadata(
     source: asSource(meta.source),
     inputCoverage: asInputCoverage(meta.inputCoverage),
     digestStats: asDigestStats(meta.inputStats),
+    analyzedProfileId: firstNonEmptyString(meta.analyzedProfileId) || undefined,
+    analyzedProfileName:
+      firstNonEmptyString(meta.analyzedProfileName) || undefined,
+    analyzedAt: firstNonEmptyString(meta.analyzedAt) || undefined,
   }
 }
 
