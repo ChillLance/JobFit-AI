@@ -1,18 +1,41 @@
 # JobFit-AI Tasks
 
-## Current Phase: MVP 0.3 — AI Analysis Hub
+## Current Phase: MVP 0.3 — Portfolio Readiness
 
-Focus: TASK-022 Model Comparison & Final Recommendation is complete; next is TASK-023 Job List Search / Filter / Sort.
+Focus: TASK-024 Dashboard Stats Cards is complete; next is TASK-025 Portfolio UI Polish with shadcn-style UI.
 
 ## Current Task
 
-### TASK-023 Job List Search / Filter / Sort
+### TASK-025 Portfolio UI Polish with shadcn-style UI
 
 **Status:** Next
 
 ---
 
 ## Completed Tasks
+
+### MVP 0.3 — Portfolio Readiness — Dashboard
+
+#### TASK-024 Dashboard Stats Cards — Done
+
+- Added a new pure helper `src/lib/jobs/getDashboardStats.ts` (`DashboardStats` type + `getDashboardStats(jobs)`), with small pure helpers `getValidScore`, `getJobDate`, `isAppliedStatus`, `isInterviewingStatus`. It **makes no AI API calls** and reuses the TASK-023 `getJobDisplayScore` / `jobHasRisk` (which reuse the TASK-022 comparison).
+- Added a presentational component `src/components/jobs/DashboardStatsCards.tsx` rendering a responsive grid (1 / 2 / 3 / 6 columns) of clean dark-theme SaaS cards.
+- Home page now shows dashboard cards **above** the filter bar and job list, replacing the old「職缺數量 / 資料來源」blocks.
+- Stats: **total jobs / high match (score ≥ 80) / applied / interviewing / average score / risky jobs**, plus small hints「近 7 天新增」(total card) and「未分析」(average-score card).
+- Score source uses `getJobDisplayScore` (comparison `averageScore` → primary `fitScore` → unanalyzed). Risk uses `jobHasRisk` (comparison `commonRisks` → primary `risks`). Status matching is format-tolerant (applied / 已投遞; interview / interviewing / 面試中). Dates read createdAt / scrapedAt / savedAt / updatedAt / collectedAt with invalid dates ignored (no crash).
+- Stats are computed over **all** jobs (not the filtered view) so they stay stable while searching / filtering; they update when job data changes (e.g. status update on refresh). Search / status / score / risk filters, sorting, clear-filters, status update, and detail navigation are unchanged. `tsc --noEmit` passes.
+
+### MVP 0.3 — Portfolio Readiness — Job List
+
+#### TASK-023 Job List Search / Filter / Sort — Done
+
+- Added **client-side job search** (no API call) over title / company / location / employment type / source / url / raw text; case-insensitive, trimmed, works for 中文 / English / 日本語. Placeholder「搜尋職稱、公司、地點...」and a「顯示 X / Y 個職缺」result count.
+- Integrated the existing **status filter tabs** (全部 / 未投遞 / 已投遞 / 面試中 / 不感興趣) into the new filter bar — no duplicate status UI, existing status data format untouched.
+- Added a **score filter** (全部分數 / 高匹配 ≥80 / 中匹配 60-79 / 低匹配 <60 / 未分析). Score source: TASK-022 `buildAnalysisComparison(job).averageScore` → fallback primary `fitScore` → otherwise unanalyzed, via new `getJobDisplayScore`.
+- Added a **「只看有風險」** filter using `buildAnalysisComparison(job).commonRisks` → fallback primary `risks`, via new `jobHasRisk`.
+- Added a **sort select** (最新新增 / 最舊新增 / 分數高到低 / 分數低到高 / 公司 A-Z / 職稱 A-Z); dates use the first available of `createdAt` / `scrapedAt` / `savedAt` / `updatedAt` / `collectedAt`, with missing values pushed to the end (no crash).
+- Added an **active filters summary** with a「清除篩選」button, plus a dashed **empty state** (「找不到符合條件的職缺」) with its own clear-filters button.
+- New pure helpers: `src/lib/jobs/getJobDisplayScore.ts` and `src/lib/jobs/filterJobs.ts`. No API / AI pipeline / analysis schema changes; status update and detail-page navigation preserved. `tsc --noEmit` passes.
 
 ### MVP 0.3 — AI Analysis Hub — Model Comparison
 

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { FitLevel } from '@/types/analysis'
 import {
   getFitLevelLabel,
@@ -9,6 +9,17 @@ import {
   getPrimaryAnalysis,
   getScoreColorClass,
 } from '@/lib/analysis/normalizeAnalysis'
+import {
+  getJobDisplayScore,
+  jobHasRisk,
+} from '@/lib/jobs/getJobDisplayScore'
+import {
+  filterAndSortJobs,
+  type JobSortKey,
+  type ScoreFilter,
+} from '@/lib/jobs/filterJobs'
+import { getDashboardStats } from '@/lib/jobs/getDashboardStats'
+import DashboardStatsCards from '@/components/jobs/DashboardStatsCards'
 
 type JobStatus =
   | 'not_applied'
@@ -61,6 +72,31 @@ const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: 'interview', label: '面試中' },
   { value: 'not_interested', label: '不感興趣' },
 ]
+
+const SCORE_FILTERS: { value: ScoreFilter; label: string }[] = [
+  { value: 'all', label: '全部分數' },
+  { value: 'high', label: '高匹配 (≥80)' },
+  { value: 'medium', label: '中匹配 (60-79)' },
+  { value: 'low', label: '低匹配 (<60)' },
+  { value: 'unanalyzed', label: '未分析' },
+]
+
+const SORT_OPTIONS: { value: JobSortKey; label: string }[] = [
+  { value: 'newest', label: '最新新增' },
+  { value: 'oldest', label: '最舊新增' },
+  { value: 'score_desc', label: '分數高到低' },
+  { value: 'score_asc', label: '分數低到高' },
+  { value: 'company_asc', label: '公司 A-Z' },
+  { value: 'title_asc', label: '職稱 A-Z' },
+]
+
+const SCORE_FILTER_LABELS: Record<ScoreFilter, string> = {
+  all: '全部分數',
+  high: '高匹配',
+  medium: '中匹配',
+  low: '低匹配',
+  unanalyzed: '未分析',
+}
 
 function countJobsByStatus(jobs: Job[]) {
   const counts: Record<StatusFilter, number> = {
@@ -146,12 +182,50 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [scoreFilter, setScoreFilter] = useState<ScoreFilter>('all')
+  const [riskOnly, setRiskOnly] = useState(false)
+  const [sortKey, setSortKey] = useState<JobSortKey>('newest')
 
   const statusCounts = countJobsByStatus(jobs)
-  const filteredJobs =
-    statusFilter === 'all'
-      ? jobs
-      : jobs.filter((job) => resolveStatus(job.status) === statusFilter)
+
+  // Dashboard stats are computed over ALL jobs (not the filtered view) so they
+  // reflect the overall job-search state and stay stable while filtering.
+  const dashboardStats = useMemo(() => getDashboardStats(jobs), [jobs])
+
+  const filteredJobs = useMemo(
+    () =>
+      filterAndSortJobs(
+        jobs,
+        {
+          search: searchQuery,
+          status: statusFilter,
+          score: scoreFilter,
+          riskOnly,
+          sort: sortKey,
+        },
+        {
+          getScore: (job) => getJobDisplayScore(job).score,
+          getHasRisk: (job) => jobHasRisk(job),
+          getStatus: (job) => resolveStatus(job.status),
+        }
+      ),
+    [jobs, searchQuery, statusFilter, scoreFilter, riskOnly, sortKey]
+  )
+
+  const hasActiveFilters =
+    searchQuery.trim() !== '' ||
+    statusFilter !== 'all' ||
+    scoreFilter !== 'all' ||
+    riskOnly
+
+  function clearFilters() {
+    setSearchQuery('')
+    setStatusFilter('all')
+    setScoreFilter('all')
+    setRiskOnly(false)
+    setSortKey('newest')
+  }
 
   async function loadJobs() {
     try {
@@ -239,19 +313,7 @@ export default function HomePage() {
           </button>
         </header>
 
-        <section className="mb-6 grid gap-4 md:grid-cols-3">
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-            <p className="text-sm text-slate-400">職缺數量</p>
-            <p className="mt-3 text-3xl font-bold">{jobs.length}</p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-            <p className="text-sm text-slate-400">資料來源</p>
-            <p className="mt-3 text-3xl font-bold">Local</p>
-          </div>
-
-      
-        </section>
+        <DashboardStatsCards stats={dashboardStats} />
 
         {error && (
           <section className="mb-6 rounded-2xl border border-red-700 bg-red-950/50 p-6 text-red-100">
@@ -261,26 +323,140 @@ export default function HomePage() {
         )}
 
         {jobs.length > 0 && (
-          <section className="mb-6 flex flex-wrap gap-2">
-            {STATUS_FILTERS.map(({ value, label }) => {
-              const isActive = statusFilter === value
-
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setStatusFilter(value)}
-                  className={`rounded-xl border px-4 py-2 text-sm font-semibold transition ${
-                    isActive
-                      ? 'border-blue-500 bg-blue-600 text-white'
-                      : 'border-slate-700 bg-slate-900 text-slate-300 hover:border-slate-600 hover:bg-slate-800'
-                  }`}
+          <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
+              <div className="flex-1">
+                <label
+                  htmlFor="job-search"
+                  className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-400"
                 >
-                  {label}
-                  <span className="ml-1.5 opacity-80">({statusCounts[value]})</span>
-                </button>
-              )
-            })}
+                  搜尋
+                </label>
+                <input
+                  id="job-search"
+                  type="text"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="搜尋職稱、公司、地點..."
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="score-filter"
+                  className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-400"
+                >
+                  分數
+                </label>
+                <select
+                  id="score-filter"
+                  value={scoreFilter}
+                  onChange={(event) =>
+                    setScoreFilter(event.target.value as ScoreFilter)
+                  }
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm text-white focus:border-blue-500 focus:outline-none lg:w-auto"
+                >
+                  {SCORE_FILTERS.map(({ value, label }) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="sort-select"
+                  className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-400"
+                >
+                  排序
+                </label>
+                <select
+                  id="sort-select"
+                  value={sortKey}
+                  onChange={(event) =>
+                    setSortKey(event.target.value as JobSortKey)
+                  }
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm text-white focus:border-blue-500 focus:outline-none lg:w-auto"
+                >
+                  {SORT_OPTIONS.map(({ value, label }) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm text-slate-300 transition hover:border-slate-600">
+                <input
+                  type="checkbox"
+                  checked={riskOnly}
+                  onChange={(event) => setRiskOnly(event.target.checked)}
+                  className="h-4 w-4 accent-blue-600"
+                />
+                只看有風險
+              </label>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {STATUS_FILTERS.map(({ value, label }) => {
+                const isActive = statusFilter === value
+
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setStatusFilter(value)}
+                    className={`rounded-xl border px-4 py-2 text-sm font-semibold transition ${
+                      isActive
+                        ? 'border-blue-500 bg-blue-600 text-white'
+                        : 'border-slate-700 bg-slate-900 text-slate-300 hover:border-slate-600 hover:bg-slate-800'
+                    }`}
+                  >
+                    {label}
+                    <span className="ml-1.5 opacity-80">
+                      ({statusCounts[value]})
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+              <span className="text-slate-400">
+                顯示 {filteredJobs.length} / {jobs.length} 個職缺
+              </span>
+
+              {hasActiveFilters && (
+                <>
+                  {searchQuery.trim() !== '' && (
+                    <span className="text-slate-400">
+                      搜尋：「{searchQuery.trim()}」
+                    </span>
+                  )}
+                  {statusFilter !== 'all' && (
+                    <span className="text-slate-400">
+                      狀態：{STATUS_LABELS[statusFilter]}
+                    </span>
+                  )}
+                  {scoreFilter !== 'all' && (
+                    <span className="text-slate-400">
+                      分數：{SCORE_FILTER_LABELS[scoreFilter]}
+                    </span>
+                  )}
+                  {riskOnly && <span className="text-slate-400">只看有風險</span>}
+
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="rounded-lg border border-slate-600 px-3 py-1 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-800"
+                  >
+                    清除篩選
+                  </button>
+                </>
+              )}
+            </div>
           </section>
         )}
 
@@ -289,8 +465,20 @@ export default function HomePage() {
             目前沒有職缺資料。請先使用 Chrome Extension 採集職缺。
           </section>
         ) : filteredJobs.length === 0 ? (
-          <section className="rounded-2xl border border-slate-800 bg-slate-900 p-10 text-center text-slate-400">
-            此篩選條件下沒有職缺。
+          <section className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 p-10 text-center">
+            <h2 className="text-lg font-bold text-slate-200">
+              找不到符合條件的職缺
+            </h2>
+            <p className="mt-2 text-sm text-slate-400">
+              請調整搜尋字詞或清除篩選條件。
+            </p>
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="mt-5 rounded-xl border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-800"
+            >
+              清除篩選
+            </button>
           </section>
         ) : (
           <section className="space-y-5">

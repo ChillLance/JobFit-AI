@@ -19,9 +19,23 @@ Also in place from earlier work:
 - Home page lists jobs with AI score/level and links to `/jobs/[id]`.
 - Job detail page includes AI score panel (`ScorePanel`) and mock scoring API with persistence.
 
-## Current Focus: MVP 0.3 — Portfolio Readiness — TASK-023 Next
+## Current Focus: MVP 0.3 — Portfolio Readiness — TASK-025 Next
 
-The AI input pipeline work (TASK-021 series) and **TASK-022: Model Comparison & Final Recommendation** are **complete** and `tsc --noEmit` passes. The next step is **TASK-023: Job List Search / Filter / Sort**.
+The AI input pipeline work (TASK-021 series), **TASK-022: Model Comparison & Final Recommendation**, **TASK-023: Job List Search / Filter / Sort**, and **TASK-024: Dashboard Stats Cards** are **complete** and `tsc --noEmit` passes. The next step is **TASK-025: Portfolio UI Polish with shadcn-style UI**.
+
+### TASK-024 Dashboard Stats Cards — complete
+
+- Home page now shows a responsive row of **dashboard stats cards** above the filter bar / job list, replacing the old「職缺數量 / 資料來源」blocks.
+- New pure helper `src/lib/jobs/getDashboardStats.ts` (`getDashboardStats(jobs)` + `DashboardStats`) aggregates **total / high-match (≥80) / applied / interviewing / average score / risky** jobs, plus `unanalyzedJobs` and `recentJobs` (近 7 天) hints. It **makes no AI API calls** — it reuses TASK-023 `getJobDisplayScore` / `jobHasRisk`.
+- New presentational component `src/components/jobs/DashboardStatsCards.tsx`. Stats are computed over **all** jobs so they stay stable while filtering; existing search / filter / sort / status update / detail navigation are unchanged.
+
+### TASK-023 Job List Search / Filter / Sort — complete
+
+- Home page job list now supports **client-side search, status / score / risk filtering, and sorting** — no API calls and no AI changes.
+- **Search** (case-insensitive, trimmed, CJK-safe) covers title / company / location / employment type / source / url / raw text; shows「顯示 X / Y 個職缺」.
+- **Status tabs** (existing 未投遞 / 已投遞 / 面試中 / 不感興趣) were integrated into the new filter bar rather than duplicated.
+- **Score filter** (高 ≥80 / 中 60-79 / 低 <60 / 未分析) and **「只看有風險」** read from TASK-022 `buildAnalysisComparison` with a primary-analysis fallback, via new pure helpers `src/lib/jobs/getJobDisplayScore.ts` and `src/lib/jobs/filterJobs.ts`.
+- **Sort** by newest / oldest / score / company / title; an **active filters summary**,「清除篩選」button, and a dashed **empty state** were added. Status update and detail navigation are unchanged.
 
 ### TASK-022 Model Comparison & Final Recommendation — complete
 

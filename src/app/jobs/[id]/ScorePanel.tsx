@@ -36,6 +36,30 @@ async function readJsonSafely(response: Response) {
   }
 }
 
+// Pin locale + timezone so server and client render an identical string.
+// Using the runtime default (toLocaleString) causes a hydration mismatch
+// because Node and the browser resolve different locales/timezones.
+const GENERATED_AT_FORMAT = new Intl.DateTimeFormat('zh-TW', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hour12: false,
+  timeZone: 'Asia/Tokyo',
+})
+
+function formatGeneratedAt(value: string): string {
+  try {
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return value
+    return GENERATED_AT_FORMAT.format(date)
+  } catch {
+    return value
+  }
+}
+
 function AnalysisList({
   title,
   items,
@@ -162,7 +186,7 @@ export function ScorePanel({
 
             {generatedAt && (
               <p className="mt-3 text-xs text-slate-400">
-                產生時間：{new Date(generatedAt).toLocaleString()}
+                產生時間：{formatGeneratedAt(generatedAt)}
               </p>
             )}
           </div>
