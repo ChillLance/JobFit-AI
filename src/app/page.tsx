@@ -310,14 +310,23 @@ export default function HomePage() {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={loadJobs}
-            disabled={isLoading}
-            className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isLoading ? '重新整理中...' : '重新整理'}
-          </button>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/profiles"
+              className="rounded-xl border border-slate-700 bg-slate-800 px-5 py-3 font-semibold text-slate-100 transition hover:border-slate-600 hover:bg-slate-700"
+            >
+              Manage Profiles
+            </Link>
+
+            <button
+              type="button"
+              onClick={loadJobs}
+              disabled={isLoading}
+              className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isLoading ? '重新整理中...' : '重新整理'}
+            </button>
+          </div>
         </header>
 
         <DashboardStatsCards stats={dashboardStats} />
