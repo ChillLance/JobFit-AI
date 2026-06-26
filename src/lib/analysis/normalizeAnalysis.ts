@@ -299,7 +299,10 @@ export function normalizeAnalysisResult(
 }
 
 // Pick the best available analysis for a job and normalize it.
-// Priority: Gemini deepAnalysis > Groq groqAnalysis > local localAnalysis / legacy aiScore.
+// Priority: Gemini deepAnalysis > Groq groqAnalysis > local. The local source
+// is read as `localAnalysis ?? analysis ?? aiScore`, matching readRawSources in
+// compareAnalysis so both readers agree (redesign Phase 1). `analysis` is the
+// deprecated local write key; `aiScore` is the legacy mock score.
 export function getPrimaryAnalysis(job: AnalysisJobInput): AnalysisResult | null {
   if (isRecord(job.deepAnalysis)) {
     return normalizeAnalysisResult(
@@ -317,17 +320,15 @@ export function getPrimaryAnalysis(job: AnalysisJobInput): AnalysisResult | null
     )
   }
 
-  if (isRecord(job.localAnalysis)) {
-    return normalizeAnalysisResult(
-      job.localAnalysis,
-      'local',
-      PROVIDER_DEFAULT_MODEL.local
-    )
-  }
+  const localRaw =
+    (isRecord(job.localAnalysis) && job.localAnalysis) ||
+    (isRecord(job.analysis) && job.analysis) ||
+    (isRecord(job.aiScore) && job.aiScore) ||
+    null
 
-  if (isRecord(job.aiScore)) {
+  if (localRaw) {
     return normalizeAnalysisResult(
-      job.aiScore,
+      localRaw,
       'local',
       PROVIDER_DEFAULT_MODEL.local
     )

@@ -21,19 +21,14 @@ import {
 } from '@/lib/jobs/filterJobs'
 import { getDashboardStats } from '@/lib/jobs/getDashboardStats'
 import DashboardStatsCards from '@/components/jobs/DashboardStatsCards'
+import { getUiCopy } from '@/lib/uiCopy'
+import { useAppLanguage } from '@/lib/useAppLanguage'
 
 type JobStatus =
   | 'not_applied'
   | 'applied'
   | 'interview'
   | 'not_interested'
-
-const STATUS_LABELS: Record<JobStatus, string> = {
-  not_applied: '未投遞',
-  applied: '已投遞',
-  interview: '面試中',
-  not_interested: '不感興趣',
-}
 
 type Job = {
   id: string
@@ -71,39 +66,6 @@ function resolveStatus(status?: string): JobStatus {
 }
 
 type StatusFilter = 'all' | JobStatus
-
-const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
-  { value: 'all', label: '全部' },
-  { value: 'not_applied', label: '未投遞' },
-  { value: 'applied', label: '已投遞' },
-  { value: 'interview', label: '面試中' },
-  { value: 'not_interested', label: '不感興趣' },
-]
-
-const SCORE_FILTERS: { value: ScoreFilter; label: string }[] = [
-  { value: 'all', label: '全部分數' },
-  { value: 'high', label: '高匹配 (≥80)' },
-  { value: 'medium', label: '中匹配 (60-79)' },
-  { value: 'low', label: '低匹配 (<60)' },
-  { value: 'unanalyzed', label: '未分析' },
-]
-
-const SORT_OPTIONS: { value: JobSortKey; label: string }[] = [
-  { value: 'newest', label: '最新新增' },
-  { value: 'oldest', label: '最舊新增' },
-  { value: 'score_desc', label: '分數高到低' },
-  { value: 'score_asc', label: '分數低到高' },
-  { value: 'company_asc', label: '公司 A-Z' },
-  { value: 'title_asc', label: '職稱 A-Z' },
-]
-
-const SCORE_FILTER_LABELS: Record<ScoreFilter, string> = {
-  all: '全部分數',
-  high: '高匹配',
-  medium: '中匹配',
-  low: '低匹配',
-  unanalyzed: '未分析',
-}
 
 function countJobsByStatus(jobs: Job[]) {
   const counts: Record<StatusFilter, number> = {
@@ -184,6 +146,38 @@ function formatDate(value?: string) {
 }
 
 export default function HomePage() {
+  const { language } = useAppLanguage()
+  const copy = getUiCopy(language)
+  const h = copy.home
+  const statusCopy = copy.status
+
+  const statusFilters: { value: StatusFilter; label: string }[] = [
+    { value: 'all', label: statusCopy.all },
+    { value: 'not_applied', label: statusCopy.not_applied },
+    { value: 'applied', label: statusCopy.applied },
+    { value: 'interview', label: statusCopy.interview },
+    { value: 'not_interested', label: statusCopy.not_interested },
+  ]
+
+  const scoreFilters: { value: ScoreFilter; label: string }[] = [
+    { value: 'all', label: h.scoreFilters.all },
+    { value: 'high', label: h.scoreFilters.high },
+    { value: 'medium', label: h.scoreFilters.medium },
+    { value: 'low', label: h.scoreFilters.low },
+    { value: 'unanalyzed', label: h.scoreFilters.unanalyzed },
+  ]
+
+  const sortOptions: { value: JobSortKey; label: string }[] = [
+    { value: 'newest', label: h.sortOptions.newest },
+    { value: 'oldest', label: h.sortOptions.oldest },
+    { value: 'score_desc', label: h.sortOptions.scoreDesc },
+    { value: 'score_asc', label: h.sortOptions.scoreAsc },
+    { value: 'company_asc', label: h.sortOptions.companyAsc },
+    { value: 'title_asc', label: h.sortOptions.titleAsc },
+  ]
+
+  const scoreFilterShort = h.scoreFilterShort
+
   const [jobs, setJobs] = useState<Job[]>([])
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -303,11 +297,9 @@ export default function HomePage() {
       <div className="mx-auto max-w-5xl">
         <header className="mb-8 flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm text-slate-400">JobFit AI</p>
-            <h1 className="mt-2 text-3xl font-bold">職缺採集儀表板</h1>
-            <p className="mt-2 text-slate-400">
-              目前已採集 {jobs.length} 筆職缺資料
-            </p>
+            <p className="text-sm text-slate-400">{h.brand}</p>
+            <h1 className="mt-2 text-3xl font-bold">{h.title}</h1>
+            <p className="mt-2 text-slate-400">{h.subtitle(jobs.length)}</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -315,14 +307,14 @@ export default function HomePage() {
               href="/profiles"
               className="rounded-xl border border-slate-700 bg-slate-800 px-5 py-3 font-semibold text-slate-100 transition hover:border-slate-600 hover:bg-slate-700"
             >
-              Manage Profiles
+              {h.manageProfiles}
             </Link>
 
             <Link
               href="/profiles/import"
               className="rounded-xl border border-violet-600 bg-violet-600/10 px-5 py-3 font-semibold text-violet-200 transition hover:bg-violet-600/20"
             >
-              Import from AI
+              {h.importFromAi}
             </Link>
 
             <button
@@ -331,7 +323,7 @@ export default function HomePage() {
               disabled={isLoading}
               className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isLoading ? '重新整理中...' : '重新整理'}
+              {isLoading ? copy.common.refreshing : copy.common.refresh}
             </button>
           </div>
         </header>
@@ -353,14 +345,14 @@ export default function HomePage() {
                   htmlFor="job-search"
                   className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-400"
                 >
-                  搜尋
+                  {h.searchLabel}
                 </label>
                 <input
                   id="job-search"
                   type="text"
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="搜尋職稱、公司、地點..."
+                  placeholder={h.searchPlaceholder}
                   className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-500 focus:outline-none"
                 />
               </div>
@@ -370,7 +362,7 @@ export default function HomePage() {
                   htmlFor="score-filter"
                   className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-400"
                 >
-                  分數
+                  {h.scoreLabel}
                 </label>
                 <select
                   id="score-filter"
@@ -380,7 +372,7 @@ export default function HomePage() {
                   }
                   className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm text-white focus:border-blue-500 focus:outline-none lg:w-auto"
                 >
-                  {SCORE_FILTERS.map(({ value, label }) => (
+                  {scoreFilters.map(({ value, label }) => (
                     <option key={value} value={value}>
                       {label}
                     </option>
@@ -393,7 +385,7 @@ export default function HomePage() {
                   htmlFor="sort-select"
                   className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-400"
                 >
-                  排序
+                  {h.sortLabel}
                 </label>
                 <select
                   id="sort-select"
@@ -403,7 +395,7 @@ export default function HomePage() {
                   }
                   className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm text-white focus:border-blue-500 focus:outline-none lg:w-auto"
                 >
-                  {SORT_OPTIONS.map(({ value, label }) => (
+                  {sortOptions.map(({ value, label }) => (
                     <option key={value} value={value}>
                       {label}
                     </option>
@@ -418,12 +410,12 @@ export default function HomePage() {
                   onChange={(event) => setRiskOnly(event.target.checked)}
                   className="h-4 w-4 accent-blue-600"
                 />
-                只看有風險
+                {h.riskOnly}
               </label>
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
-              {STATUS_FILTERS.map(({ value, label }) => {
+              {statusFilters.map(({ value, label }) => {
                 const isActive = statusFilter === value
 
                 return (
@@ -448,34 +440,36 @@ export default function HomePage() {
 
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
               <span className="text-slate-400">
-                顯示 {filteredJobs.length} / {jobs.length} 個職缺
+                {h.showingCount(filteredJobs.length, jobs.length)}
               </span>
 
               {hasActiveFilters && (
                 <>
                   {searchQuery.trim() !== '' && (
                     <span className="text-slate-400">
-                      搜尋：「{searchQuery.trim()}」
+                      {h.searchActive(searchQuery.trim())}
                     </span>
                   )}
                   {statusFilter !== 'all' && (
                     <span className="text-slate-400">
-                      狀態：{STATUS_LABELS[statusFilter]}
+                      {h.statusFilter(statusCopy[statusFilter])}
                     </span>
                   )}
                   {scoreFilter !== 'all' && (
                     <span className="text-slate-400">
-                      分數：{SCORE_FILTER_LABELS[scoreFilter]}
+                      {h.scoreFilter(scoreFilterShort[scoreFilter])}
                     </span>
                   )}
-                  {riskOnly && <span className="text-slate-400">只看有風險</span>}
+                  {riskOnly && (
+                    <span className="text-slate-400">{h.riskOnly}</span>
+                  )}
 
                   <button
                     type="button"
                     onClick={clearFilters}
                     className="rounded-lg border border-slate-600 px-3 py-1 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-800"
                   >
-                    清除篩選
+                    {copy.common.clearFilters}
                   </button>
                 </>
               )}
@@ -489,18 +483,16 @@ export default function HomePage() {
               ◎
             </div>
             <h2 className="mt-4 text-lg font-bold text-slate-200">
-              目前還沒有職缺資料
+              {h.emptyTitle}
             </h2>
-            <p className="mt-2 text-sm text-slate-400">
-              請先使用 Chrome Extension 採集職缺，採集後回到這裡點「重新整理」。
-            </p>
+            <p className="mt-2 text-sm text-slate-400">{h.emptyDescription}</p>
             <button
               type="button"
               onClick={loadJobs}
               disabled={isLoading}
               className="mt-5 rounded-xl border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isLoading ? '重新整理中...' : '重新整理'}
+              {isLoading ? copy.common.refreshing : copy.common.refresh}
             </button>
           </section>
         ) : filteredJobs.length === 0 ? (
@@ -509,29 +501,29 @@ export default function HomePage() {
               ⌕
             </div>
             <h2 className="mt-4 text-lg font-bold text-slate-200">
-              找不到符合條件的職缺
+              {h.noMatchTitle}
             </h2>
-            <p className="mt-2 text-sm text-slate-400">
-              目前的搜尋與篩選條件沒有對應的職缺，請調整條件或清除篩選。
-            </p>
+            <p className="mt-2 text-sm text-slate-400">{h.noMatchDescription}</p>
             <button
               type="button"
               onClick={clearFilters}
               className="mt-5 rounded-xl border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-800"
             >
-              清除篩選
+              {copy.common.clearFilters}
             </button>
           </section>
         ) : (
           <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             {filteredJobs.map((job) => {
               const status = resolveStatus(job.status)
-              // Resolve analysis once. Local results may live under `analysis`,
-              // so normalize the input the shared helpers expect.
+              // Pass raw analysis fields straight through; getPrimaryAnalysis /
+              // buildAnalysisComparison own the localAnalysis ?? analysis ?? aiScore
+              // fallback, so the list, filters, and dashboard all agree.
               const analysisInput = {
                 deepAnalysis: job.deepAnalysis,
                 groqAnalysis: job.groqAnalysis,
-                localAnalysis: job.localAnalysis ?? job.analysis,
+                localAnalysis: job.localAnalysis,
+                analysis: job.analysis,
                 aiScore: job.aiScore,
               }
               const primary = getPrimaryAnalysis(analysisInput)
@@ -546,8 +538,8 @@ export default function HomePage() {
                 job.location,
                 job.employmentType,
                 job.salary,
-                job.source ? `來源：${job.source}` : null,
-                `採集：${formatDate(job.collectedAt)}`,
+                job.source ? `${h.sourcePrefix}${job.source}` : null,
+                `${h.collectedPrefix}${formatDate(job.collectedAt)}`,
               ].filter((value): value is string => Boolean(value))
 
               return (
@@ -557,12 +549,12 @@ export default function HomePage() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <h2 className="line-clamp-2 text-lg font-bold leading-snug">
-                      {job.title || '未命名職缺'}
+                      {job.title || copy.common.unnamedJob}
                     </h2>
                     <span
                       className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${getStatusBadgeClass(status)}`}
                     >
-                      {STATUS_LABELS[status]}
+                      {statusCopy[status]}
                     </span>
                   </div>
 
@@ -606,9 +598,11 @@ export default function HomePage() {
                     ) : (
                       <>
                         <span className="text-sm font-semibold text-slate-300">
-                          AI 適合度
+                          {h.aiFitScore}
                         </span>
-                        <span className="text-sm text-slate-500">待分析</span>
+                        <span className="text-sm text-slate-500">
+                          {h.pendingAnalysis}
+                        </span>
                       </>
                     )}
                   </div>
@@ -624,7 +618,7 @@ export default function HomePage() {
                       href={`/jobs/${encodeURIComponent(job.id)}`}
                       className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500"
                     >
-                      查看詳情 / 分析中心
+                      {h.viewDetails}
                     </Link>
 
                     {job.url && (
@@ -634,7 +628,7 @@ export default function HomePage() {
                         rel="noopener noreferrer"
                         className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-800"
                       >
-                        原始頁面
+                        {h.originalPage}
                       </a>
                     )}
 
@@ -644,7 +638,9 @@ export default function HomePage() {
                       disabled={deletingId === job.id}
                       className="ml-auto rounded-xl border border-red-500/60 px-4 py-2 text-sm font-semibold text-red-300 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {deletingId === job.id ? '刪除中...' : '刪除'}
+                      {deletingId === job.id
+                        ? copy.common.deleting
+                        : copy.common.delete}
                     </button>
                   </div>
                 </article>

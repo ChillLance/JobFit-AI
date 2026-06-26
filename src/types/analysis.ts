@@ -57,10 +57,13 @@ export type AnalysisResult = {
 // Field names are intentionally loose; normalizeAnalysisResult maps them to AnalysisResult.
 export type RawAnalysis = Record<string, unknown> | null | undefined
 
-// Minimal job shape that getPrimaryAnalysis needs to pick the best available analysis.
+// Minimal job shape that getPrimaryAnalysis needs to pick the best available
+// analysis. The local result may live under `localAnalysis` (canonical),
+// `analysis` (deprecated write key), or `aiScore` (legacy mock).
 export type AnalysisJobInput = {
   deepAnalysis?: unknown
   groqAnalysis?: unknown
   localAnalysis?: unknown
+  analysis?: unknown
   aiScore?: unknown
 }
