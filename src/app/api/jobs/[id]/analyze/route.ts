@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server'
-import path from 'path'
-import { promises as fs } from 'fs'
-import {
-  analyzeJobLocally,
-  type LocalAnalyzableJob,
-} from '@/lib/analysis/localAnalysis'
+import { analyzeJobLocally } from '@/lib/analysis/localAnalysis'
+import { findJob, updateJob } from '@/lib/jobs/jobsRepository'
+import { resolveAppLanguage, type AppLanguage } from '@/lib/appLanguage'
 import {
   defaultJapanCareerProfile,
   JAPAN_CAREER_PROFILE_VERSION,
@@ -20,29 +17,6 @@ type Params = {
   params: Promise<{
     id: string
   }>
-}
-
-type Job = LocalAnalyzableJob & {
-  id: string
-}
-
-const jobsFilePath = path.join(process.cwd(), 'jobs_temp.json')
-
-async function readJsonFile<T>(filePath: string, label: string): Promise<T> {
-  try {
-    const content = await fs.readFile(filePath, 'utf-8')
-    if (!content.trim()) {
-      throw new Error(`${label} is empty`)
-    }
-    return JSON.parse(content) as T
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    throw new Error(`Failed to read ${label}: ${message}`)
-  }
-}
-
-async function writeJsonFile<T>(filePath: string, data: T): Promise<void> {
-  await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8')
 }
 
 // Defensive shape check: require the fields the analyzer relies on. Anything
@@ -67,16 +41,25 @@ function isValidProfile(value: unknown): value is JapanCareerProfile {
   )
 }
 
-async function resolveProfile(request: Request): Promise<JapanCareerProfile> {
+async function parseAnalyzeRequest(request: Request): Promise<{
+  profile: JapanCareerProfile
+  language: AppLanguage
+}> {
+  let profile = defaultJapanCareerProfile
+  let language = resolveAppLanguage(undefined)
   try {
-    const body = (await request.json()) as { profile?: unknown } | null
-    if (body && typeof body === 'object' && isValidProfile(body.profile)) {
-      return body.profile
+    const body = (await request.json()) as {
+      profile?: unknown
+      language?: unknown
+    } | null
+    if (body && typeof body === 'object') {
+      if (isValidProfile(body.profile)) profile = body.profile
+      language = resolveAppLanguage(body.language)
     }
   } catch {
-    // No / invalid body — fall back to default below.
+    // No / invalid body — fall back to defaults above.
   }
-  return defaultJapanCareerProfile
+  return { profile, language }
 }
 
 export async function POST(request: Request, context: Params) {
@@ -87,25 +70,7 @@ export async function POST(request: Request, context: Params) {
       return NextResponse.json({ error: 'Missing job id' }, { status: 400 })
     }
 
-    let jobsRaw: unknown
-    try {
-      jobsRaw = await readJsonFile<unknown>(jobsFilePath, 'jobs_temp.json')
-    } catch (error) {
-      return NextResponse.json(
-        { error: error instanceof Error ? error.message : String(error) },
-        { status: 500 }
-      )
-    }
-
-    if (!Array.isArray(jobsRaw)) {
-      return NextResponse.json(
-        { error: 'jobs_temp.json is not an array' },
-        { status: 500 }
-      )
-    }
-
-    const jobs = jobsRaw as Job[]
-    const job = jobs.find((j) => j?.id === id)
+    const job = findJob(id)
 
     if (!job) {
       return NextResponse.json(
@@ -114,18 +79,14 @@ export async function POST(request: Request, context: Params) {
       )
     }
 
-    const profile = await resolveProfile(request)
+    const { profile, language } = await parseAnalyzeRequest(request)
+    // Parsed for upcoming AI output language (TASK-2D); local analysis unchanged.
+    void language
+    // The canonical Job is a superset of LocalAnalyzableJob.
     const result = analyzeJobLocally(job, profile)
 
-    const updatedJobs = jobs.map((j) =>
-      j.id === id ? { ...j, analysis: result } : j
-    )
-
-    try {
-      await writeJsonFile(jobsFilePath, updatedJobs)
-    } catch (error) {
-      console.error('Failed to persist local analysis result:', error)
-    }
+    // Persist under the canonical `localAnalysis` key (redesign Phase 1).
+    updateJob(id, { localAnalysis: result as unknown as Record<string, unknown> })
 
     return NextResponse.json(result)
   } catch (error) {

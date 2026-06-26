@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
-import path from 'path'
-import { promises as fs } from 'fs'
 import { hasGeminiApiKey } from '@/lib/aiConfig'
+import { findJob, updateJob } from '@/lib/jobs/jobsRepository'
 import {
   buildAnalysisInput,
   buildJobFitPrompt,
@@ -10,6 +9,7 @@ import {
   type InputCoverageReport,
   type JobDigest,
 } from '@/lib/analysis/compactInput'
+import { resolveAppLanguage, type AppLanguage } from '@/lib/appLanguage'
 import {
   defaultJapanCareerProfile,
   flattenProfileForCompactInput,
@@ -65,6 +65,7 @@ type DeepAnalysisResponse = {
     // only; never the full job text, cleaned text, or full evidence text.
     inputStats: InputStats
     inputCoverage: InputCoverageReport
+    outputLanguage?: AppLanguage
   }
 }
 
@@ -116,23 +117,6 @@ function buildInputStats(input: CompactAnalysisInput): InputStats {
   }
 }
 
-type Job = {
-  id: string
-  title?: string
-  url?: string
-  rawText?: string
-  source?: string
-  collectedAt?: string
-  company?: string
-  location?: string
-  salary?: string
-  employmentType?: string
-  deepAnalysis?: DeepAnalysisResponse
-  [key: string]: unknown
-}
-
-const jobsFilePath = path.join(process.cwd(), 'jobs_temp.json')
-
 // Defensive shape check: require the fields the analysis baseline relies on.
 function isValidProfile(value: unknown): value is JapanCareerProfile {
   if (!value || typeof value !== 'object') return false
@@ -148,23 +132,6 @@ function isValidProfile(value: unknown): value is JapanCareerProfile {
   )
 }
 
-async function readJsonFile<T>(filePath: string, label: string): Promise<T> {
-  try {
-    const content = await fs.readFile(filePath, 'utf-8')
-    if (!content.trim()) {
-      throw new Error(`${label} is empty`)
-    }
-    return JSON.parse(content) as T
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    throw new Error(`Failed to read ${label}: ${message}`)
-  }
-}
-
-async function writeJsonFile<T>(filePath: string, data: T): Promise<void> {
-  await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8')
-}
-
 function clampScore(n: number): number {
   if (Number.isNaN(n)) return 0
   return Math.max(0, Math.min(100, Math.round(n)))
@@ -173,7 +140,8 @@ function clampScore(n: number): number {
 // TASK-016: decide whether an existing deepAnalysis can be served from cache.
 function isDeepCacheValid(
   deepAnalysis: DeepAnalysisResponse | undefined,
-  profileVersion: string | number
+  profileVersion: string | number,
+  language: AppLanguage
 ): boolean {
   const meta = deepAnalysis?.metadata as
     | (DeepAnalysisResponse['metadata'] & { cacheExpiresAt?: string })
@@ -191,6 +159,9 @@ function isDeepCacheValid(
   }
   if (strategyMeta.inputMode !== 'digest') return false
   if (strategyMeta.tokenStrategy !== 'relevant_job_digest_v1') return false
+
+  const cachedLanguage = meta.outputLanguage ?? 'zh-TW'
+  if (cachedLanguage !== language) return false
 
   const now = Date.now()
 
@@ -415,7 +386,8 @@ function normalizeDeepAnalysis(
   profileVersion: string | number,
   model: string,
   analysisInput: CompactAnalysisInput,
-  profile: JapanCareerProfile
+  profile: JapanCareerProfile,
+  language: AppLanguage
 ): DeepAnalysisResponse {
   const createdAtDate = new Date()
   const createdAt = createdAtDate.toISOString()
@@ -472,6 +444,7 @@ function normalizeDeepAnalysis(
       analyzedAt: createdAt,
       inputStats: buildInputStats(analysisInput),
       inputCoverage: analysisInput.inputCoverage,
+      outputLanguage: language,
     },
   }
 }
@@ -484,42 +457,26 @@ export async function POST(request: Request, context: Params) {
       return NextResponse.json({ error: 'Missing job id' }, { status: 400 })
     }
 
-    // Parse optional { force, profile } body. Missing/invalid body means
-    // force=false and the default profile baseline.
+    // Parse optional { force, profile, language } body. Missing/invalid body
+    // means force=false, default profile baseline, and DEFAULT_APP_LANGUAGE.
     let force = false
     let profile: JapanCareerProfile = defaultJapanCareerProfile
+    let language: AppLanguage = resolveAppLanguage(undefined)
     try {
       const body = (await request.json()) as {
         force?: unknown
         profile?: unknown
+        language?: unknown
       } | null
       if (body && typeof body === 'object') {
         if (body.force === true) force = true
         if (isValidProfile(body.profile)) profile = body.profile
+        language = resolveAppLanguage(body.language)
       }
     } catch {
       force = false
     }
-
-    let jobsRaw: unknown
-    try {
-      jobsRaw = await readJsonFile<unknown>(jobsFilePath, 'jobs_temp.json')
-    } catch (error) {
-      return NextResponse.json(
-        { error: error instanceof Error ? error.message : String(error) },
-        { status: 500 }
-      )
-    }
-
-    if (!Array.isArray(jobsRaw)) {
-      return NextResponse.json(
-        { error: 'jobs_temp.json is not an array' },
-        { status: 500 }
-      )
-    }
-
-    const jobs = jobsRaw as Job[]
-    const job = jobs.find((j) => j?.id === id)
+    const job = findJob(id)
 
     if (!job) {
       return NextResponse.json(
@@ -528,12 +485,17 @@ export async function POST(request: Request, context: Params) {
       )
     }
 
+    const cachedDeep = job.deepAnalysis as DeepAnalysisResponse | undefined
+
     // Profile version is derived from the active profile so the cache is
     // invalidated whenever the user switches or edits their profile (TASK-029).
     const profileVersion = `${profile.id}@${profile.updatedAt}`
 
     // TASK-016: serve cached deepAnalysis when valid and not force-refreshed.
-    if (force !== true && isDeepCacheValid(job.deepAnalysis, profileVersion)) {
+    if (
+      force !== true &&
+      isDeepCacheValid(cachedDeep, profileVersion, language)
+    ) {
       return new Response(
         JSON.stringify({
           ok: true,
@@ -580,6 +542,7 @@ export async function POST(request: Request, context: Params) {
     )
     const prompt = buildJobFitPrompt(analysisInput, {
       profileContext: profileToAnalysisContext(profile),
+      language,
     })
 
     let geminiText: string
@@ -630,20 +593,14 @@ export async function POST(request: Request, context: Params) {
       profileVersion,
       model,
       analysisInput,
-      profile
+      profile,
+      language
     )
 
-    const updatedJobs = jobs.map((j) => {
-      if (j.id !== id) return j
-
-      return {
-        ...j,
-        deepAnalysis: result,
-      }
-    })
-
     try {
-      await writeJsonFile(jobsFilePath, updatedJobs)
+      updateJob(id, {
+        deepAnalysis: result as unknown as Record<string, unknown>,
+      })
     } catch (error) {
       console.error('Failed to persist deep analysis result:', error)
 

@@ -31,13 +31,16 @@ export type Job = {
   // Application tracking.
   status?: JobStatus
   statusUpdatedAt?: string
-  // Analysis results.
-  // NOTE (Phase 1): the existing provider-specific keys are kept as-is so behavior
-  // is unchanged. Phase 2 unifies these into `analyses: { local?, gemini?, groq? }`
-  // and reconciles the local write key (`analysis`) with the reader. Kept loose
-  // (Record) here; consumers normalize via `normalizeAnalysisResult`.
-  analysis?: Record<string, unknown> // local rule-based result
-  aiScore?: Record<string, unknown> // legacy local / mock score
+  // Analysis results. Kept as flat per-provider keys (Phase 1 decision in
+  // docs/REDESIGN.md); consumers normalize via `normalizeAnalysisResult`. The
+  // nested `analyses: { local?, gemini?, groq? }` grouping is deferred to Phase 2
+  // when the SQLite schema is defined.
+  localAnalysis?: Record<string, unknown> // local rule-based result (canonical key)
   deepAnalysis?: Record<string, unknown> // Gemini
   groqAnalysis?: Record<string, unknown> // Groq
+  // Deprecated, read-only back-compat: older records may still carry these. New
+  // code never writes them. `analysis` was the previous local key; `aiScore` was
+  // the legacy mock score. Readers fall back to them so old data is not lost.
+  analysis?: Record<string, unknown>
+  aiScore?: Record<string, unknown>
 }
