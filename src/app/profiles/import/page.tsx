@@ -4,10 +4,12 @@ import Link from 'next/link'
 import { useRef, useState } from 'react'
 import {
   JAPAN_CAREER_PROFILE_VERSION,
-  PROFILE_BUILDER_PROMPT_ZH,
+  PROFILE_BUILDER_PROMPTS,
   addProfile,
   type JapanCareerProfile,
 } from '@/lib/profile'
+import { getUiCopy } from '@/lib/uiCopy'
+import { useAppLanguage } from '@/lib/useAppLanguage'
 
 function nowIso(): string {
   return new Date().toISOString()
@@ -75,15 +77,11 @@ function validateProfileShape(value: unknown): ValidationResult {
 
 type Status = { type: 'success' | 'error'; text: string } | null
 
-const STEPS = [
-  '複製下方的提示詞 (Prompt)。',
-  '貼到你的 AI 助手（ChatGPT / Gemini / Claude）。',
-  '在該 AI 工具中上傳或貼上你的履歷 / 職務經歷書 / 作品集等資料。',
-  '複製 AI 產生的 JapanCareerProfile JSON。',
-  '貼到下方欄位並點「Import Profile」匯入。',
-]
-
 export default function ImportProfilePage() {
+  const { language } = useAppLanguage()
+  const copy = getUiCopy(language)
+  const i = copy.profileImport
+
   const [copyStatus, setCopyStatus] = useState<Status>(null)
   const [importStatus, setImportStatus] = useState<Status>(null)
   const [importError, setImportError] = useState<string | null>(null)
@@ -91,6 +89,7 @@ export default function ImportProfilePage() {
   const [importedName, setImportedName] = useState<string | null>(null)
 
   const promptRef = useRef<HTMLTextAreaElement | null>(null)
+  const selectedPrompt = PROFILE_BUILDER_PROMPTS[language]
 
   async function handleCopyPrompt() {
     setCopyStatus(null)
@@ -102,7 +101,7 @@ export default function ImportProfilePage() {
 
     if (canUseClipboard) {
       try {
-        await navigator.clipboard.writeText(PROFILE_BUILDER_PROMPT_ZH)
+        await navigator.clipboard.writeText(selectedPrompt)
         setCopyStatus({ type: 'success', text: '已複製提示詞到剪貼簿。' })
         return
       } catch {
@@ -181,21 +180,16 @@ export default function ImportProfilePage() {
             href="/profiles"
             className="text-sm text-slate-400 transition hover:text-slate-200"
           >
-            ← 回 Profiles
+            {copy.common.backToProfiles}
           </Link>
-          <h1 className="mt-2 text-3xl font-bold">
-            Import Profile from External AI
-          </h1>
-          <p className="mt-3 max-w-2xl leading-7 text-slate-400">
-            JobFit-AI 不需要你的原始履歷。你可以在自己信任的 AI 工具中處理敏感的個人文件，
-            只把整理後、結構化的 Profile JSON 貼回來匯入。你的履歷原文不會經過 JobFit-AI。
-          </p>
+          <h1 className="mt-2 text-3xl font-bold">{i.title}</h1>
+          <p className="mt-3 max-w-2xl leading-7 text-slate-400">{i.description}</p>
         </header>
 
         <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg">
-          <h2 className="text-lg font-bold">操作步驟</h2>
+          <h2 className="text-lg font-bold">{i.stepsTitle}</h2>
           <ol className="mt-3 space-y-2">
-            {STEPS.map((step, index) => (
+            {i.steps.map((step, index) => (
               <li key={index} className="flex gap-3 text-sm leading-6 text-slate-300">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-700 bg-slate-800 text-xs font-semibold text-slate-200">
                   {index + 1}
@@ -209,19 +203,19 @@ export default function ImportProfilePage() {
         <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-bold">1. 複製提示詞</h2>
-              <p className="mt-1 text-sm text-slate-400">
-                貼到 ChatGPT / Gemini / Claude，並附上你的求職資料。
-              </p>
+              <h2 className="text-lg font-bold">{i.copyPromptTitle}</h2>
+              <p className="mt-1 text-sm text-slate-400">{i.copyPromptDesc}</p>
             </div>
             <button
               type="button"
               onClick={handleCopyPrompt}
               className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500"
             >
-              Copy Prompt
+              {i.copyPromptButton}
             </button>
           </div>
+
+          <p className="mt-4 text-sm text-slate-500">{i.promptFollowsAppLanguage}</p>
 
           {copyStatus && (
             <div
@@ -237,7 +231,7 @@ export default function ImportProfilePage() {
 
           <textarea
             ref={promptRef}
-            value={PROFILE_BUILDER_PROMPT_ZH}
+            value={selectedPrompt}
             readOnly
             spellCheck={false}
             onFocus={(e) => e.currentTarget.select()}
@@ -246,10 +240,8 @@ export default function ImportProfilePage() {
         </section>
 
         <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg">
-          <h2 className="text-lg font-bold">2. 貼上並匯入 JSON</h2>
-          <p className="mt-1 text-sm text-slate-400">
-            把 AI 產生的 JapanCareerProfile JSON 貼到下方，然後點「Import Profile」。
-          </p>
+          <h2 className="text-lg font-bold">{i.pasteJsonTitle}</h2>
+          <p className="mt-1 text-sm text-slate-400">{i.pasteJsonDesc}</p>
 
           <textarea
             value={jsonText}
@@ -271,14 +263,14 @@ export default function ImportProfilePage() {
 
           {importStatus?.type === 'success' && (
             <div className="mt-3 rounded-xl border border-emerald-700 bg-emerald-950/40 p-4 text-sm text-emerald-100">
-              <p className="font-bold">匯入成功</p>
+              <p className="font-bold">{i.importSuccessTitle}</p>
               <p className="mt-1">{importStatus.text}</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Link
                   href="/profiles"
                   className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
                 >
-                  前往 Profiles 查看
+                  {i.goToProfiles}
                 </Link>
                 {importedName && (
                   <button
@@ -290,7 +282,7 @@ export default function ImportProfilePage() {
                     }}
                     className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-800"
                   >
-                    再匯入一個
+                    {i.importAnother}
                   </button>
                 )}
               </div>
@@ -303,13 +295,13 @@ export default function ImportProfilePage() {
               onClick={handleImport}
               className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500"
             >
-              Import Profile
+              {i.importButton}
             </button>
             <Link
               href="/profiles"
               className="rounded-xl border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-800"
             >
-              返回 Profiles
+              {i.backToProfiles}
             </Link>
           </div>
         </section>

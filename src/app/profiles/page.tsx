@@ -13,6 +13,8 @@ import {
   type JapanCareerProfile,
   type ProfileStore,
 } from '@/lib/profile'
+import { getUiCopy } from '@/lib/uiCopy'
+import { useAppLanguage } from '@/lib/useAppLanguage'
 
 function nowIso(): string {
   return new Date().toISOString()
@@ -161,13 +163,18 @@ const TONE_BUTTON =
   'rounded-lg border px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50'
 
 export default function ProfilesPage() {
+  const { language } = useAppLanguage()
+  const copy = getUiCopy(language)
+  const p = copy.profiles
+
   const [store, setStore] = useState<ProfileStore | null>(null)
   const [toast, setToast] = useState<Toast>(null)
   const [editor, setEditor] = useState<EditorState>(null)
 
   // profileStore relies on localStorage, so we only read it on the client
-  // after mount to avoid any SSR/hydration mismatch.
+  // after mount to avoid any SSR/hydration mismatch. setState here is intentional.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStore(getProfileStore())
   }, [])
 
@@ -319,7 +326,7 @@ export default function ProfilesPage() {
     return (
       <main className="min-h-screen bg-slate-950 px-6 py-8 text-white">
         <div className="mx-auto max-w-5xl">
-          <p className="text-slate-400">載入 Profile 中...</p>
+          <p className="text-slate-400">{p.loading}</p>
         </div>
       </main>
     )
@@ -339,19 +346,16 @@ export default function ProfilesPage() {
                 href="/"
                 className="text-sm text-slate-400 transition hover:text-slate-200"
               >
-                ← 回儀表板
+                {copy.common.backToDashboard}
               </Link>
-              <h1 className="mt-2 text-3xl font-bold">Career Profiles</h1>
-              <p className="mt-2 max-w-2xl text-slate-400">
-                Manage multiple Japan career profiles and choose which one
-                should be used for job-fit analysis.
-              </p>
+              <h1 className="mt-2 text-3xl font-bold">{p.title}</h1>
+              <p className="mt-2 max-w-2xl text-slate-400">{p.description}</p>
             </div>
           </div>
 
           <div className="rounded-xl border border-emerald-800 bg-emerald-950/30 px-4 py-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-emerald-400">
-              使用中的 Profile (Active)
+              {p.activeProfileLabel}
             </p>
             <p className="mt-1 text-lg font-bold text-emerald-100">
               {activeProfile?.name ?? '—'}
@@ -364,27 +368,27 @@ export default function ProfilesPage() {
               onClick={handleCreateBlank}
               className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500"
             >
-              Create Blank Profile
+              {p.createBlank}
             </button>
             <button
               type="button"
               onClick={handleDuplicateActive}
               className="rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-100 transition hover:border-slate-600 hover:bg-slate-700"
             >
-              Duplicate Active Profile
+              {p.duplicateActive}
             </button>
             <Link
               href="/profiles/import"
               className="rounded-xl border border-violet-600 bg-violet-600/10 px-4 py-2.5 text-sm font-semibold text-violet-200 transition hover:bg-violet-600/20"
             >
-              Import from AI
+              {p.importFromAi}
             </Link>
             <button
               type="button"
               onClick={handleReset}
               className="ml-auto rounded-xl border border-red-500/60 px-4 py-2.5 text-sm font-semibold text-red-300 transition hover:bg-red-500/10"
             >
-              Reset to Default Profiles
+              {p.resetDefault}
             </button>
           </div>
         </header>
@@ -420,11 +424,11 @@ export default function ProfilesPage() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <h2 className="text-lg font-bold leading-snug">
-                    {profile.name || '未命名 Profile'}
+                    {profile.name || p.unnamedProfile}
                   </h2>
                   {isActive && (
                     <span className="shrink-0 rounded-full border border-emerald-700 bg-emerald-950/50 px-2.5 py-1 text-xs font-semibold text-emerald-300">
-                      Active
+                      {copy.common.active}
                     </span>
                   )}
                 </div>
@@ -437,24 +441,24 @@ export default function ProfilesPage() {
 
                 <dl className="mt-4 space-y-2 text-sm">
                   <ProfileField
-                    label="Desired roles"
+                    label={p.fields.desiredRoles}
                     value={profile.target.desiredRoles}
                   />
                   <ProfileField
-                    label="Desired locations"
+                    label={p.fields.desiredLocations}
                     value={profile.target.desiredLocations}
                   />
                   <ProfileField
-                    label="Japanese level"
+                    label={p.fields.japaneseLevel}
                     value={profile.languages.japaneseLevel || '—'}
                   />
                   <ProfileField
-                    label="Employment types"
+                    label={p.fields.employmentTypes}
                     value={profile.conditions.acceptableEmploymentTypes}
                   />
                   <div>
                     <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Career goal / vision
+                      {p.fields.careerGoal}
                     </dt>
                     <dd className="mt-0.5 line-clamp-3 text-slate-300">
                       {careerSummary}
@@ -463,7 +467,7 @@ export default function ProfilesPage() {
                 </dl>
 
                 <p className="mt-4 text-xs text-slate-500">
-                  最後更新：{formatDate(profile.updatedAt)}
+                  {p.lastUpdated}{formatDate(profile.updatedAt)}
                 </p>
 
                 <div className="mt-auto flex flex-wrap gap-2 pt-4">
@@ -473,35 +477,35 @@ export default function ProfilesPage() {
                     disabled={isActive}
                     className={`${TONE_BUTTON} border-emerald-600 text-emerald-300 hover:bg-emerald-500/10`}
                   >
-                    {isActive ? '使用中' : 'Set Active'}
+                    {isActive ? p.inUse : p.setActive}
                   </button>
                   <button
                     type="button"
                     onClick={() => handleDuplicateOne(profile)}
                     className={`${TONE_BUTTON} border-slate-600 text-slate-200 hover:bg-slate-800`}
                   >
-                    Duplicate
+                    {p.duplicate}
                   </button>
                   <button
                     type="button"
                     onClick={() => openEditor(profile)}
                     className={`${TONE_BUTTON} border-slate-600 text-slate-200 hover:bg-slate-800`}
                   >
-                    Edit JSON
+                    {p.editJson}
                   </button>
                   <button
                     type="button"
                     onClick={() => handleExport(profile)}
                     className={`${TONE_BUTTON} border-slate-600 text-slate-200 hover:bg-slate-800`}
                   >
-                    Export JSON
+                    {p.exportJson}
                   </button>
                   <button
                     type="button"
                     onClick={() => handleDelete(profile)}
                     className={`${TONE_BUTTON} border-red-500/60 text-red-300 hover:bg-red-500/10`}
                   >
-                    Delete
+                    {p.delete}
                   </button>
                 </div>
               </article>
@@ -515,7 +519,7 @@ export default function ProfilesPage() {
           <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
               <div>
-                <h2 className="text-lg font-bold">Edit Profile JSON</h2>
+                <h2 className="text-lg font-bold">{p.editModalTitle}</h2>
                 <p className="mt-0.5 text-xs text-slate-400">
                   {editor.profileName}
                 </p>
@@ -525,7 +529,7 @@ export default function ProfilesPage() {
                 onClick={() => setEditor(null)}
                 className="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 transition hover:bg-slate-800"
               >
-                關閉
+                {copy.common.close}
               </button>
             </div>
 
@@ -553,14 +557,14 @@ export default function ProfilesPage() {
                 onClick={() => setEditor(null)}
                 className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-800"
               >
-                Cancel
+                {copy.common.cancel}
               </button>
               <button
                 type="button"
                 onClick={handleEditorSave}
                 className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
               >
-                Save
+                {copy.common.save}
               </button>
             </div>
           </div>

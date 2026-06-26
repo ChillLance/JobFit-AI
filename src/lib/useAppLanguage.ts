@@ -26,6 +26,9 @@ export function useAppLanguage() {
     if (!canUseLocalStorage()) return
     const stored = window.localStorage.getItem(APP_LANGUAGE_STORAGE_KEY)
     if (isAppLanguage(stored)) {
+      // Hydration-safe init: SSR renders the default, then we sync the stored
+      // browser preference once on mount. setState here is intentional.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLanguageState(stored)
     }
   }, [])

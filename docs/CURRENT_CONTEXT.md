@@ -17,7 +17,13 @@ Also in place from earlier work:
 
 - Chrome Extension collects job postings into `jobs_temp.json`.
 - Home page lists jobs with AI score/level and links to `/jobs/[id]`.
-- Job detail page includes AI score panel (`ScorePanel`) and mock scoring API with persistence.
+- Job detail page uses the **Analyze Fit panel** (`AnalyzeFitPanel`) for local /
+  Gemini / Groq analysis. The old mock `ScorePanel` + `/api/jobs/[id]/score`
+  route were removed in the Phase 1 redesign (see `docs/REDESIGN.md`).
+- The UI is fully **multilingual (zh-TW / en / ja)** via `src/lib/uiCopy.ts` +
+  `useAppLanguage` — this is active, not deferred.
+- All `jobs_temp.json` access goes through `src/lib/jobs/jobsRepository.ts`, and
+  every `Job` is the canonical type in `src/types/domain.ts`.
 
 ## Current Focus: MVP 0.3 — Portfolio Readiness — TASK-025 Next
 

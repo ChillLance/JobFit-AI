@@ -400,12 +400,14 @@ Refresh the home page after collecting to load jobs via `GET /api/jobs`.
 | `GET` | `/api/jobs` | List jobs (home page) |
 | `DELETE` | `/api/jobs/[id]` | Delete job |
 | `PATCH` | `/api/jobs/[id]/status` | Update application status |
-| `POST` | `/api/jobs/[id]/score` | Mock quick score (`aiScore`) — API exists; detail UI uses Analyze Fit panel instead |
-| `POST` | `/api/jobs/[id]/analyze` | Local profile-driven analysis |
-| `POST` | `/api/jobs/[id]/analyze/deep` | Gemini analysis |
-| `POST` | `/api/jobs/[id]/analyze/groq` | Groq analysis |
+| `POST` | `/api/jobs/[id]/analyze` | Local profile-driven analysis (writes `localAnalysis`) |
+| `POST` | `/api/jobs/[id]/analyze/deep` | Gemini analysis (writes `deepAnalysis`) |
+| `POST` | `/api/jobs/[id]/analyze/groq` | Groq analysis (writes `groqAnalysis`) |
 
-Job detail reads `jobs_temp.json` on the server (no `GET /api/jobs/[id]`).
+All routes go through `src/lib/jobs/jobsRepository.ts`; job detail reads it on
+the server (no `GET /api/jobs/[id]`). The legacy `POST /api/jobs/[id]/score`
+mock route and its `ScorePanel` were removed (the detail UI uses the Analyze
+Fit panel); old `aiScore` data is still read as a back-compat fallback.
 
 ---
 
@@ -414,7 +416,10 @@ Job detail reads `jobs_temp.json` on the server (no `GET /api/jobs/[id]`).
 ```text
 JobFit-AI/
 ├── docs/
+│   ├── ARCHITECTURE.md
 │   ├── CURRENT_CONTEXT.md
+│   ├── DEPLOYMENT.md
+│   ├── QA.md
 │   └── TASKS.md
 ├── public/
 ├── src/
@@ -595,5 +600,11 @@ This project demonstrates:
 ---
 
 ## Maintainer Docs
+
+For architecture overview, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+For manual QA and demo validation, see [docs/QA.md](docs/QA.md).
+
+For local/production run and deployment notes, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 For task backlog and agent context, see `docs/TASKS.md` and `docs/CURRENT_CONTEXT.md`.

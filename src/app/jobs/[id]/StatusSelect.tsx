@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { getUiCopy } from '@/lib/uiCopy'
+import { useAppLanguage } from '@/lib/useAppLanguage'
 
 export const JOB_STATUSES = [
   'not_applied',
@@ -10,13 +12,6 @@ export const JOB_STATUSES = [
 ] as const
 
 export type JobStatus = (typeof JOB_STATUSES)[number]
-
-const STATUS_LABELS: Record<JobStatus, string> = {
-  not_applied: '未投遞',
-  applied: '已投遞',
-  interview: '面試中',
-  not_interested: '不感興趣',
-}
 
 type StatusApiResponse = {
   success: boolean
@@ -45,6 +40,11 @@ export function StatusSelect({
   jobId: string
   initialStatus: JobStatus
 }) {
+  const { language } = useAppLanguage()
+  const copy = getUiCopy(language)
+  const s = copy.jobDetail.statusSection
+  const statusCopy = copy.status
+
   const [status, setStatus] = useState<JobStatus>(initialStatus)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -92,9 +92,9 @@ export function StatusSelect({
     <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-bold">應徵狀態</h2>
+          <h2 className="text-lg font-bold">{s.title}</h2>
           <p className="mt-1 text-sm text-slate-400">
-            目前：{STATUS_LABELS[status]}
+            {s.current(statusCopy[status])}
           </p>
         </div>
 
@@ -107,13 +107,13 @@ export function StatusSelect({
           >
             {JOB_STATUSES.map((value) => (
               <option key={value} value={value}>
-                {STATUS_LABELS[value]}
+                {statusCopy[value]}
               </option>
             ))}
           </select>
 
           {isSaving && (
-            <span className="text-sm text-slate-400">儲存中...</span>
+            <span className="text-sm text-slate-400">{s.saving}</span>
           )}
         </div>
       </div>

@@ -1,8 +1,8 @@
-// Dashboard stats cards for the home page (TASK-024).
-// Presentational only — receives the already-computed stats and renders a
-// responsive grid of cards. No data fetching, no AI calls.
+'use client'
 
 import type { DashboardStats } from '@/lib/jobs/getDashboardStats'
+import { getUiCopy } from '@/lib/uiCopy'
+import { useAppLanguage } from '@/lib/useAppLanguage'
 
 type DashboardStatsCardsProps = {
   stats: DashboardStats
@@ -21,55 +21,61 @@ type StatCard = {
 export default function DashboardStatsCards({
   stats,
 }: DashboardStatsCardsProps) {
+  const { language } = useAppLanguage()
+  const copy = getUiCopy(language)
+  const d = copy.dashboard
+
   const cards: StatCard[] = [
     {
       key: 'total',
-      label: '總職缺',
+      label: d.totalJobs,
       value: String(stats.totalJobs),
-      description: '已收集的職缺數',
-      hint: stats.recentJobs > 0 ? `近 7 天新增：${stats.recentJobs}` : undefined,
+      description: d.totalJobsDesc,
+      hint: stats.recentJobs > 0 ? d.recentJobsHint(stats.recentJobs) : undefined,
       accent: 'border-slate-700/80 bg-slate-900/60',
       valueClass: 'text-slate-100',
     },
     {
       key: 'high-match',
-      label: '高匹配',
+      label: d.highMatch,
       value: String(stats.highMatchJobs),
-      description: 'AI 分數 ≥ 80',
+      description: d.highMatchDesc,
       accent: 'border-emerald-900/70 bg-emerald-950/30',
       valueClass: 'text-emerald-300',
     },
     {
       key: 'applied',
-      label: '已投遞',
+      label: d.applied,
       value: String(stats.appliedJobs),
-      description: '已送出申請',
+      description: d.appliedDesc,
       accent: 'border-cyan-900/70 bg-cyan-950/30',
       valueClass: 'text-cyan-300',
     },
     {
       key: 'interviewing',
-      label: '面試中',
+      label: d.interviewing,
       value: String(stats.interviewingJobs),
-      description: '進行中的面試流程',
+      description: d.interviewingDesc,
       accent: 'border-amber-900/70 bg-amber-950/30',
       valueClass: 'text-amber-300',
     },
     {
       key: 'average-score',
-      label: '平均分數',
+      label: d.averageScore,
       value: stats.averageScore === null ? '-' : String(stats.averageScore),
-      description: '已分析職缺平均匹配度',
+      description: d.averageScoreDesc,
       hint:
-        stats.unanalyzedJobs > 0 ? `未分析：${stats.unanalyzedJobs}` : undefined,
+        stats.unanalyzedJobs > 0
+          ? d.unanalyzedHint(stats.unanalyzedJobs)
+          : undefined,
       accent: 'border-violet-900/70 bg-violet-950/30',
       valueClass: 'text-violet-300',
     },
     {
       key: 'risky',
-      label: '有風險',
+      label: d.risky,
       value: String(stats.riskyJobs),
-      description: '偵測到需確認條件',
+      description: d.riskyDesc,
       accent: 'border-rose-900/70 bg-rose-950/30',
       valueClass: 'text-rose-300',
     },

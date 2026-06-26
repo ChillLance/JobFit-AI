@@ -32,10 +32,6 @@ function nowIso(): string {
   return new Date().toISOString()
 }
 
-function isStringArray(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every((v) => typeof v === 'string')
-}
-
 /**
  * Validate the *shape* of a stored profile defensively. We only require the
  * fields the rest of the app relies on; anything missing means we treat the

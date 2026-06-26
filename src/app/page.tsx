@@ -289,6 +289,8 @@ export default function HomePage() {
   }
 
   useEffect(() => {
+    // Fetch the job list once on mount; loadJobs sets state from the response.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadJobs()
   }, [])
 

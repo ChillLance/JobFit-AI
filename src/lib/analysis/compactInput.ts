@@ -2,8 +2,15 @@
 // Gemini and Groq routes use this so both providers analyze the SAME compact
 // data, keeping token usage bounded and results comparable.
 //
-// This module is intentionally dependency-free (no fs / no provider imports) so
-// it can be reused from any server route without circular dependencies.
+// This module avoids fs / provider imports so it can be reused from any server
+// route without circular dependencies.
+
+import {
+  DEFAULT_APP_LANGUAGE,
+  getAiOutputLanguageInstruction,
+  resolveAppLanguage,
+  type AppLanguage,
+} from '@/lib/appLanguage'
 
 // Hard cap on the cleaned job text we send to the model (token safety).
 export const MAX_JOB_TEXT_CHARS = 2500
@@ -1414,10 +1421,70 @@ export function buildAnalysisInput(
 // buildJobFitPrompt (shared user prompt for Gemini + Groq)
 // ---------------------------------------------------------------------------
 
+function jobFitOutputLanguageRules(language: AppLanguage): {
+  textFieldsRule: string
+  recommendationRule: string
+  jsonTemplate: string
+} {
+  switch (language) {
+    case 'en':
+      return {
+        textFieldsRule:
+          '3. Except fitScore (number), all text fields must be written in English.',
+        recommendationRule:
+          '5. recommendation is a short English phrase (e.g. "Apply", "Consider", "Skip for now").',
+        jsonTemplate: `{
+  "fitScore": <integer 0-100>,
+  "recommendation": "<English, short recommendation>",
+  "summary": "<English summary, 2-4 sentences>",
+  "strengths": ["<English>"],
+  "gaps": ["<English>"],
+  "risks": ["<English, e.g. night shift, dispatch, tenure, visa risks>"],
+  "suggestedActions": ["<English, concrete next steps such as resume focus, interview prep, questions for the employer>"]
+}`,
+      }
+    case 'ja':
+      return {
+        textFieldsRule:
+          '3. fitScore（数値）を除き、すべてのテキストフィールドは日本語で書いてください。',
+        recommendationRule:
+          '5. recommendation は短い日本語の提案（例：「応募を推奨」「検討可」「今回は見送り」）。',
+        jsonTemplate: `{
+  "fitScore": <0-100 の整数>,
+  "recommendation": "<日本語、短い提案>",
+  "summary": "<日本語の要約、2-4文>",
+  "strengths": ["<日本語>"],
+  "gaps": ["<日本語>"],
+  "risks": ["<日本語、例：夜勤、派遣、年資、ビザなどのリスク>"],
+  "suggestedActions": ["<日本語、履歴書の重点、面接準備、雇用主への確認事項など具体的な行動>"]
+}`,
+      }
+    default:
+      return {
+        textFieldsRule:
+          '3. 除 fitScore 為數字外，所有文字欄位請使用「繁體中文」。',
+        recommendationRule:
+          '5. recommendation 為簡短的繁體中文建議（例如「建議投遞」「可以考慮」「暫不建議」）。',
+        jsonTemplate: `{
+  "fitScore": <0-100 整數>,
+  "recommendation": "<繁體中文，簡短建議>",
+  "summary": "<繁體中文摘要，2-4 句>",
+  "strengths": ["<繁體中文>"],
+  "gaps": ["<繁體中文>"],
+  "risks": ["<繁體中文，例如夜勤、派遣、年資、簽證等風險>"],
+  "suggestedActions": ["<繁體中文，建議的具體行動，例如履歷重點、面試準備、向雇主確認的問題>"]
+}`,
+      }
+  }
+}
+
 export function buildJobFitPrompt(
   input: CompactAnalysisInput,
-  options?: { profileContext?: string }
+  options?: { profileContext?: string; language?: AppLanguage }
 ): string {
+  const language = resolveAppLanguage(options?.language ?? DEFAULT_APP_LANGUAGE)
+  const outputRules = jobFitOutputLanguageRules(language)
+  const languageInstruction = getAiOutputLanguageInstruction(language)
   // Active career profile context becomes the primary decision baseline
   // (TASK-029). When provided, it is injected as the highest-priority profile
   // information and the prompt is told to prefer it over any assumption.
@@ -1459,6 +1526,11 @@ export function buildJobFitPrompt(
 
   return `你是一位熟悉日本就職市場的職涯顧問。請根據以下資料，分析這份職缺與求職者的整體匹配度。
 
+【輸出語言要求（最高優先）】
+Output language requirement:
+${languageInstruction}
+All user-facing analysis fields, explanations, recommendations, risks, and next actions must be written in this language.
+
 ${profileBaselineInstruction}資料優先順序（由高到低）：
 1. 基本職缺欄位（title/company/location/salary/employmentType）。
 2. jobDigest：從「完整職缺內容」保守抽取出的重點，是你主要的判斷依據。
@@ -1479,20 +1551,12 @@ ${profileBaselineInstruction}資料優先順序（由高到低）：
 輸出規則：
 1. 只輸出「單一合法 JSON 物件」，不要 markdown、不要程式碼區塊、不要任何額外說明文字。
 2. JSON 必須能被 JavaScript JSON.parse() 直接解析，不要輸出 trailing comma。
-3. 除 fitScore 為數字外，所有文字欄位請使用「繁體中文」。
+${outputRules.textFieldsRule}
 4. fitScore 為 0 到 100 的整數。
-5. recommendation 為簡短的繁體中文建議（例如「建議投遞」「可以考慮」「暫不建議」）。
+${outputRules.recommendationRule}
 
 請輸出符合以下結構的 JSON（欄位名稱必須完全一致）：
-{
-  "fitScore": <0-100 整數>,
-  "recommendation": "<繁體中文，簡短建議>",
-  "summary": "<繁體中文摘要，2-4 句>",
-  "strengths": ["<繁體中文>"],
-  "gaps": ["<繁體中文>"],
-  "risks": ["<繁體中文，例如夜勤、派遣、年資、簽證等風險>"],
-  "suggestedActions": ["<繁體中文，建議的具體行動，例如履歷重點、面試準備、向雇主確認的問題>"]
-}
+${outputRules.jsonTemplate}
 ${profileContextBlock}
 【1. 基本職缺欄位】
 ${JSON.stringify(basicJobFields, null, 2)}

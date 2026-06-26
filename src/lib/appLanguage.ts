@@ -28,6 +28,10 @@ export function isAppLanguage(value: unknown): value is AppLanguage {
   )
 }
 
+export function resolveAppLanguage(value: unknown): AppLanguage {
+  return isAppLanguage(value) ? value : DEFAULT_APP_LANGUAGE
+}
+
 const AI_OUTPUT_LANGUAGE_INSTRUCTIONS: Record<AppLanguage, string> = {
   'zh-TW': '請使用繁體中文回覆分析結果。請避免簡體中文。',
   en: 'Please write the analysis result in English.',
