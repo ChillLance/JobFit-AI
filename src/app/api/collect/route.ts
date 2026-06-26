@@ -1,47 +1,27 @@
-import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
-
-const DATA_FILE = path.join(process.cwd(), "jobs_temp.json");
-
-function getJobs() {
-  if (!fs.existsSync(DATA_FILE)) {
-    return [];
-  }
-
-  const data = fs.readFileSync(DATA_FILE, "utf-8");
-
-  if (!data.trim()) {
-    return [];
-  }
-
-  return JSON.parse(data);
-}
+import { NextResponse } from 'next/server'
+import { prependJob } from '@/lib/jobs/jobsRepository'
+import type { Job } from '@/types/domain'
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body = await request.json()
 
-    const jobs = getJobs();
-
-    const newJob = {
+    const newJob: Job = {
       id: crypto.randomUUID(),
-      title: body.title || "Untitled",
-      url: body.url || "",
-      rawText: body.rawText || "",
+      title: body.title || 'Untitled',
+      url: body.url || '',
+      rawText: body.rawText || '',
       collectedAt: new Date().toISOString(),
-    };
+    }
 
-    jobs.unshift(newJob);
-
-    fs.writeFileSync(DATA_FILE, JSON.stringify(jobs, null, 2), "utf-8");
+    prependJob(newJob)
 
     return NextResponse.json({
       success: true,
       job: newJob,
-    });
+    })
   } catch (error) {
-    console.error("Collect API Error:", error);
+    console.error('Collect API Error:', error)
 
     return NextResponse.json(
       {
@@ -49,6 +29,6 @@ export async function POST(request: Request) {
         error: String(error),
       },
       { status: 500 }
-    );
+    )
   }
 }

@@ -1,63 +1,10 @@
 import { NextResponse } from 'next/server'
-import fs from 'fs'
-import path from 'path'
-
-const VALID_STATUSES = [
-  'not_applied',
-  'applied',
-  'interview',
-  'not_interested',
-] as const
-
-type JobStatus = (typeof VALID_STATUSES)[number]
-
-type Job = {
-  id: string
-  title?: string
-  url?: string
-  rawText?: string
-  source?: string
-  collectedAt?: string
-  status?: JobStatus
-  statusUpdatedAt?: string
-  aiScore?: Record<string, unknown>
-}
-
-const filePath = path.join(process.cwd(), 'jobs_temp.json')
-
-function getJobs(): Job[] {
-  try {
-    if (!fs.existsSync(filePath)) {
-      return []
-    }
-
-    const content = fs.readFileSync(filePath, 'utf-8')
-
-    if (!content.trim()) {
-      return []
-    }
-
-    const data = JSON.parse(content)
-
-    if (!Array.isArray(data)) {
-      return []
-    }
-
-    return data
-  } catch (error) {
-    console.error('讀取 jobs_temp.json 失敗:', error)
-    return []
-  }
-}
-
-function saveJobs(jobs: Job[]) {
-  fs.writeFileSync(filePath, JSON.stringify(jobs, null, 2), 'utf-8')
-}
+import { JOB_STATUSES, type JobStatus } from '@/types/domain'
+import { updateJob } from '@/lib/jobs/jobsRepository'
 
 function isValidStatus(value: unknown): value is JobStatus {
   return (
-    typeof value === 'string' &&
-    VALID_STATUSES.includes(value as JobStatus)
+    typeof value === 'string' && JOB_STATUSES.includes(value as JobStatus)
   )
 }
 
@@ -102,16 +49,18 @@ export async function PATCH(
         {
           success: false,
           error: 'Invalid or missing status',
-          allowed: [...VALID_STATUSES],
+          allowed: [...JOB_STATUSES],
         },
         { status: 400 }
       )
     }
 
-    const jobs = getJobs()
-    const jobIndex = jobs.findIndex((job) => job.id === id)
+    const updatedJob = updateJob(id, {
+      status,
+      statusUpdatedAt: new Date().toISOString(),
+    })
 
-    if (jobIndex === -1) {
+    if (!updatedJob) {
       return NextResponse.json(
         {
           success: false,
@@ -121,18 +70,6 @@ export async function PATCH(
         { status: 404 }
       )
     }
-
-    const job = jobs[jobIndex]
-    const statusUpdatedAt = new Date().toISOString()
-
-    const updatedJob: Job = {
-      ...job,
-      status,
-      statusUpdatedAt,
-    }
-
-    jobs[jobIndex] = updatedJob
-    saveJobs(jobs)
 
     return NextResponse.json({
       success: true,
