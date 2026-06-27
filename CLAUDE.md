@@ -1,79 +1,46 @@
 @AGENTS.md
 # CLAUDE.md - JobFit-AI
 
-## Purpose
+> Keep this file short and sharp. For each line ask: "would removing it cause a
+> mistake?" If not, delete it. Detailed rules live in @AGENTS.md — don't duplicate.
 
-This file provides project context for AI coding assistants.
+## What this is
 
-JobFit-AI is a local job tracking and AI job-fit analysis tool.
+A local MVP for collecting job postings and showing AI job-fit analysis.
+Storage is file-based (`jobs_temp.json`) and read/written from the server side.
+Refactor, don't rewrite. Keep it lightweight.
 
-It is currently a local MVP and should stay lightweight.
-
-## Current Status
-
-Completed:
-
-- Chrome Extension can collect job postings.
-- Jobs are saved into `jobs_temp.json`.
-- Home page displays collected jobs.
-- Job detail page exists at `/jobs/[id]`.
-- Mock AI scoring API works.
-- AI scoring result is written back to `jobs_temp.json`.
-- Detail page can load existing AI score.
-- Home page displays AI score and level.
-
-Known issue:
-
-- Home page still has an old "AI 評分" button that triggers:
-  `alert('AI 評分功能待開發')`
-- This button should be replaced with navigation to the detail page.
-
-## Development Philosophy
-
-Keep the MVP simple.
-
-Prefer small, safe, incremental changes.
-
-Avoid premature architecture changes such as:
-
-- database migration
-- authentication
-- cloud sync
-- real AI API integration
-- complex state management
-- major UI rewrite
-
-## Recommended Task Style
-
-When executing a task:
-
-1. Read `docs/CURRENT_CONTEXT.md`.
-2. Read `docs/TASKS.md`.
-3. Only implement the current task.
-4. Do not implement future tasks.
-5. Do not change unrelated files.
-6. If more than 3 files must be changed, explain the plan first.
-7. After implementation, summarize changed files and testing steps.
-
-## Useful Commands
+## Commands
 
 ```bash
-npm run dev
-npm run build
-npm run lint
+npm run dev     # start dev server (http://localhost:3000)
+npm run build   # production build
+npm run lint    # eslint
 git status
 ```
 
-## Important Warning
+## Task workflow
 
-Do not convert server-side files that use `fs` or `path` into Client Components.
+1. Read `docs/CURRENT_CONTEXT.md` and `docs/TASKS.md`.
+2. Implement only the current task — not future ones.
+3. Don't touch unrelated files. If >3 files must change, explain the plan first.
+4. After changes, summarize touched files + how to test.
 
-This project currently relies on reading and writing `jobs_temp.json` from the server side.
+To verify UI behavior (e.g. home/detail pages), use the **webapp-testing** skill:
+run `npm run dev` on port 3000 and drive it with Playwright.
 
-## Current Next Tasks
+## Hard rules (don't break)
 
-1. Fix home AI button.
-2. Add job status model.
-3. Add `PATCH /api/jobs/[id]/status`.
-4. Add status dropdown to detail page.
-5. Add status badge and filters to home page.
+- Never add `'use client'` to files using `fs` / `path` — they must stay server-side.
+- Don't remove or replace `jobs_temp.json`.
+- No real AI API, database, auth, or cloud sync unless explicitly requested.
+- Don't change dependency versions or add deps without being asked.
+
+## Next tasks
+
+1. Replace the old home "AI 評分" button (`alert('AI 評分功能待開發')`) with
+   navigation to the detail page.
+2. Add job application status model.
+3. `PATCH /api/jobs/[id]/status`.
+4. Status dropdown on the detail page.
+5. Status badge + filter tabs on the home page.

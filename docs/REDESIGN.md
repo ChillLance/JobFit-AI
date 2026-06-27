@@ -133,3 +133,130 @@ The three goals are one path at different stages.
 - Keep `jobs_temp.json` as the Phase 1 store; never delete user data during migration.
 - Server-only files (anything using `fs` / `path`) stay server-side — never converted
   to Client Components.
+
+## 7. Direction update (2026-06-27) — from "job tracker" to "job-hunt pipeline"
+
+Context: the original developer is on a **working-holiday visa in Japan**, targeting
+two distinct segments:
+
+- **(A) Tech / fully-remote roles** that fit their conditions, and
+- **(B) 住み込み (live-in) リゾートバイト** — resort/hospitality work where 寮
+  (dorm) and 食事 (meals) are provided. This is the working-holiday bread-and-butter
+  and is a *different* segment with different sources and different match criteria.
+
+The future goal expands the app from "collect + analyze jobs I paste in" to
+"**automatically ingest jobs, match them against my profile, help me tailor + apply,
+and prep for interviews**". Reframed around that goal:
+
+### 7.1 The decisive blocker for automation
+
+Debt 2 (profile in `localStorage`, jobs in the server file) is no longer just tech
+debt — it is the **wall that blocks automation**. A background ingestion job runs on
+the server and **cannot read a profile that lives in the browser**. Closing this
+(move the profile to the server, behind the Repository) is the prerequisite for any
+automated matching. This promotes §5 Phase 2 item 7 to a near-term **Phase 1.5**.
+
+### 7.2 Two ingestion classes (not the same problem)
+
+| Class | Sources | Access | Legality / stability |
+| --- | --- | --- | --- |
+| **A. Tech / remote (EN-friendly)** | Greenhouse / Lever / Ashby public job-board APIs; aggregators (RemoteOK, Remotive, We Work Remotely); TokyoDev / Japan Dev (many of whose companies *use* those ATS) | **Public JSON APIs** — no scraping | ✅ Legal, stable. The green-light path. |
+| **B. 住み込み / リゾートバイト** | JP dispatch agencies: リゾバ.com, アルファリゾート, リゾートバイトダイブ, グッドマンサービス, ワクトリ, はたらくどっとこむ … | **No public API**, Japanese-only, form/login-gated | ⚠️ Scraping-bound, ToS-sensitive, fragile (same shape as the 104/Cake problem). |
+| **C. Social / "hidden" job market** | Hiring posts on X, LinkedIn posts, Reddit (r/remotejobs, HN "Who is hiring"), Discord / Slack, FB groups, LINE Openchat | **Human-captured** (Chrome extension / Claude for Chrome) → **LLM-normalized** into the store | ✅ No scraping if user-initiated capture. High-signal, low-competition, but unstructured & ephemeral — exactly where structured-API tools are blind and LLMs shine. The existing Chrome extension is the ready-made capture tool for this. |
+
+Implication: **do not build Class B as an unattended crawler.** For Class B the
+realistic path is **manual / semi-manual capture** (the existing Chrome-extension
+collect flow, or paste-in) + AI matching — keep a human in the loop and stay off the
+agencies' anti-bot radar. **Class A is where automated ingestion earns its keep.**
+
+### 7.3 Profile schema implication — add a "work style" axis
+
+`JapanCareerProfile` already models `visa` and `languages` (good — it anticipated
+Japan). But the two segments need different match criteria:
+
+- **Tech / remote:** role, stack, seniority, remote-OK, salary, EN/JP level.
+- **住み込みリゾートバイト:** 寮あり / 食事付き (dorm + meals), 勤務地
+  (北海道・沖縄・温泉地 …), 期間 (短期/長期), 職種 (仲居・裏方・フロント・リフト係 …),
+  時給, 目標貯金額 (savings target).
+
+Because the store already supports **multiple profiles**, the clean model is **one
+profile per search mode**, each with its own `conditions` block, distinguished by a
+`workStyle: 'remote-tech' | 'resort-baito'` discriminator — *not* one profile trying
+to be both.
+
+### 7.4 The MCP question, resolved
+
+Do **not** replace the app with community MCP/skills. Keep the app as the
+system-of-record + ingestion backbone, use the LLM as the brain, and — at Phase 3 —
+**expose this app itself as an MCP server** so the job store can be queried
+conversationally ("which jobs fit me best? tailor my résumé for #3"). The convergence
+point is "**my app becomes a skill**", not "borrow someone's crawler".
+
+### 7.5 Landmines — do not build
+
+- LinkedIn contact scraping + automated outreach / DMs → ToS + ban.
+- Automated apply / form auto-submit on any platform → ban + spray-and-pray quality damage.
+- Class B as an unattended scraper of dispatch agencies → fragile + ToS.
+
+## 8. Updated phased roadmap (supersedes §5 sequencing where they conflict)
+
+- **Phase 0 — Zero-code validation (now):** Claude Project + résumé + ATS MCP + paste
+  JDs from TokyoDev / Japan Dev (Class A) and dispatch-agency listings (Class B).
+  Confirm AI matching + résumé tailoring is worth it *before* investing more code.
+- **Phase 1 — ✅ done** (foundation / consolidation).
+- **Phase 1.5 — Bridge (unlocks automation):** (a) move profile to the server behind
+  the Repository (closes §7.1); (b) add a `JobSource` ingestion interface, first
+  adapter = Greenhouse / Lever / Ashby public boards filtered to remote + Japan;
+  auto-collect → auto-run local analysis.
+- **Phase 2 — Open-source ready:** SQLite via Repository; profiles fully in the store;
+  Vitest + CI; shadcn polish; more Class-A adapters (RemoteOK, Remotive, Adzuna,
+  TokyoDev / Japan Dev feeds); `workStyle` axis on the profile (§7.3).
+- **Phase 3 — Product + MCP:** Postgres / Supabase; expose the app as an MCP server;
+  human-in-the-loop tailor-and-apply (draft → review → send; email semi-auto for small
+  companies, platform apply stays manual); interview-prep module.
+- **Never:** the §7.5 landmines.
+
+## 9. Distribution, network & sanctioned tooling (2026-06-27)
+
+### 9.1 Inverse market — "post yourself", not just collect jobs
+
+Candidates also get hired by **posting their own availability**: HN "Ask HN: Who
+wants to be hired?", LinkedIn `#OpenToWork`, Wantedly (カジュアル面談 — companies
+reach out to your profile). This is the mirror image of Class C. **Product symmetry:**
+generate an optimized "hire me" one-pager / availability post from the active
+profile, and track *where it was posted + who responded*. Inbound interest is a
+stronger demand signal than outbound applies.
+
+### 9.2 The flywheel — job hunt × side project are one loop
+
+Building this tool **in public**, in the communities where foreign devs in Japan
+gather (TokyoDev, r/japanlife, **connpass** meetups), is itself the highest-ROI
+job-search network: people see "this person built something useful", not a résumé.
+The project doubles as **portfolio + lead-gen**. Referrals / network beat application
+volume — so the product should **amplify network & visibility, not automate
+spray-and-pray applies** (that segment's reputation is collapsing: LazyApply / Sonara
+widely panned, "buggy / black box / wrong résumé"). For リゾートバイト, the dispatch
+agencies' コーディネーター act as a free matching network — register, don't only search.
+
+### 9.3 Sanctioned official tooling (verified 2026-06-27) — prefer over fragile 3rd-party MCPs
+
+- **Indeed Connector** (`claude.com/connectors/indeed`) — Indeed's *own* official MCP
+  server, listed in Claude's connector directory. API-based job search + job detail +
+  company reviews/salary + résumé retrieval. **Safe (no scraping, no ban risk).**
+  Indeed Japan (`jp.indeed.com`) has deep coverage incl. アルバイト, so this is a legal
+  channel into part of **Class A *and* Japan listings**. Use for discovery; do not rebuild it.
+- **Claude for Chrome** (official, beta on paid plans) — browser navigate + form-fill +
+  scheduled background tasks, with human confirmation on sensitive actions. The
+  *official* **human-in-the-loop** capture/assist tool: the right way to handle LinkedIn
+  (read + draft, you click submit) and to capture **Class C** social postings. Note: it
+  partly **commoditizes the project's custom Chrome extension** — don't over-invest there
+  if the official one suffices.
+- ⚠️ Overstated elsewhere: a Claude Code "job-hunting plugin" (arustydev) is
+  **community**, not "officially certified" — vet before trusting. LinkedIn has **no**
+  official connector (correct); never use third-party auto-apply on it.
+
+**Strategic implication:** official tools now cover much of Class A discovery + safe
+LinkedIn assist for free. The app's durable value is therefore the **system-of-record**
+(tracking + A–F grading against the visa / language / 住み込み profile) and the **white
+space** (Class B resort dispatch + Class C social normalization) — *not* re-building the
+discovery the connectors already do.
