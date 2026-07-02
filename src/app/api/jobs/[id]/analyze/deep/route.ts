@@ -11,12 +11,11 @@ import {
 } from '@/lib/analysis/compactInput'
 import { resolveAppLanguage, type AppLanguage } from '@/lib/appLanguage'
 import {
-  defaultJapanCareerProfile,
   flattenProfileForCompactInput,
-  JAPAN_CAREER_PROFILE_VERSION,
   profileToAnalysisContext,
   type JapanCareerProfile,
 } from '@/lib/profile'
+import { getActiveProfileFromDb } from '@/lib/profile/profileRepository'
 
 // Server-side Gemini deep analysis only — manual POST; never auto-called.
 
@@ -115,21 +114,6 @@ function buildInputStats(input: CompactAnalysisInput): InputStats {
     fallbackItemCount: ds.fallbackItemCount,
     fallbackTextChars: ds.fallbackTextChars,
   }
-}
-
-// Defensive shape check: require the fields the analysis baseline relies on.
-function isValidProfile(value: unknown): value is JapanCareerProfile {
-  if (!value || typeof value !== 'object') return false
-  const p = value as Record<string, unknown>
-  return (
-    typeof p.id === 'string' &&
-    p.version === JAPAN_CAREER_PROFILE_VERSION &&
-    typeof p.name === 'string' &&
-    typeof p.target === 'object' &&
-    p.target !== null &&
-    typeof p.conditions === 'object' &&
-    p.conditions !== null
-  )
 }
 
 function clampScore(n: number): number {
@@ -457,25 +441,24 @@ export async function POST(request: Request, context: Params) {
       return NextResponse.json({ error: 'Missing job id' }, { status: 400 })
     }
 
-    // Parse optional { force, profile, language } body. Missing/invalid body
-    // means force=false, default profile baseline, and DEFAULT_APP_LANGUAGE.
+    // Parse optional { force, language } body. Missing/invalid body means
+    // force=false and DEFAULT_APP_LANGUAGE. The active profile is resolved
+    // server-side (redesign Phase 2) — see profileRepository.ts.
     let force = false
-    let profile: JapanCareerProfile = defaultJapanCareerProfile
     let language: AppLanguage = resolveAppLanguage(undefined)
     try {
       const body = (await request.json()) as {
         force?: unknown
-        profile?: unknown
         language?: unknown
       } | null
       if (body && typeof body === 'object') {
         if (body.force === true) force = true
-        if (isValidProfile(body.profile)) profile = body.profile
         language = resolveAppLanguage(body.language)
       }
     } catch {
       force = false
     }
+    const profile = getActiveProfileFromDb()
     const job = findJob(id)
 
     if (!job) {

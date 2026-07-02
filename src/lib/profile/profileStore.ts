@@ -79,6 +79,27 @@ function normalizeActiveProfileId(store: ProfileStore): ProfileStore {
   return { ...store, activeProfileId: fallbackId }
 }
 
+/**
+ * Best-effort mirror of the store to the server (redesign Phase 2), so
+ * analyze routes can resolve the active profile without it being sent in
+ * every analyze request body. Fire-and-forget: never throws, never awaited,
+ * and never blocks the UI. If it fails, server routes just keep using
+ * whatever they last had (or the default profile).
+ */
+function syncToServer(store: ProfileStore): void {
+  if (typeof fetch !== 'function') return
+  try {
+    fetch('/api/profile-sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(store),
+      keepalive: true,
+    }).catch(() => {})
+  } catch {
+    // Ignore synchronous throws (e.g. fetch unavailable in this context).
+  }
+}
+
 function writeStore(store: ProfileStore): ProfileStore {
   if (!isBrowser()) return store
   try {
@@ -87,6 +108,7 @@ function writeStore(store: ProfileStore): ProfileStore {
     // Ignore write failures (quota, private mode, etc.); return the in-memory
     // store so callers still get a usable value.
   }
+  syncToServer(store)
   return store
 }
 

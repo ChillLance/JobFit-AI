@@ -12,12 +12,11 @@ import {
   type AppLanguage,
 } from '@/lib/appLanguage'
 import {
-  defaultJapanCareerProfile,
   flattenProfileForCompactInput,
-  JAPAN_CAREER_PROFILE_VERSION,
   profileToAnalysisContext,
   type JapanCareerProfile,
 } from '@/lib/profile'
+import { getActiveProfileFromDb } from '@/lib/profile/profileRepository'
 
 // Server-side OpenRouter deep analysis — manual POST; never auto-called.
 // OpenRouter is an OpenAI-compatible gateway to many models; the model is
@@ -65,20 +64,6 @@ type OpenRouterAnalysisResponse = {
     inputCoverage: InputCoverageReport
     outputLanguage?: AppLanguage
   }
-}
-
-function isValidProfile(value: unknown): value is JapanCareerProfile {
-  if (!value || typeof value !== 'object') return false
-  const p = value as Record<string, unknown>
-  return (
-    typeof p.id === 'string' &&
-    p.version === JAPAN_CAREER_PROFILE_VERSION &&
-    typeof p.name === 'string' &&
-    typeof p.target === 'object' &&
-    p.target !== null &&
-    typeof p.conditions === 'object' &&
-    p.conditions !== null
-  )
 }
 
 function getOpenRouterModel(): string {
@@ -341,24 +326,23 @@ export async function POST(request: Request, context: Params) {
       return NextResponse.json({ error: 'Missing job id' }, { status: 400 })
     }
 
-    // Optional { force, profile, language } body — same contract as deep/groq.
+    // Optional { force, language } body — same contract as deep/groq. The
+    // active profile is resolved server-side (redesign Phase 2).
     let force = false
-    let profile: JapanCareerProfile = defaultJapanCareerProfile
     let language: AppLanguage = resolveAppLanguage(undefined)
     try {
       const body = (await request.json()) as {
         force?: unknown
-        profile?: unknown
         language?: unknown
       } | null
       if (body && typeof body === 'object') {
         if (body.force === true) force = true
-        if (isValidProfile(body.profile)) profile = body.profile
         language = resolveAppLanguage(body.language)
       }
     } catch {
       force = false
     }
+    const profile = getActiveProfileFromDb()
 
     const job = findJob(id)
     if (!job) {

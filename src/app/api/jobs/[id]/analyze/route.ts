@@ -2,16 +2,12 @@ import { NextResponse } from 'next/server'
 import { analyzeJobLocally } from '@/lib/analysis/localAnalysis'
 import { findJob, updateJob } from '@/lib/jobs/jobsRepository'
 import { resolveAppLanguage, type AppLanguage } from '@/lib/appLanguage'
-import {
-  defaultJapanCareerProfile,
-  JAPAN_CAREER_PROFILE_VERSION,
-  type JapanCareerProfile,
-} from '@/lib/profile'
+import { getActiveProfileFromDb } from '@/lib/profile/profileRepository'
 
 // Profile-driven local rule-based analysis (TASK-029).
-// The active JapanCareerProfile is sent by the client in the request body and
-// used as the decision baseline. If no valid profile is provided we fall back
-// to the default profile so existing behavior never crashes.
+// The active JapanCareerProfile is resolved server-side from the mirrored
+// profile store (redesign Phase 2) instead of the request body — see
+// src/lib/profile/profileRepository.ts.
 
 type Params = {
   params: Promise<{
@@ -19,47 +15,19 @@ type Params = {
   }>
 }
 
-// Defensive shape check: require the fields the analyzer relies on. Anything
-// else means we treat the input as missing and fall back to the default.
-function isValidProfile(value: unknown): value is JapanCareerProfile {
-  if (!value || typeof value !== 'object') return false
-  const p = value as Record<string, unknown>
-  return (
-    typeof p.id === 'string' &&
-    p.version === JAPAN_CAREER_PROFILE_VERSION &&
-    typeof p.name === 'string' &&
-    typeof p.target === 'object' &&
-    p.target !== null &&
-    typeof p.conditions === 'object' &&
-    p.conditions !== null &&
-    typeof p.preferences === 'object' &&
-    p.preferences !== null &&
-    typeof p.languages === 'object' &&
-    p.languages !== null &&
-    typeof p.visa === 'object' &&
-    p.visa !== null
-  )
-}
-
-async function parseAnalyzeRequest(request: Request): Promise<{
-  profile: JapanCareerProfile
-  language: AppLanguage
-}> {
-  let profile = defaultJapanCareerProfile
+async function parseAnalyzeRequest(
+  request: Request
+): Promise<{ language: AppLanguage }> {
   let language = resolveAppLanguage(undefined)
   try {
-    const body = (await request.json()) as {
-      profile?: unknown
-      language?: unknown
-    } | null
+    const body = (await request.json()) as { language?: unknown } | null
     if (body && typeof body === 'object') {
-      if (isValidProfile(body.profile)) profile = body.profile
       language = resolveAppLanguage(body.language)
     }
   } catch {
-    // No / invalid body — fall back to defaults above.
+    // No / invalid body — fall back to the default language above.
   }
-  return { profile, language }
+  return { language }
 }
 
 export async function POST(request: Request, context: Params) {
@@ -79,9 +47,10 @@ export async function POST(request: Request, context: Params) {
       )
     }
 
-    const { profile, language } = await parseAnalyzeRequest(request)
+    const { language } = await parseAnalyzeRequest(request)
     // Parsed for upcoming AI output language (TASK-2D); local analysis unchanged.
     void language
+    const profile = getActiveProfileFromDb()
     // The canonical Job is a superset of LocalAnalyzableJob.
     const result = analyzeJobLocally(job, profile)
 
