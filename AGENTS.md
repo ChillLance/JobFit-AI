@@ -9,15 +9,20 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 JobFit-AI is a local Next.js App Router project for collecting job postings, storing them locally, and showing AI-based job-fit analysis.
 
-The app is currently an MVP.
+The app has gone through a redesign (see docs/REDESIGN.md) and is now past MVP:
+Phase 1 (consolidation) and Phase 2 (SQLite + tests/CI) are complete.
 
-Current storage is file-based:
+Storage is SQLite (redesign Phase 2), accessed only through
+`src/lib/jobs/jobsRepository.ts` and `src/lib/profile/profileRepository.ts`:
 
 ```txt
-jobs_temp.json
+data/jobfit.sqlite
 ```
 
-This file is located in the project root and is currently the source of truth.
+`jobs_temp.json` is a **legacy, read-only migration source**: on first boot,
+if `data/jobfit.sqlite` has no jobs yet, it is imported once from
+`jobs_temp.json` and the JSON file is left untouched on disk afterward. No
+route or page reads/writes it directly anymore.
 
 ## Tech Stack
 
@@ -25,41 +30,44 @@ This file is located in the project root and is currently the source of truth.
 - TypeScript
 - React
 - Tailwind CSS
-- Local JSON file storage
-- Chrome Extension sends collected jobs to the app
-- Mock AI scoring API
+- SQLite via Node's built-in `node:sqlite` (no native/compiled dependency)
+- Vitest for unit tests, GitHub Actions for CI
+- Chrome Extension (`extension/`) sends collected jobs to the app
+- Local rule-based analysis + Gemini / Groq / OpenRouter providers
 
 ## Current Core Flow
 
 ```txt
 Chrome Extension collects job posting
-→ POST to local Next.js API
-→ Save job to jobs_temp.json
-→ Home page displays jobs
-→ Detail page displays one job
-→ Mock AI score API generates score
-→ AI score is saved back to jobs_temp.json
-→ Home page displays AI score
+→ POST /api/collect
+→ jobsRepository.prependJob() persists to SQLite
+→ Home page lists jobs, detail page shows one job
+→ Analyze Fit panel runs local / Gemini / Groq / OpenRouter analysis
+→ Result persisted back onto the job row via jobsRepository.updateJob()
 ```
 
 ## Important Files
 
 ```txt
-jobs_temp.json
+src/lib/jobs/db.ts                  # shared SQLite connection + legacy migration
+src/lib/jobs/jobsRepository.ts      # the ONLY module that touches the jobs table
+src/lib/profile/profileRepository.ts# server-side mirror of the active profile
+src/types/domain.ts                 # canonical Job / JobStatus types
 src/app/page.tsx
 src/app/api/collect/route.ts
 src/app/api/jobs/[id]/route.ts
-src/app/api/jobs/[id]/score/route.ts
 src/app/jobs/[id]/page.tsx
-src/app/jobs/[id]/ScorePanel.tsx
 ```
 
 ## Rules for AI Agents
 
 - Do not rewrite the whole project.
-- Do not introduce a database unless explicitly requested.
-- Do not remove or replace `jobs_temp.json`.
-- Do not connect a real AI API unless explicitly requested.
+- Do not add a second storage backend without discussing it first — SQLite via
+  `jobsRepository.ts` is the one source of truth.
+- Do not delete `jobs_temp.json` — it is a historical snapshot.
+- Do not connect a real AI API unless explicitly requested (Gemini/Groq/
+  OpenRouter are already wired and opt-in via API keys — this means don't add
+  *new* providers or auto-calling behavior, not that these are forbidden).
 - Do not add unnecessary dependencies.
 - Do not change package versions unless explicitly requested.
 - Do not modify unrelated files.
@@ -69,28 +77,20 @@ src/app/jobs/[id]/ScorePanel.tsx
 ## Next.js Rules
 
 - This project uses Next.js App Router.
-- Files that use Node.js APIs such as `fs` and `path` must stay server-side.
-- Do not add `'use client'` to files that read or write `jobs_temp.json`.
+- Files that use Node.js APIs such as `fs`, `path`, or `node:sqlite` must stay
+  server-side.
+- Do not add `'use client'` to files that import `jobsRepository` or
+  `profileRepository`.
 - Use Client Components only for interactive UI such as buttons, filters, forms, and dropdowns.
-
-## Current Priorities
-
-1. Fix the old home page AI button that still shows an alert.
-2. Add job application status API.
-3. Add status selector on the detail page.
-4. Show status badge on the home page.
-5. Add status filter tabs on the home page.
 
 ## Do Not Do Yet
 
-- Real AI API integration
-- Database migration
-- User login
+- Postgres/Supabase migration (Phase 3)
+- User login / multi-user
 - Cloud sync
 - Calendar integration
 - Resume generation
 - Cover letter generation
-- Large UI redesign
 
 <!-- END:nextjs-agent-rules -->
 

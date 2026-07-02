@@ -44,5 +44,9 @@ next-env.d.ts
 jobs_temp.json
 jobs_temp.backup-*.json
 
+# SQLite store (redesign Phase 2) — personal data, never committed
+data/jobfit.sqlite
+data/jobfit.sqlite-*
+
 # local Claude Code permissions (project skills in .claude/skills ARE committed)
 .claude/settings.local.json

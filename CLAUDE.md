@@ -6,8 +6,10 @@
 
 ## What this is
 
-A local MVP for collecting job postings and showing AI job-fit analysis.
-Storage is file-based (`jobs_temp.json`) and read/written from the server side.
+A local app for collecting job postings and showing AI job-fit analysis.
+Storage is SQLite (`data/jobfit.sqlite`), accessed only through
+`src/lib/jobs/jobsRepository.ts` / `src/lib/profile/profileRepository.ts`.
+`jobs_temp.json` is a legacy, read-only migration source — see docs/REDESIGN.md.
 Refactor, don't rewrite. Keep it lightweight.
 
 ## Commands
@@ -16,6 +18,7 @@ Refactor, don't rewrite. Keep it lightweight.
 npm run dev     # start dev server (http://localhost:3000)
 npm run build   # production build
 npm run lint    # eslint
+npm test        # vitest
 git status
 ```
 
@@ -31,16 +34,13 @@ run `npm run dev` on port 3000 and drive it with Playwright.
 
 ## Hard rules (don't break)
 
-- Never add `'use client'` to files using `fs` / `path` — they must stay server-side.
-- Don't remove or replace `jobs_temp.json`.
-- No real AI API, database, auth, or cloud sync unless explicitly requested.
+- Never add `'use client'` to files using `fs` / `path` / `node:sqlite` — they must stay server-side.
+- Don't delete `jobs_temp.json` (historical snapshot); don't add a second storage backend.
+- No auth or cloud sync unless explicitly requested. AI providers (Gemini/Groq/
+  OpenRouter) and SQLite are already in place — don't add *new* ones casually.
 - Don't change dependency versions or add deps without being asked.
 
 ## Next tasks
 
-1. Replace the old home "AI 評分" button (`alert('AI 評分功能待開發')`) with
-   navigation to the detail page.
-2. Add job application status model.
-3. `PATCH /api/jobs/[id]/status`.
-4. Status dropdown on the detail page.
-5. Status badge + filter tabs on the home page.
+See `docs/REDESIGN.md` for the phased roadmap (Phase 1 + Phase 2 complete).
+Phase 3 (Postgres/Supabase, multi-user, auth) is not started.
