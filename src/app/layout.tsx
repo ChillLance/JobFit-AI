@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google";
 import { AppLanguageSelector } from "@/components/AppLanguageSelector";
+import { ToriiIcon } from "@/components/ToriiIcon";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -42,7 +43,8 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col">
         <div className="flex shrink-0 items-center justify-between border-b border-stone-200/80 bg-washi/90 px-4 py-2 backdrop-blur sm:px-6">
-          <span className="font-[family-name:var(--font-display)] text-sm font-bold tracking-tight text-stone-700">
+          <span className="flex items-center gap-1.5 font-[family-name:var(--font-display)] text-sm font-bold tracking-tight text-stone-700">
+            <ToriiIcon className="h-4 w-4 text-orange-600" />
             JobFit<span className="text-orange-600"> AI</span>
           </span>
           <AppLanguageSelector />

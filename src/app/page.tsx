@@ -23,6 +23,7 @@ import { getDashboardStats } from '@/lib/jobs/getDashboardStats'
 import DashboardStatsCards from '@/components/jobs/DashboardStatsCards'
 import { getUiCopy } from '@/lib/uiCopy'
 import { useAppLanguage } from '@/lib/useAppLanguage'
+import { ToriiIcon } from '@/components/ToriiIcon'
 
 type JobStatus =
   | 'not_applied'
@@ -485,8 +486,8 @@ export default function HomePage() {
 
         {jobs.length === 0 ? (
           <section className="rounded-2xl border border-dashed border-stone-300 bg-stone-50/60 p-12 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-stone-300 bg-stone-100 text-xl text-stone-500">
-              ◎
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-orange-200 bg-orange-50 text-orange-600">
+              <ToriiIcon className="h-6 w-6" />
             </div>
             <h2 className="mt-4 text-lg font-bold text-stone-700">
               {h.emptyTitle}

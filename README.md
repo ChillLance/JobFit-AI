@@ -9,6 +9,22 @@ The core idea is simple:
 > JobFit-AI does not only ask: **"Can I do this job?"**  
 > It also asks: **"Should I apply for this job based on my profile?"**
 
+![Home dashboard — washi theme](docs/screenshots/home.png)
+
+![Job detail — multi-model analyze fit panel](docs/screenshots/job-detail.png)
+
+---
+
+## Try it in 60 seconds
+
+```bash
+npm install
+npm run demo   # seeds 7 fictional Japan working-holiday jobs (ramen shop, ski resort, ninja show...)
+npm run dev    # open http://localhost:3000, click 本地分析 on any job — no API keys needed
+```
+
+`npm run demo` never overwrites existing data (use `-- --force` to reset).
+
 ---
 
 ## Overview

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { getUiCopy } from '@/lib/uiCopy'
 import { useAppLanguage } from '@/lib/useAppLanguage'
+import { ToriiIcon } from '@/components/ToriiIcon'
 import type { JobStatus } from './StatusSelect'
 
 function getStatusBadgeClass(status: JobStatus) {
@@ -55,7 +56,8 @@ export function JobNotFound({ id }: { id: string }) {
         </Link>
 
         <section className="rounded-2xl border border-red-200 bg-red-50 p-8">
-          <p className="text-sm text-red-700">{j.notFoundLabel}</p>
+          <ToriiIcon className="h-8 w-8 text-red-300" />
+          <p className="mt-3 text-sm text-red-700">{j.notFoundLabel}</p>
           <h1 className="mt-3 text-3xl font-bold">{j.notFoundTitle}</h1>
           <p className="mt-4 break-all text-stone-600">ID：{id}</p>
         </section>
