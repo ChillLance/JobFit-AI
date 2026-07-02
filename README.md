@@ -190,7 +190,7 @@ The home page (`/`) provides a portfolio-style view of collected job postings:
 - Application status badges
 - Source and collected date
 
-Jobs are loaded from `GET /api/jobs` and persisted in `jobs_temp.json` on the server.
+Jobs are loaded from `GET /api/jobs` and persisted in SQLite (`data/jobfit.sqlite`) on the server.
 
 ---
 
@@ -317,9 +317,10 @@ The UI presents these with Traditional Chinese labels in `AnalyzeFitPanel`.
 | Framework | Next.js 16 (App Router) |
 | UI | React 19, Tailwind CSS 4 |
 | Language | TypeScript |
-| Job storage | `jobs_temp.json` (server-side `fs`) |
-| Profile storage | Browser `localStorage` |
-| Optional AI | Gemini API, Groq API (server routes only) |
+| Job storage | SQLite (`data/jobfit.sqlite`) via Node's built-in `node:sqlite` — no native dependency |
+| Profile storage | Browser `localStorage`, mirrored server-side for analysis (see below) |
+| Optional AI | Gemini, Groq, OpenRouter (server routes only) |
+| Tests / CI | Vitest, GitHub Actions |
 
 ---
 
@@ -388,6 +389,8 @@ npm run lint
 | --- | --- |
 | `build` | `next build` |
 | `start` | `next start` (after build) |
+| `test` | `vitest run` — unit tests for the pure analysis/jobs helpers and the SQLite repositories (isolated `:memory:` databases, never touches `data/jobfit.sqlite`) |
+| `test:watch` | `vitest` |
 
 ---
 
@@ -412,7 +415,7 @@ Refresh the home page after collecting to load jobs via `GET /api/jobs`.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `POST` | `/api/collect` | Append job to `jobs_temp.json` |
+| `POST` | `/api/collect` | Add a collected job to SQLite |
 | `GET` | `/api/jobs` | List jobs (home page) |
 | `DELETE` | `/api/jobs/[id]` | Delete job |
 | `PATCH` | `/api/jobs/[id]/status` | Update application status |
@@ -460,11 +463,12 @@ JobFit-AI/
 │   │   │   ├── profileContext.ts
 │   │   │   └── index.ts
 │   │   ├── analysis/               # Local analysis, digest, compareAnalysis
-│   │   ├── jobs/                   # Filters, display score, dashboard stats
+│   │   ├── jobs/                   # db.ts, jobsRepository.ts, filters, dashboard stats
 │   │   └── aiConfig.ts
 │   └── types/analysis.ts
-├── jobs_temp.json                  # Job store (gitignored)
-├── user_profile.json               # Reference profile seed
+├── data/jobfit.sqlite               # SQLite store (gitignored)
+├── jobs_temp.json                   # Legacy migration source (gitignored, read-only)
+├── user_profile.json                # Reference profile seed
 ├── .env.example
 └── package.json
 ```
@@ -472,8 +476,9 @@ JobFit-AI/
 Important areas:
 
 - `src/app/profiles` — Profile management and external AI profile import.
-- `src/lib/profile` — Profile schema, defaults, `localStorage` store, builder prompt, analysis context.
-- `src/app/api` — Collect, job CRUD/status, and analysis routes.
+- `src/lib/profile` — Profile schema, defaults, `localStorage` store + server-side mirror (`profileRepository.ts`), builder prompt, analysis context.
+- `src/lib/jobs` — SQLite connection (`db.ts`) and the one repository (`jobsRepository.ts`) that touches it.
+- `src/app/api` — Collect, job CRUD/status, profile sync, and analysis routes.
 - `src/app/jobs/[id]` — Conclusion-first job detail experience.
 
 ---
@@ -490,7 +495,8 @@ Important areas:
 - Home dashboard: stats cards, search, status/score/risk filters, sorting
 - Application status tracking (`PATCH /api/jobs/[id]/status`)
 - Job detail: active profile banner, Analyze Fit panel, collapsed raw posting
-- Job persistence via `jobs_temp.json` and `POST /api/collect`
+- Job persistence via SQLite (`data/jobfit.sqlite`) and `POST /api/collect`
+- Unit tests (Vitest) and CI (GitHub Actions) for the pure logic and repositories
 
 ### In progress / near-term (see Roadmap)
 
@@ -609,7 +615,7 @@ This project demonstrates:
 - AI prompt design and a shared compact digest pipeline
 - Multi-model analysis and read-only model comparison
 - Next.js App Router API routes with server-only secrets
-- File-based and `localStorage` MVP persistence
+- SQLite persistence behind a single repository, plus `localStorage` for the profiles UI
 - Privacy-aware profile import without in-app resume storage
 
 ---

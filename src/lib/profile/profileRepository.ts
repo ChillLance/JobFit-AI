@@ -62,11 +62,25 @@ export function createProfileRepository(db: DatabaseSync): ProfileRepository {
   return { readStore, writeStore, getActiveProfile }
 }
 
-const defaultRepository = createProfileRepository(getDb())
+// Lazy singleton: merely importing this module (e.g. to reuse
+// createProfileRepository in tests against an isolated database) must never
+// open the real data/jobfit.sqlite file. The connection is only made on the
+// first actual call.
+let defaultRepository: ProfileRepository | null = null
+function getDefaultRepository(): ProfileRepository {
+  if (!defaultRepository) defaultRepository = createProfileRepository(getDb())
+  return defaultRepository
+}
 
 /** The mirrored profile store, or `null` if the client has never synced. */
-export const readProfileStore = defaultRepository.readStore
+export function readProfileStore(): ProfileStore | null {
+  return getDefaultRepository().readStore()
+}
 /** Overwrite the mirrored store (called by POST /api/profile-sync). */
-export const writeProfileStore = defaultRepository.writeStore
+export function writeProfileStore(store: ProfileStore): void {
+  getDefaultRepository().writeStore(store)
+}
 /** The active profile to use as the analysis baseline, with a default fallback. */
-export const getActiveProfileFromDb = defaultRepository.getActiveProfile
+export function getActiveProfileFromDb(): JapanCareerProfile {
+  return getDefaultRepository().getActiveProfile()
+}

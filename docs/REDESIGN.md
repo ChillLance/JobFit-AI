@@ -114,12 +114,21 @@ The three goals are one path at different stages.
 4. ✅ Remove the `/score` zombie route (and its dead `ScorePanel`). No model id change.
 5. ✅ Commit and integrate the untracked i18n V2; update `docs/` to match reality.
 
-### Phase 2 — Open-source ready (polish + trust)
+### Phase 2 — Open-source ready (polish + trust) — ✅ done
 
-6. shadcn-style UI polish (the existing TASK-025), using the installed `shadcn-ui` skill.
-7. Swap the Repository to SQLite; move profiles into the store so analysis no longer
-   depends on the request body.
-8. Tests (Vitest) + CI (GitHub Actions) + README / `.env.example` alignment.
+6. ✅ Visual polish — done via a custom design system (`DESIGN.md`: washi
+   paper theme, vermilion accent, torii/kiriko motifs) rather than adopting
+   shadcn/ui components. The `shadcn-ui` skill stays installed for future
+   component work if that direction is revisited.
+7. ✅ Swapped the Repository to SQLite (`src/lib/jobs/db.ts` + `jobsRepository.ts`,
+   Node's built-in `node:sqlite`, no native dependency). Profiles are mirrored
+   into the same database (`src/lib/profile/profileRepository.ts`) via
+   `POST /api/profile-sync`; analyze routes resolve the active profile
+   server-side and no longer read it from the request body.
+8. ✅ Tests (Vitest, `npm test`) for the pure analysis/jobs helpers and both
+   SQLite repositories (isolated `:memory:` databases), plus CI
+   (`.github/workflows/ci.yml`: lint, typecheck, test, build). README /
+   `.env.example` updated to match.
 
 ### Phase 3 — Basic digital product
 
@@ -204,10 +213,12 @@ point is "**my app becomes a skill**", not "borrow someone's crawler".
   JDs from TokyoDev / Japan Dev (Class A) and dispatch-agency listings (Class B).
   Confirm AI matching + résumé tailoring is worth it *before* investing more code.
 - **Phase 1 — ✅ done** (foundation / consolidation).
-- **Phase 1.5 — Bridge (unlocks automation):** (a) move profile to the server behind
-  the Repository (closes §7.1); (b) add a `JobSource` ingestion interface, first
-  adapter = Greenhouse / Lever / Ashby public boards filtered to remote + Japan;
-  auto-collect → auto-run local analysis.
+- **Phase 1.5 — Bridge (unlocks automation):** (a) ✅ done — the active profile is
+  now mirrored server-side (`src/lib/profile/profileRepository.ts`, synced via
+  `POST /api/profile-sync`), so a server-side process can resolve "the profile"
+  without the browser in the loop, closing §7.1. (b) not started — add a
+  `JobSource` ingestion interface, first adapter = Greenhouse / Lever / Ashby
+  public boards filtered to remote + Japan; auto-collect → auto-run local analysis.
 - **Phase 2 — Open-source ready:** SQLite via Repository; profiles fully in the store;
   Vitest + CI; shadcn polish; more Class-A adapters (RemoteOK, Remotive, Adzuna,
   TokyoDev / Japan Dev feeds); `workStyle` axis on the profile (§7.3).

@@ -83,23 +83,43 @@ export function createJobsRepository(db: DatabaseSync): JobsRepository {
   return { readJobs, writeJobs, findJob, prependJob, updateJob, deleteJob }
 }
 
-const defaultRepository = createJobsRepository(getDb())
+// Lazy singleton: merely importing this module (e.g. to reuse
+// createJobsRepository in tests against an isolated database) must never
+// open the real data/jobfit.sqlite file. The connection is only made on the
+// first actual call.
+let defaultRepository: JobsRepository | null = null
+function getDefaultRepository(): JobsRepository {
+  if (!defaultRepository) defaultRepository = createJobsRepository(getDb())
+  return defaultRepository
+}
 
 /** Read all jobs, newest first. Never throws. */
-export const readJobs = defaultRepository.readJobs
+export function readJobs(): Job[] {
+  return getDefaultRepository().readJobs()
+}
 /** Overwrite the whole store. Caller is responsible for passing the full list. */
-export const writeJobs = defaultRepository.writeJobs
+export function writeJobs(jobs: Job[]): void {
+  getDefaultRepository().writeJobs(jobs)
+}
 /** Find a single job by id, or `undefined` when absent. */
-export const findJob = defaultRepository.findJob
+export function findJob(id: string): Job | undefined {
+  return getDefaultRepository().findJob(id)
+}
 /** Insert a new job at the front of the list (newest first). */
-export const prependJob = defaultRepository.prependJob
+export function prependJob(job: Job): void {
+  getDefaultRepository().prependJob(job)
+}
 /**
  * Apply a shallow patch to one job and persist.
  * Returns the updated job, or `null` when the id is not found.
  */
-export const updateJob = defaultRepository.updateJob
+export function updateJob(id: string, patch: JobPatch): Job | null {
+  return getDefaultRepository().updateJob(id, patch)
+}
 /**
  * Delete one job and persist.
  * Returns the remaining count, or `null` when the id is not found.
  */
-export const deleteJob = defaultRepository.deleteJob
+export function deleteJob(id: string): { remaining: number } | null {
+  return getDefaultRepository().deleteJob(id)
+}
