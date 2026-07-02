@@ -1,7 +1,7 @@
 // Unified analysis schema shared across local / Gemini / Groq providers (TASK-020).
 // UI should read these standardized fields instead of provider-specific raw shapes.
 
-export type AnalysisProvider = 'local' | 'gemini' | 'groq'
+export type AnalysisProvider = 'local' | 'gemini' | 'groq' | 'openrouter'
 
 export type FitLevel = 'excellent' | 'good' | 'fair' | 'poor' | 'unknown'
 
@@ -63,6 +63,7 @@ export type RawAnalysis = Record<string, unknown> | null | undefined
 export type AnalysisJobInput = {
   deepAnalysis?: unknown
   groqAnalysis?: unknown
+  openrouterAnalysis?: unknown
   localAnalysis?: unknown
   analysis?: unknown
   aiScore?: unknown

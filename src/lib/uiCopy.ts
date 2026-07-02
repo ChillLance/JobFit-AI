@@ -183,21 +183,25 @@ export type UiCopy = {
       local: string
       gemini: string
       groq: string
+      openrouter: string
     }
     startLabels: {
       local: string
       gemini: string
       groq: string
+      openrouter: string
     }
     resultHeadings: {
       local: string
       gemini: string
       groq: string
+      openrouter: string
     }
     emptyDescriptions: {
       local: string
       gemini: string
       groq: string
+      openrouter: string
     }
     analyzing: string
     regenerating: string
@@ -424,22 +428,27 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
         local: '本地分析',
         gemini: 'Gemini',
         groq: 'Groq 70B',
+        openrouter: 'OpenRouter',
       },
       startLabels: {
         local: '執行本地分析',
         gemini: '開始 Gemini 分析',
         groq: '開始 Groq Llama 70B 分析',
+        openrouter: '開始 OpenRouter 分析',
       },
       resultHeadings: {
         local: '本地分析結果',
         gemini: 'Gemini 分析結果',
         groq: 'Groq Llama 70B 分析結果',
+        openrouter: 'OpenRouter 分析結果',
       },
       emptyDescriptions: {
         local: '尚未執行本地分析。本地分析使用關鍵字規則，立即可用、不需 API。',
         gemini:
           '尚未進行 Gemini 深度分析。Gemini 會根據完整職缺內容與你的個人檔案產生深度建議。',
         groq: '尚未進行 Groq Llama 70B 分析。Groq 使用精簡輸入，速度快，可作為另一個分析視角。',
+        openrouter:
+          '尚未進行 OpenRouter 分析。OpenRouter 透過單一 API 使用多種模型（需設定 OPENROUTER_API_KEY）。',
       },
       analyzing: '分析中…',
       regenerating: '重新產生中…',
@@ -667,16 +676,19 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
         local: 'Local analysis',
         gemini: 'Gemini',
         groq: 'Groq 70B',
+        openrouter: 'OpenRouter',
       },
       startLabels: {
         local: 'Run local analysis',
         gemini: 'Start Gemini analysis',
         groq: 'Start Groq Llama 70B analysis',
+        openrouter: 'Start OpenRouter analysis',
       },
       resultHeadings: {
         local: 'Local analysis result',
         gemini: 'Gemini analysis result',
         groq: 'Groq Llama 70B analysis result',
+        openrouter: 'OpenRouter analysis result',
       },
       emptyDescriptions: {
         local:
@@ -685,6 +697,8 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
           'No Gemini deep analysis yet. Gemini reviews the full posting and your profile.',
         groq:
           'No Groq Llama 70B analysis yet. Groq uses compact input for a fast second opinion.',
+        openrouter:
+          'No OpenRouter analysis yet. OpenRouter reaches many models through one API (requires OPENROUTER_API_KEY).',
       },
       analyzing: 'Analyzing…',
       regenerating: 'Regenerating…',
@@ -914,16 +928,19 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
         local: 'ローカル分析',
         gemini: 'Gemini',
         groq: 'Groq 70B',
+        openrouter: 'OpenRouter',
       },
       startLabels: {
         local: 'ローカル分析を実行',
         gemini: 'Gemini 分析を開始',
         groq: 'Groq Llama 70B 分析を開始',
+        openrouter: 'OpenRouter 分析を開始',
       },
       resultHeadings: {
         local: 'ローカル分析結果',
         gemini: 'Gemini 分析結果',
         groq: 'Groq Llama 70B 分析結果',
+        openrouter: 'OpenRouter 分析結果',
       },
       emptyDescriptions: {
         local:
@@ -932,6 +949,8 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
           'Gemini 深層分析は未実行です。求人全文と Profile に基づく詳細分析です。',
         groq:
           'Groq Llama 70B 分析は未実行です。コンパクト入力で高速な第二意見を得られます。',
+        openrouter:
+          'OpenRouter 分析は未実行です。単一 API で多数のモデルを利用できます（OPENROUTER_API_KEY が必要）。',
       },
       analyzing: '分析中…',
       regenerating: '再生成中…',

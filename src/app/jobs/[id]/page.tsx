@@ -43,6 +43,7 @@ export default async function JobDetailPage({
           jobId={job.id}
           initialDeepAnalysis={job.deepAnalysis ?? null}
           initialGroqAnalysis={job.groqAnalysis ?? null}
+          initialOpenrouterAnalysis={job.openrouterAnalysis ?? null}
           initialLocalAnalysis={
             job.localAnalysis ?? job.analysis ?? job.aiScore ?? null
           }

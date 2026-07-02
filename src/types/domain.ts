@@ -38,6 +38,7 @@ export type Job = {
   localAnalysis?: Record<string, unknown> // local rule-based result (canonical key)
   deepAnalysis?: Record<string, unknown> // Gemini
   groqAnalysis?: Record<string, unknown> // Groq
+  openrouterAnalysis?: Record<string, unknown> // OpenRouter (any model via gateway)
   // Deprecated, read-only back-compat: older records may still carry these. New
   // code never writes them. `analysis` was the previous local key; `aiScore` was
   // the legacy mock score. Readers fall back to them so old data is not lost.

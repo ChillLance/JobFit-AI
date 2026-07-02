@@ -9,7 +9,7 @@ import {
   normalizeAnalysisResult,
 } from '@/lib/analysis/normalizeAnalysis'
 
-export type AnalysisSourceKey = 'local' | 'gemini' | 'groq'
+export type AnalysisSourceKey = 'local' | 'gemini' | 'groq' | 'openrouter'
 
 export type AnalysisConsistency = 'high' | 'medium' | 'low' | 'insufficient'
 
@@ -26,6 +26,7 @@ export type AnalysisComparison = {
     local?: number
     gemini?: number
     groq?: number
+    openrouter?: number
   }
   averageScore: number | null
   scoreSpread: number | null
@@ -58,6 +59,7 @@ function readRawSources(job: unknown): Record<AnalysisSourceKey, unknown> {
     local,
     gemini: isRecord(j.deepAnalysis) ? j.deepAnalysis : null,
     groq: isRecord(j.groqAnalysis) ? j.groqAnalysis : null,
+    openrouter: isRecord(j.openrouterAnalysis) ? j.openrouterAnalysis : null,
   }
 }
 
@@ -353,7 +355,7 @@ function emptyComparison(finalSummary: string): AnalysisComparison {
 export function buildAnalysisComparison(job: unknown): AnalysisComparison {
   const raw = readRawSources(job)
 
-  const sourceOrder: AnalysisSourceKey[] = ['local', 'gemini', 'groq']
+  const sourceOrder: AnalysisSourceKey[] = ['local', 'gemini', 'groq', 'openrouter']
   const normalized: Partial<Record<AnalysisSourceKey, AnalysisResult>> = {}
 
   for (const key of sourceOrder) {

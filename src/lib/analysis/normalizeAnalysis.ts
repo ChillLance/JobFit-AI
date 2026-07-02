@@ -16,12 +16,14 @@ export const PROVIDER_DEFAULT_MODEL: Record<AnalysisProvider, string> = {
   local: 'local-rules-v1',
   gemini: 'gemini-3.5-flash',
   groq: 'llama-3.3-70b-versatile',
+  openrouter: 'meta-llama/llama-3.3-70b-instruct',
 }
 
 const PROVIDER_LABEL: Record<AnalysisProvider, string> = {
   local: '本地規則分析',
   gemini: 'Gemini 深度分析',
   groq: 'Groq Llama 70B',
+  openrouter: 'OpenRouter',
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -317,6 +319,14 @@ export function getPrimaryAnalysis(job: AnalysisJobInput): AnalysisResult | null
       job.groqAnalysis,
       'groq',
       PROVIDER_DEFAULT_MODEL.groq
+    )
+  }
+
+  if (isRecord(job.openrouterAnalysis)) {
+    return normalizeAnalysisResult(
+      job.openrouterAnalysis,
+      'openrouter',
+      PROVIDER_DEFAULT_MODEL.openrouter
     )
   }
 

@@ -403,6 +403,7 @@ Refresh the home page after collecting to load jobs via `GET /api/jobs`.
 | `POST` | `/api/jobs/[id]/analyze` | Local profile-driven analysis (writes `localAnalysis`) |
 | `POST` | `/api/jobs/[id]/analyze/deep` | Gemini analysis (writes `deepAnalysis`) |
 | `POST` | `/api/jobs/[id]/analyze/groq` | Groq analysis (writes `groqAnalysis`) |
+| `POST` | `/api/jobs/[id]/analyze/openrouter` | OpenRouter analysis — any model via one gateway (writes `openrouterAnalysis`; needs `OPENROUTER_API_KEY`) |
 
 All routes go through `src/lib/jobs/jobsRepository.ts`; job detail reads it on
 the server (no `GET /api/jobs/[id]`). The legacy `POST /api/jobs/[id]/score`

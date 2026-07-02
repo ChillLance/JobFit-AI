@@ -38,6 +38,7 @@ type Props = {
   jobId: string
   initialDeepAnalysis?: RawAnalysisObject | null
   initialGroqAnalysis?: RawAnalysisObject | null
+  initialOpenrouterAnalysis?: RawAnalysisObject | null
   initialLocalAnalysis?: RawAnalysisObject | null
 }
 
@@ -660,7 +661,7 @@ function ComparisonView({
             </span>
           </span>
         </div>
-        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-5">
           <ScoreCell
             label={a.providers.local}
             value={comparison.scores.local}
@@ -674,6 +675,11 @@ function ComparisonView({
           <ScoreCell
             label={a.providers.groq}
             value={comparison.scores.groq}
+            notAnalyzedLabel={a.notAnalyzed}
+          />
+          <ScoreCell
+            label={a.providers.openrouter}
+            value={comparison.scores.openrouter}
             notAnalyzedLabel={a.notAnalyzed}
           />
           <div className="rounded-xl border border-violet-800/50 bg-violet-950/30 p-3 text-center">
@@ -728,6 +734,7 @@ export function AnalyzeFitPanel({
   jobId,
   initialDeepAnalysis = null,
   initialGroqAnalysis = null,
+  initialOpenrouterAnalysis = null,
   initialLocalAnalysis = null,
 }: Props) {
   const { language } = useAppLanguage()
@@ -742,6 +749,8 @@ export function AnalyzeFitPanel({
   const [groqAnalysis, setGroqAnalysis] = useState<RawAnalysisObject | null>(
     initialGroqAnalysis
   )
+  const [openrouterAnalysis, setOpenrouterAnalysis] =
+    useState<RawAnalysisObject | null>(initialOpenrouterAnalysis)
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('summary')
 
@@ -749,16 +758,19 @@ export function AnalyzeFitPanel({
     local: false,
     gemini: false,
     groq: false,
+    openrouter: false,
   })
   const [errors, setErrors] = useState<Record<AnalysisProvider, string | null>>({
     local: null,
     gemini: null,
     groq: null,
+    openrouter: null,
   })
   const [staleNotice, setStaleNotice] = useState<Record<AnalysisProvider, boolean>>({
     local: false,
     gemini: false,
     groq: false,
+    openrouter: false,
   })
 
   function setProviderLoading(provider: AnalysisProvider, value: boolean) {
@@ -826,14 +838,24 @@ export function AnalyzeFitPanel({
     }
   }
 
-  async function runDeepAnalyze(provider: 'gemini' | 'groq', force: boolean) {
+  async function runDeepAnalyze(
+    provider: 'gemini' | 'groq' | 'openrouter',
+    force: boolean
+  ) {
     const endpoint =
       provider === 'gemini'
         ? `/api/jobs/${jobId}/analyze/deep`
-        : `/api/jobs/${jobId}/analyze/groq`
+        : provider === 'groq'
+          ? `/api/jobs/${jobId}/analyze/groq`
+          : `/api/jobs/${jobId}/analyze/openrouter`
 
-    const hadResult =
-      provider === 'gemini' ? Boolean(geminiAnalysis) : Boolean(groqAnalysis)
+    const hadResult = Boolean(
+      provider === 'gemini'
+        ? geminiAnalysis
+        : provider === 'groq'
+          ? groqAnalysis
+          : openrouterAnalysis
+    )
 
     setProviderLoading(provider, true)
     setProviderError(provider, null)
@@ -853,7 +875,11 @@ export function AnalyzeFitPanel({
 
       if (!res.ok || !data.analysis) {
         const baseLabel =
-          provider === 'gemini' ? 'Gemini 分析失敗' : 'Groq Llama 70B 分析失敗'
+          provider === 'gemini'
+            ? 'Gemini 分析失敗'
+            : provider === 'groq'
+              ? 'Groq Llama 70B 分析失敗'
+              : 'OpenRouter 分析失敗'
         const message =
           typeof data.details === 'string'
             ? `${data.error || baseLabel}：${data.details}`
@@ -871,8 +897,10 @@ export function AnalyzeFitPanel({
 
       if (provider === 'gemini') {
         setGeminiAnalysis(data.analysis)
-      } else {
+      } else if (provider === 'groq') {
         setGroqAnalysis(data.analysis)
+      } else {
+        setOpenrouterAnalysis(data.analysis)
       }
       setProviderError(provider, null)
     } catch (error) {
@@ -881,7 +909,9 @@ export function AnalyzeFitPanel({
           ? error.message
           : provider === 'gemini'
             ? 'Gemini 分析失敗'
-            : 'Groq Llama 70B 分析失敗'
+            : provider === 'groq'
+              ? 'Groq Llama 70B 分析失敗'
+              : 'OpenRouter 分析失敗'
 
       if (hadResult) {
         setProviderStale(provider, true)
@@ -903,11 +933,19 @@ export function AnalyzeFitPanel({
   const groqResult: AnalysisResult | null = groqAnalysis
     ? normalizeAnalysisResult(groqAnalysis, 'groq', PROVIDER_DEFAULT_MODEL.groq)
     : null
+  const openrouterResult: AnalysisResult | null = openrouterAnalysis
+    ? normalizeAnalysisResult(
+        openrouterAnalysis,
+        'openrouter',
+        PROVIDER_DEFAULT_MODEL.openrouter
+      )
+    : null
 
-  // Best available analysis for the overview card: gemini > groq > local > none.
+  // Best available analysis for the overview card: gemini > groq > openrouter > local.
   const overview = getPrimaryAnalysis({
     deepAnalysis: geminiAnalysis ?? undefined,
     groqAnalysis: groqAnalysis ?? undefined,
+    openrouterAnalysis: openrouterAnalysis ?? undefined,
     localAnalysis: localAnalysis ?? undefined,
   })
 
@@ -918,12 +956,14 @@ export function AnalyzeFitPanel({
     localAnalysis: localAnalysis ?? undefined,
     deepAnalysis: geminiAnalysis ?? undefined,
     groqAnalysis: groqAnalysis ?? undefined,
+    openrouterAnalysis: openrouterAnalysis ?? undefined,
   })
 
   const hasResult: Record<AnalysisProvider, boolean> = {
     local: Boolean(localResult),
     gemini: Boolean(geminiResult),
     groq: Boolean(groqResult),
+    openrouter: Boolean(openrouterResult),
   }
 
   // Normalized per-model results used by the comparison's expandable breakdown.
@@ -934,12 +974,20 @@ export function AnalyzeFitPanel({
         ? { provider: 'gemini' as const, result: geminiResult }
         : null,
       groqResult ? { provider: 'groq' as const, result: groqResult } : null,
+      openrouterResult
+        ? { provider: 'openrouter' as const, result: openrouterResult }
+        : null,
     ].filter(
       (entry): entry is { provider: AnalysisProvider; result: AnalysisResult } =>
         entry !== null
     )
 
-  const providerTabs: AnalysisProvider[] = ['local', 'gemini', 'groq']
+  const providerTabs: AnalysisProvider[] = [
+    'local',
+    'gemini',
+    'groq',
+    'openrouter',
+  ]
 
   return (
     <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-6">
@@ -1100,6 +1148,27 @@ export function AnalyzeFitPanel({
               onStart={() => runDeepAnalyze('groq', false)}
               isLoading={loading.groq}
               error={errors.groq}
+              analyzingLabel={a.analyzing}
+            />
+          ))}
+
+        {activeTab === 'openrouter' &&
+          (openrouterResult ? (
+            <AnalysisResultCard
+              heading={a.resultHeadings.openrouter}
+              data={openrouterResult}
+              onRegenerate={() => runDeepAnalyze('openrouter', true)}
+              isRegenerating={loading.openrouter}
+              staleNotice={staleNotice.openrouter}
+              copy={a}
+            />
+          ) : (
+            <EmptyState
+              description={a.emptyDescriptions.openrouter}
+              buttonLabel={a.startLabels.openrouter}
+              onStart={() => runDeepAnalyze('openrouter', false)}
+              isLoading={loading.openrouter}
+              error={errors.openrouter}
               analyzingLabel={a.analyzing}
             />
           ))}
