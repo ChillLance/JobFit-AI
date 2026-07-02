@@ -299,8 +299,12 @@ export default function HomePage() {
       <div className="mx-auto max-w-5xl">
         <header className="mb-8 flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-sm text-slate-400">{h.brand}</p>
-            <h1 className="mt-2 text-3xl font-bold">{h.title}</h1>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-400">
+              {h.brand}
+            </p>
+            <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight">
+              {h.title}
+            </h1>
             <p className="mt-2 text-slate-400">{h.subtitle(jobs.length)}</p>
           </div>
 
@@ -547,7 +551,7 @@ export default function HomePage() {
               return (
                 <article
                   key={job.id}
-                  className="flex h-full flex-col rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-lg transition hover:border-slate-700"
+                  className="flex h-full flex-col rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-700/50 hover:shadow-xl hover:shadow-violet-950/30"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <h2 className="line-clamp-2 text-lg font-bold leading-snug">
