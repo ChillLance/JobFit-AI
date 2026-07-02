@@ -49,6 +49,7 @@ export default function RootLayout({
           </span>
           <AppLanguageSelector />
         </div>
+        <div className="kiriko-edge shrink-0" aria-hidden="true" />
         {children}
       </body>
     </html>

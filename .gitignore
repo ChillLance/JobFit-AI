@@ -42,6 +42,7 @@ yarn-error.log*
 next-env.d.ts
 
 jobs_temp.json
+jobs_temp.backup-*.json
 
 # local Claude Code permissions (project skills in .claude/skills ARE committed)
 .claude/settings.local.json

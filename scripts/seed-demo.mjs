@@ -2,7 +2,11 @@
 // fresh clone shows the dashboard without the Chrome extension.
 //
 //   npm run demo            -> seeds only when jobs_temp.json is missing/empty
-//   npm run demo -- --force -> overwrites existing data (asks nothing; be sure)
+//   npm run demo -- --force -> overwrites existing data
+//
+// Safety: --force NEVER discards real data silently. Whatever is currently in
+// jobs_temp.json is copied to a timestamped jobs_temp.backup-<ISO>.json first,
+// so an accidental --force is always recoverable.
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -18,6 +22,13 @@ if (hasData && !force) {
   console.log('jobs_temp.json already has data — not touching it.')
   console.log('Use `npm run demo -- --force` to overwrite with demo jobs.')
   process.exit(0)
+}
+
+if (hasData && force) {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+  const backupPath = path.join(root, `jobs_temp.backup-${stamp}.json`)
+  fs.writeFileSync(backupPath, existing, 'utf8')
+  console.log(`Backed up existing jobs_temp.json to ${path.basename(backupPath)} before overwriting.`)
 }
 
 fs.copyFileSync(source, target)
