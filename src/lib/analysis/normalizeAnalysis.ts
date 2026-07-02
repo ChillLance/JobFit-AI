@@ -187,15 +187,15 @@ export function getFitLevelLabel(level: FitLevel): string {
 export function getScoreColorClass(score: number | null | undefined): string {
   switch (getFitLevel(score)) {
     case 'excellent':
-      return 'text-emerald-300'
+      return 'text-emerald-700'
     case 'good':
-      return 'text-amber-300'
+      return 'text-amber-700'
     case 'fair':
-      return 'text-sky-300'
+      return 'text-sky-700'
     case 'poor':
-      return 'text-rose-300'
+      return 'text-rose-700'
     default:
-      return 'text-slate-400'
+      return 'text-stone-500'
   }
 }
 

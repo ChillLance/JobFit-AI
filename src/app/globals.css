@@ -1,11 +1,18 @@
 @import "tailwindcss";
 
-/* JobFit AI design tokens — dark-first "night-shift command center".
+/* JobFit AI design tokens — light "washi field notes" (和紙手帳) theme.
+   Kinari unbleached-paper surfaces, sumi ink text, vermilion (朱) accent.
    Single source of truth documented in DESIGN.md. */
 :root {
-  --background: #020617; /* slate-950 */
-  --foreground: #f1f5f9; /* slate-100 */
-  --accent: #ea580c; /* orange-600 */
+  --background: #f8f4ea; /* 生成り kinari washi */
+  --foreground: #26221c; /* 墨 sumi ink (warm near-black) */
+  --accent: #ea580c; /* 朱 vermilion (orange-600) */
+}
+
+@theme {
+  --color-washi: #f8f4ea;
+  --color-paper: #fffcf6;
+  --color-ink: #26221c;
 }
 
 @theme inline {
@@ -29,7 +36,8 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Atmospheric depth: a faint orange aurora behind the top of every page. */
+/* Paper atmosphere: faint vermilion + indigo washes bleeding from the top,
+   like ink settling into washi. Subtle by design. */
 body::before {
   content: "";
   position: fixed;
@@ -38,13 +46,13 @@ body::before {
   z-index: 0;
   background:
     radial-gradient(
-      60rem 24rem at 50% -8rem,
-      rgba(234, 88, 12, 0.12),
+      64rem 26rem at 45% -10rem,
+      rgba(215, 38, 49, 0.05),
       transparent 70%
     ),
     radial-gradient(
-      40rem 20rem at 85% -6rem,
-      rgba(56, 189, 248, 0.06),
+      44rem 20rem at 90% -8rem,
+      rgba(0, 75, 151, 0.04),
       transparent 70%
     );
 }
@@ -55,21 +63,21 @@ body > * {
 }
 
 ::selection {
-  background: rgba(234, 88, 12, 0.5);
-  color: #f8fafc;
+  background: rgba(234, 88, 12, 0.25);
+  color: #1c1917;
 }
 
-/* Slim slate scrollbars to match the shell. */
+/* Slim warm-gray scrollbars to match the paper shell. */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #334155 transparent;
+  scrollbar-color: #d6d3d1 transparent;
 }
 *::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 *::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #d6d3d1;
   border-radius: 8px;
 }
 *::-webkit-scrollbar-track {
@@ -78,7 +86,7 @@ body > * {
 
 /* Visible keyboard focus without hunting per-component. */
 :focus-visible {
-  outline: 2px solid rgba(251, 146, 60, 0.85);
+  outline: 2px solid rgba(234, 88, 12, 0.7);
   outline-offset: 2px;
   border-radius: 4px;
 }

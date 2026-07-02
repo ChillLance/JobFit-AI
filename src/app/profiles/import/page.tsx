@@ -173,25 +173,25 @@ export default function ImportProfilePage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-8 text-white">
+    <main className="min-h-screen bg-washi px-6 py-8 text-ink">
       <div className="mx-auto max-w-3xl">
-        <header className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg">
+        <header className="mb-6 rounded-2xl border border-stone-200 bg-paper p-6 shadow-sm">
           <Link
             href="/profiles"
-            className="text-sm text-slate-400 transition hover:text-slate-200"
+            className="text-sm text-stone-500 transition hover:text-stone-700"
           >
             {copy.common.backToProfiles}
           </Link>
           <h1 className="mt-2 text-3xl font-bold">{i.title}</h1>
-          <p className="mt-3 max-w-2xl leading-7 text-slate-400">{i.description}</p>
+          <p className="mt-3 max-w-2xl leading-7 text-stone-500">{i.description}</p>
         </header>
 
-        <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg">
+        <section className="mb-6 rounded-2xl border border-stone-200 bg-paper p-6 shadow-sm">
           <h2 className="text-lg font-bold">{i.stepsTitle}</h2>
           <ol className="mt-3 space-y-2">
             {i.steps.map((step, index) => (
-              <li key={index} className="flex gap-3 text-sm leading-6 text-slate-300">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-700 bg-slate-800 text-xs font-semibold text-slate-200">
+              <li key={index} className="flex gap-3 text-sm leading-6 text-stone-600">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-stone-300 bg-stone-100 text-xs font-semibold text-stone-700">
                   {index + 1}
                 </span>
                 <span>{step}</span>
@@ -200,11 +200,11 @@ export default function ImportProfilePage() {
           </ol>
         </section>
 
-        <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg">
+        <section className="mb-6 rounded-2xl border border-stone-200 bg-paper p-6 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-bold">{i.copyPromptTitle}</h2>
-              <p className="mt-1 text-sm text-slate-400">{i.copyPromptDesc}</p>
+              <p className="mt-1 text-sm text-stone-500">{i.copyPromptDesc}</p>
             </div>
             <button
               type="button"
@@ -215,14 +215,14 @@ export default function ImportProfilePage() {
             </button>
           </div>
 
-          <p className="mt-4 text-sm text-slate-500">{i.promptFollowsAppLanguage}</p>
+          <p className="mt-4 text-sm text-stone-400">{i.promptFollowsAppLanguage}</p>
 
           {copyStatus && (
             <div
               className={`mt-3 rounded-xl border p-3 text-sm ${
                 copyStatus.type === 'success'
-                  ? 'border-emerald-700 bg-emerald-950/40 text-emerald-100'
-                  : 'border-amber-700 bg-amber-950/40 text-amber-100'
+                  ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
+                  : 'border-amber-300 bg-amber-50 text-amber-900'
               }`}
             >
               {copyStatus.text}
@@ -235,13 +235,13 @@ export default function ImportProfilePage() {
             readOnly
             spellCheck={false}
             onFocus={(e) => e.currentTarget.select()}
-            className="mt-4 h-64 w-full resize-none rounded-xl border border-slate-700 bg-slate-950 p-4 font-mono text-xs leading-5 text-slate-100 focus:border-orange-500 focus:outline-none"
+            className="mt-4 h-64 w-full resize-none rounded-xl border border-stone-300 bg-washi p-4 font-mono text-xs leading-5 text-ink focus:border-orange-500 focus:outline-none"
           />
         </section>
 
-        <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg">
+        <section className="mb-6 rounded-2xl border border-stone-200 bg-paper p-6 shadow-sm">
           <h2 className="text-lg font-bold">{i.pasteJsonTitle}</h2>
-          <p className="mt-1 text-sm text-slate-400">{i.pasteJsonDesc}</p>
+          <p className="mt-1 text-sm text-stone-500">{i.pasteJsonDesc}</p>
 
           <textarea
             value={jsonText}
@@ -251,18 +251,18 @@ export default function ImportProfilePage() {
             }}
             spellCheck={false}
             placeholder='{ "version": "japan_career_profile_v1", "name": "...", ... }'
-            className="mt-4 h-64 w-full resize-none rounded-xl border border-slate-700 bg-slate-950 p-4 font-mono text-xs leading-5 text-slate-100 placeholder:text-slate-600 focus:border-orange-500 focus:outline-none"
+            className="mt-4 h-64 w-full resize-none rounded-xl border border-stone-300 bg-washi p-4 font-mono text-xs leading-5 text-ink placeholder:text-stone-400 focus:border-orange-500 focus:outline-none"
           />
 
           {importError && (
-            <div className="mt-3 rounded-xl border border-red-700 bg-red-950/50 p-3 text-sm text-red-100">
+            <div className="mt-3 rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-900">
               <p className="font-bold">無法匯入</p>
               <p className="mt-1">{importError}</p>
             </div>
           )}
 
           {importStatus?.type === 'success' && (
-            <div className="mt-3 rounded-xl border border-emerald-700 bg-emerald-950/40 p-4 text-sm text-emerald-100">
+            <div className="mt-3 rounded-xl border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-900">
               <p className="font-bold">{i.importSuccessTitle}</p>
               <p className="mt-1">{importStatus.text}</p>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -280,7 +280,7 @@ export default function ImportProfilePage() {
                       setImportStatus(null)
                       setImportedName(null)
                     }}
-                    className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-800"
+                    className="rounded-xl border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100"
                   >
                     {i.importAnother}
                   </button>
@@ -299,7 +299,7 @@ export default function ImportProfilePage() {
             </button>
             <Link
               href="/profiles"
-              className="rounded-xl border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-800"
+              className="rounded-xl border border-stone-300 px-4 py-2.5 text-sm font-semibold text-stone-700 transition hover:bg-stone-100"
             >
               {i.backToProfiles}
             </Link>

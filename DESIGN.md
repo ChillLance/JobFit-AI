@@ -5,13 +5,13 @@
 
 ## Direction
 
-**"Night-shift command center."** A focused, dark intelligence dashboard for a
-job hunter comparing AI verdicts late at night. Calm slate surfaces, one
-confident **vermilion (朱色, torii red-orange)** accent, data that lines up.
-Refined-minimal — precision over decoration. Vermilion was chosen deliberately
-over the violet/purple that every AI-built product defaults to; it also nods
-to the app's Japan job-hunt domain. Not a marketing site: no hero images, no
-purple gradients.
+**"Washi field notes"(和紙手帳).** A working-holiday job hunter's travel
+journal: warm unbleached-paper (生成り kinari) surfaces, sumi-ink text, one
+confident **vermilion (朱, hanko/torii red)** accent, indigo (藍) reserved for
+the "applied" state. Light, calm, printed-matter feel — the opposite of both
+AI-product clichés (purple accents AND black dashboards). Reference hues from
+Japan's traditional color canon: shu #D72631, ai #004B97, kinari off-white,
+sumi #1C1C1C. Refined-minimal: precision over decoration.
 
 ## Tokens
 
@@ -19,15 +19,18 @@ purple gradients.
 
 | Role | Value | Tailwind |
 | --- | --- | --- |
-| Page background | `#020617` | `slate-950` |
-| Card surface | — | `slate-900` (+ `border-slate-800`) |
-| Inset surface | — | `slate-950/60` |
-| Text primary / secondary / muted | — | `slate-100` / `slate-300` / `slate-400` |
-| **Accent — vermilion 朱 (brand, primary actions, active tabs, focus)** | `#ea580c` | `orange-600` (hover `orange-500`; text `orange-300/400`) |
-| Danger (destructive only, always outline style) | — | `red-500/60` border + `red-300` text |
+| Page background — washi 生成り | `#f8f4ea` | custom `washi` |
+| Card surface — paper | `#fffcf6` | custom `paper` (+ `border-stone-200`) |
+| Inset surface | — | `stone-100/60` on paper |
+| Text — sumi ink / secondary / muted | `#26221c` | custom `ink` / `stone-600` / `stone-500` |
+| Neutral family | — | `stone` (warm gray; never cool `slate`/`gray`) |
+| **Accent — vermilion 朱 (brand, primary actions, active tabs, focus)** | `#ea580c` | `orange-600` (hover `orange-500`; text `orange-600/700`) |
+| Danger (destructive only, always outline style) | — | `red-300` border + `red-700` text |
 
-Single accent: the old secondary `blue-600` CTAs were folded into vermilion.
-Blue now appears **only** in the semantic `applied` status badge.
+Single accent: vermilion owns every CTA. Indigo/blue appears **only** in the
+semantic `applied` status badge. On this light theme, semantic hues render as
+`-700/-800` text on `-50` washes with `-200/-300` borders (dark `-300 on -950`
+shades are forbidden).
 
 **Semantic score scale (never repurpose):**
 `excellent ≥85` emerald · `good ≥70` amber · `fair ≥50` sky · `poor <50` rose ·
@@ -47,9 +50,10 @@ not_interested slate · not_applied slate.
 
 - Cards `rounded-2xl`, inner elements `rounded-xl`, chips `rounded-full`.
 - Elevation via borders first, shadows second (`shadow-lg` cards).
-- Atmosphere: fixed vermilion ember glow at the top of every page, with a
-  faint cool counter-glow (see `globals.css body::before`) — subtle; if you
-  notice it, it's too strong.
+- Elevation is quiet on paper: `shadow-sm`/`shadow-md` only — heavy dark
+  shadows break the printed-matter feel.
+- Atmosphere: faint vermilion + indigo paper washes at the top of every page
+  (see `globals.css body::before`) — subtle; if you notice it, it's too strong.
 
 ## Motion
 
@@ -69,7 +73,9 @@ not_interested slate · not_applied slate.
    Destructive actions stay outline-red so solid vermilion never reads as
    danger.
 2. Every interactive element keeps a visible `:focus-visible` ring (global).
-3. Empty states use dashed `border-slate-700` boxes with one action button.
+3. Empty states use dashed `border-stone-300` boxes with one action button.
 4. Language switch (zh-TW/en/ja) must never reflow layout — copy lives in
    `src/lib/uiCopy.ts`, sized for the longest language.
-5. Dark only. No light theme until a real token pass (Phase 2 shadcn work).
+5. Light washi theme only. A dark mode, if ever added, must be designed as
+   its own washi-derived palette — never revert to the slate-950 "AI
+   dashboard" look.

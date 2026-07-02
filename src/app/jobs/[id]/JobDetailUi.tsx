@@ -8,13 +8,13 @@ import type { JobStatus } from './StatusSelect'
 function getStatusBadgeClass(status: JobStatus) {
   switch (status) {
     case 'applied':
-      return 'border-blue-800 bg-blue-950/40 text-blue-300'
+      return 'border-blue-200 bg-blue-50 text-blue-700'
     case 'interview':
-      return 'border-amber-800 bg-amber-950/40 text-amber-300'
+      return 'border-amber-200 bg-amber-50 text-amber-700'
     case 'not_interested':
-      return 'border-slate-600 bg-slate-800/80 text-slate-400'
+      return 'border-stone-400 bg-stone-100/80 text-stone-500'
     default:
-      return 'border-slate-700 bg-slate-800 text-slate-300'
+      return 'border-stone-300 bg-stone-100 text-stone-600'
   }
 }
 
@@ -45,19 +45,19 @@ export function JobNotFound({ id }: { id: string }) {
   const j = getUiCopy(language).jobDetail
 
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-8 text-white">
+    <main className="min-h-screen bg-washi px-6 py-8 text-ink">
       <div className="mx-auto max-w-4xl">
         <Link
           href="/"
-          className="mb-6 inline-block rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800"
+          className="mb-6 inline-block rounded-xl border border-stone-300 px-4 py-2 text-sm text-stone-700 hover:bg-stone-100"
         >
           {j.backToList}
         </Link>
 
-        <section className="rounded-2xl border border-red-800 bg-red-950/40 p-8">
-          <p className="text-sm text-red-300">{j.notFoundLabel}</p>
+        <section className="rounded-2xl border border-red-200 bg-red-50 p-8">
+          <p className="text-sm text-red-700">{j.notFoundLabel}</p>
           <h1 className="mt-3 text-3xl font-bold">{j.notFoundTitle}</h1>
-          <p className="mt-4 break-all text-slate-300">ID：{id}</p>
+          <p className="mt-4 break-all text-stone-600">ID：{id}</p>
         </section>
       </div>
     </main>
@@ -80,7 +80,7 @@ export function JobDetailHeader({
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <Link
           href="/"
-          className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-200 transition hover:bg-slate-800"
+          className="rounded-xl border border-stone-300 px-4 py-2 text-sm text-stone-700 transition hover:bg-stone-100"
         >
           {j.backToList}
         </Link>
@@ -97,9 +97,9 @@ export function JobDetailHeader({
         )}
       </div>
 
-      <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg">
+      <section className="mb-6 rounded-2xl border border-stone-200 bg-paper p-6 shadow-sm">
         <div className="flex flex-wrap items-center gap-3">
-          <p className="text-sm font-semibold text-orange-400">{j.pageLabel}</p>
+          <p className="text-sm font-semibold text-orange-600">{j.pageLabel}</p>
           <span
             className={`rounded-full border px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(status)}`}
           >
@@ -111,28 +111,28 @@ export function JobDetailHeader({
           {job.title || copy.common.unnamedJob}
         </h1>
 
-        <div className="mt-4 flex flex-wrap gap-2 text-sm text-slate-400">
+        <div className="mt-4 flex flex-wrap gap-2 text-sm text-stone-500">
           {job.company && (
-            <span className="rounded-full bg-slate-800 px-3 py-1">
+            <span className="rounded-full bg-stone-100 px-3 py-1">
               {job.company}
             </span>
           )}
           {job.location && (
-            <span className="rounded-full bg-slate-800 px-3 py-1">
+            <span className="rounded-full bg-stone-100 px-3 py-1">
               {job.location}
             </span>
           )}
           {job.employmentType && (
-            <span className="rounded-full bg-slate-800 px-3 py-1">
+            <span className="rounded-full bg-stone-100 px-3 py-1">
               {job.employmentType}
             </span>
           )}
           {job.salary && (
-            <span className="rounded-full bg-slate-800 px-3 py-1">
+            <span className="rounded-full bg-stone-100 px-3 py-1">
               {job.salary}
             </span>
           )}
-          <span className="rounded-full bg-slate-800 px-3 py-1">
+          <span className="rounded-full bg-stone-100 px-3 py-1">
             {j.collectedAt}
             {formatDate(job.collectedAt, copy.common.unknownTime)}
           </span>
@@ -173,18 +173,18 @@ export function JobDetailSections({ job }: { job: JobData }) {
 
   return (
     <>
-      <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-6">
+      <section className="mb-6 rounded-2xl border border-stone-200 bg-paper p-6">
         <h2 className="text-xl font-bold">{j.overviewTitle}</h2>
         <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {overviewItems.map((item) => (
             <div
               key={item.label}
-              className="rounded-xl border border-slate-800 bg-slate-950/60 p-4"
+              className="rounded-xl border border-stone-200 bg-stone-100/60 p-4"
             >
-              <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <dt className="text-xs font-semibold uppercase tracking-wide text-stone-500">
                 {item.label}
               </dt>
-              <dd className="mt-1.5 break-words text-sm text-slate-100">
+              <dd className="mt-1.5 break-words text-sm text-ink">
                 {item.value}
               </dd>
             </div>
@@ -192,15 +192,15 @@ export function JobDetailSections({ job }: { job: JobData }) {
         </dl>
       </section>
 
-      <details className="group rounded-2xl border border-slate-800 bg-slate-900">
-        <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 rounded-2xl p-6 transition hover:bg-slate-900/60">
+      <details className="group rounded-2xl border border-stone-200 bg-paper">
+        <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 rounded-2xl p-6 transition hover:bg-stone-50">
           <div>
             <h2 className="text-xl font-bold">{j.rawContentTitle}</h2>
-            <p className="mt-1 text-sm text-slate-400">{j.rawContentDesc}</p>
+            <p className="mt-1 text-sm text-stone-500">{j.rawContentDesc}</p>
           </div>
-          <span className="flex items-center gap-2 rounded-full bg-slate-800 px-3 py-1 text-sm text-slate-300">
+          <span className="flex items-center gap-2 rounded-full bg-stone-100 px-3 py-1 text-sm text-stone-600">
             <span>{j.charCount(Number(charCount.replace(/,/g, '')) || 0)}</span>
-            <span className="text-slate-500 transition group-open:rotate-180">
+            <span className="text-stone-400 transition group-open:rotate-180">
               ▾
             </span>
           </span>
@@ -208,11 +208,11 @@ export function JobDetailSections({ job }: { job: JobData }) {
 
         <div className="px-6 pb-6">
           {job.rawText ? (
-            <div className="max-h-[70vh] overflow-auto whitespace-pre-wrap rounded-xl border border-slate-800 bg-slate-950 p-5 text-sm leading-7 text-slate-200">
+            <div className="max-h-[70vh] overflow-auto whitespace-pre-wrap rounded-xl border border-stone-200 bg-washi p-5 text-sm leading-7 text-stone-700">
               {job.rawText}
             </div>
           ) : (
-            <div className="rounded-xl border border-slate-800 bg-slate-950 p-5 text-sm text-slate-400">
+            <div className="rounded-xl border border-stone-200 bg-washi p-5 text-sm text-stone-500">
               {j.noRawContent}
             </div>
           )}

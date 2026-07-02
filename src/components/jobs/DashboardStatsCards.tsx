@@ -32,32 +32,32 @@ export default function DashboardStatsCards({
       value: String(stats.totalJobs),
       description: d.totalJobsDesc,
       hint: stats.recentJobs > 0 ? d.recentJobsHint(stats.recentJobs) : undefined,
-      accent: 'border-slate-700/80 bg-slate-900/60',
-      valueClass: 'text-slate-100',
+      accent: 'border-stone-300/80 bg-stone-50',
+      valueClass: 'text-ink',
     },
     {
       key: 'high-match',
       label: d.highMatch,
       value: String(stats.highMatchJobs),
       description: d.highMatchDesc,
-      accent: 'border-emerald-900/70 bg-emerald-950/30',
-      valueClass: 'text-emerald-300',
+      accent: 'border-emerald-200 bg-emerald-50',
+      valueClass: 'text-emerald-700',
     },
     {
       key: 'applied',
       label: d.applied,
       value: String(stats.appliedJobs),
       description: d.appliedDesc,
-      accent: 'border-cyan-900/70 bg-cyan-950/30',
-      valueClass: 'text-cyan-300',
+      accent: 'border-cyan-200 bg-cyan-50',
+      valueClass: 'text-cyan-700',
     },
     {
       key: 'interviewing',
       label: d.interviewing,
       value: String(stats.interviewingJobs),
       description: d.interviewingDesc,
-      accent: 'border-amber-900/70 bg-amber-950/30',
-      valueClass: 'text-amber-300',
+      accent: 'border-amber-200 bg-amber-50',
+      valueClass: 'text-amber-700',
     },
     {
       key: 'average-score',
@@ -68,16 +68,16 @@ export default function DashboardStatsCards({
         stats.unanalyzedJobs > 0
           ? d.unanalyzedHint(stats.unanalyzedJobs)
           : undefined,
-      accent: 'border-orange-900/70 bg-orange-950/30',
-      valueClass: 'text-orange-300',
+      accent: 'border-orange-200 bg-orange-50',
+      valueClass: 'text-orange-700',
     },
     {
       key: 'risky',
       label: d.risky,
       value: String(stats.riskyJobs),
       description: d.riskyDesc,
-      accent: 'border-rose-900/70 bg-rose-950/30',
-      valueClass: 'text-rose-300',
+      accent: 'border-rose-200 bg-rose-50',
+      valueClass: 'text-rose-700',
     },
   ]
 
@@ -88,13 +88,13 @@ export default function DashboardStatsCards({
           key={card.key}
           className={`rounded-2xl border p-5 shadow-sm ${card.accent}`}
         >
-          <p className="text-sm font-medium text-slate-400">{card.label}</p>
+          <p className="text-sm font-medium text-stone-500">{card.label}</p>
           <p className={`mt-2 text-3xl font-bold ${card.valueClass}`}>
             {card.value}
           </p>
-          <p className="mt-2 text-sm text-slate-500">{card.description}</p>
+          <p className="mt-2 text-sm text-stone-400">{card.description}</p>
           {card.hint && (
-            <p className="mt-1 text-xs font-medium text-slate-500">
+            <p className="mt-1 text-xs font-medium text-stone-400">
               {card.hint}
             </p>
           )}

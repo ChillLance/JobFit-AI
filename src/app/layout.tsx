@@ -41,9 +41,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${displayFont.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        <div className="flex shrink-0 items-center justify-between border-b border-slate-800/80 bg-slate-950/80 px-4 py-2 backdrop-blur sm:px-6">
-          <span className="font-[family-name:var(--font-display)] text-sm font-bold tracking-tight text-slate-200">
-            JobFit<span className="text-orange-400"> AI</span>
+        <div className="flex shrink-0 items-center justify-between border-b border-stone-200/80 bg-washi/90 px-4 py-2 backdrop-blur sm:px-6">
+          <span className="font-[family-name:var(--font-display)] text-sm font-bold tracking-tight text-stone-700">
+            JobFit<span className="text-orange-600"> AI</span>
           </span>
           <AppLanguageSelector />
         </div>

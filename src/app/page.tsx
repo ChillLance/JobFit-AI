@@ -86,28 +86,28 @@ function countJobsByStatus(jobs: Job[]) {
 function getStatusBadgeClass(status: JobStatus) {
   switch (status) {
     case 'applied':
-      return 'border-blue-800 bg-blue-950/40 text-blue-300'
+      return 'border-blue-200 bg-blue-50 text-blue-700'
     case 'interview':
-      return 'border-amber-800 bg-amber-950/40 text-amber-300'
+      return 'border-amber-200 bg-amber-50 text-amber-700'
     case 'not_interested':
-      return 'border-slate-600 bg-slate-800/80 text-slate-400'
+      return 'border-stone-400 bg-stone-100/80 text-stone-500'
     default:
-      return 'border-slate-700 bg-slate-800 text-slate-300'
+      return 'border-stone-300 bg-stone-100 text-stone-600'
   }
 }
 
 function getScoreBoxClass(level: FitLevel) {
   switch (level) {
     case 'excellent':
-      return 'border-emerald-800 bg-emerald-950/20'
+      return 'border-emerald-200 bg-emerald-50'
     case 'good':
-      return 'border-amber-800 bg-amber-950/20'
+      return 'border-amber-200 bg-amber-50'
     case 'fair':
-      return 'border-sky-800 bg-sky-950/20'
+      return 'border-sky-200 bg-sky-50'
     case 'poor':
-      return 'border-rose-800 bg-rose-950/20'
+      return 'border-rose-200 bg-rose-50'
     default:
-      return 'border-slate-700 bg-slate-950'
+      return 'border-stone-300 bg-washi'
   }
 }
 
@@ -295,30 +295,30 @@ export default function HomePage() {
   }, [])
 
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-8 text-white">
+    <main className="min-h-screen bg-washi px-6 py-8 text-ink">
       <div className="mx-auto max-w-5xl">
-        <header className="mb-8 flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg md:flex-row md:items-center md:justify-between">
+        <header className="mb-8 flex flex-col gap-4 rounded-2xl border border-stone-200 bg-paper p-6 shadow-sm md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-orange-400">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-orange-600">
               {h.brand}
             </p>
             <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight">
               {h.title}
             </h1>
-            <p className="mt-2 text-slate-400">{h.subtitle(jobs.length)}</p>
+            <p className="mt-2 text-stone-500">{h.subtitle(jobs.length)}</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <Link
               href="/profiles"
-              className="rounded-xl border border-slate-700 bg-slate-800 px-5 py-3 font-semibold text-slate-100 transition hover:border-slate-600 hover:bg-slate-700"
+              className="rounded-xl border border-stone-300 bg-stone-100 px-5 py-3 font-semibold text-ink transition hover:border-stone-400 hover:bg-stone-200"
             >
               {h.manageProfiles}
             </Link>
 
             <Link
               href="/profiles/import"
-              className="rounded-xl border border-orange-600 bg-orange-600/10 px-5 py-3 font-semibold text-orange-200 transition hover:bg-orange-600/20"
+              className="rounded-xl border border-orange-600 bg-orange-600/10 px-5 py-3 font-semibold text-orange-800 transition hover:bg-orange-600/20"
             >
               {h.importFromAi}
             </Link>
@@ -337,19 +337,19 @@ export default function HomePage() {
         <DashboardStatsCards stats={dashboardStats} />
 
         {error && (
-          <section className="mb-6 rounded-2xl border border-red-700 bg-red-950/50 p-6 text-red-100">
+          <section className="mb-6 rounded-2xl border border-red-300 bg-red-50 p-6 text-red-900">
             <h2 className="font-bold">操作失敗</h2>
             <p className="mt-2 text-sm">{error}</p>
           </section>
         )}
 
         {jobs.length > 0 && (
-          <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-5">
+          <section className="mb-6 rounded-2xl border border-stone-200 bg-paper p-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
               <div className="flex-1">
                 <label
                   htmlFor="job-search"
-                  className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-400"
+                  className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-500"
                 >
                   {h.searchLabel}
                 </label>
@@ -359,14 +359,14 @@ export default function HomePage() {
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
                   placeholder={h.searchPlaceholder}
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-orange-500 focus:outline-none"
+                  className="w-full rounded-xl border border-stone-300 bg-washi px-4 py-2.5 text-sm text-white placeholder:text-stone-400 focus:border-orange-500 focus:outline-none"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="score-filter"
-                  className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-400"
+                  className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-500"
                 >
                   {h.scoreLabel}
                 </label>
@@ -376,7 +376,7 @@ export default function HomePage() {
                   onChange={(event) =>
                     setScoreFilter(event.target.value as ScoreFilter)
                   }
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none lg:w-auto"
+                  className="w-full rounded-xl border border-stone-300 bg-washi px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none lg:w-auto"
                 >
                   {scoreFilters.map(({ value, label }) => (
                     <option key={value} value={value}>
@@ -389,7 +389,7 @@ export default function HomePage() {
               <div>
                 <label
                   htmlFor="sort-select"
-                  className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-400"
+                  className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-500"
                 >
                   {h.sortLabel}
                 </label>
@@ -399,7 +399,7 @@ export default function HomePage() {
                   onChange={(event) =>
                     setSortKey(event.target.value as JobSortKey)
                   }
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none lg:w-auto"
+                  className="w-full rounded-xl border border-stone-300 bg-washi px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none lg:w-auto"
                 >
                   {sortOptions.map(({ value, label }) => (
                     <option key={value} value={value}>
@@ -409,7 +409,7 @@ export default function HomePage() {
                 </select>
               </div>
 
-              <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm text-slate-300 transition hover:border-slate-600">
+              <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-stone-300 bg-washi px-4 py-2.5 text-sm text-stone-600 transition hover:border-stone-400">
                 <input
                   type="checkbox"
                   checked={riskOnly}
@@ -432,7 +432,7 @@ export default function HomePage() {
                     className={`rounded-xl border px-4 py-2 text-sm font-semibold transition ${
                       isActive
                         ? 'border-orange-500 bg-orange-600 text-white'
-                        : 'border-slate-700 bg-slate-900 text-slate-300 hover:border-slate-600 hover:bg-slate-800'
+                        : 'border-stone-300 bg-paper text-stone-600 hover:border-stone-400 hover:bg-stone-100'
                     }`}
                   >
                     {label}
@@ -445,35 +445,35 @@ export default function HomePage() {
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-              <span className="text-slate-400">
+              <span className="text-stone-500">
                 {h.showingCount(filteredJobs.length, jobs.length)}
               </span>
 
               {hasActiveFilters && (
                 <>
                   {searchQuery.trim() !== '' && (
-                    <span className="text-slate-400">
+                    <span className="text-stone-500">
                       {h.searchActive(searchQuery.trim())}
                     </span>
                   )}
                   {statusFilter !== 'all' && (
-                    <span className="text-slate-400">
+                    <span className="text-stone-500">
                       {h.statusFilter(statusCopy[statusFilter])}
                     </span>
                   )}
                   {scoreFilter !== 'all' && (
-                    <span className="text-slate-400">
+                    <span className="text-stone-500">
                       {h.scoreFilter(scoreFilterShort[scoreFilter])}
                     </span>
                   )}
                   {riskOnly && (
-                    <span className="text-slate-400">{h.riskOnly}</span>
+                    <span className="text-stone-500">{h.riskOnly}</span>
                   )}
 
                   <button
                     type="button"
                     onClick={clearFilters}
-                    className="rounded-lg border border-slate-600 px-3 py-1 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-800"
+                    className="rounded-lg border border-stone-400 px-3 py-1 text-sm font-semibold text-stone-700 transition hover:border-stone-500 hover:bg-stone-100"
                   >
                     {copy.common.clearFilters}
                   </button>
@@ -484,36 +484,36 @@ export default function HomePage() {
         )}
 
         {jobs.length === 0 ? (
-          <section className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 p-12 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-slate-700 bg-slate-800 text-xl text-slate-400">
+          <section className="rounded-2xl border border-dashed border-stone-300 bg-stone-50/60 p-12 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-stone-300 bg-stone-100 text-xl text-stone-500">
               ◎
             </div>
-            <h2 className="mt-4 text-lg font-bold text-slate-200">
+            <h2 className="mt-4 text-lg font-bold text-stone-700">
               {h.emptyTitle}
             </h2>
-            <p className="mt-2 text-sm text-slate-400">{h.emptyDescription}</p>
+            <p className="mt-2 text-sm text-stone-500">{h.emptyDescription}</p>
             <button
               type="button"
               onClick={loadJobs}
               disabled={isLoading}
-              className="mt-5 rounded-xl border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-5 rounded-xl border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:border-stone-500 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isLoading ? copy.common.refreshing : copy.common.refresh}
             </button>
           </section>
         ) : filteredJobs.length === 0 ? (
-          <section className="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 p-12 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-slate-700 bg-slate-800 text-xl text-slate-400">
+          <section className="rounded-2xl border border-dashed border-stone-300 bg-stone-50/60 p-12 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-stone-300 bg-stone-100 text-xl text-stone-500">
               ⌕
             </div>
-            <h2 className="mt-4 text-lg font-bold text-slate-200">
+            <h2 className="mt-4 text-lg font-bold text-stone-700">
               {h.noMatchTitle}
             </h2>
-            <p className="mt-2 text-sm text-slate-400">{h.noMatchDescription}</p>
+            <p className="mt-2 text-sm text-stone-500">{h.noMatchDescription}</p>
             <button
               type="button"
               onClick={clearFilters}
-              className="mt-5 rounded-xl border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-slate-500 hover:bg-slate-800"
+              className="mt-5 rounded-xl border border-stone-400 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:border-stone-500 hover:bg-stone-100"
             >
               {copy.common.clearFilters}
             </button>
@@ -551,7 +551,7 @@ export default function HomePage() {
               return (
                 <article
                   key={job.id}
-                  className="flex h-full flex-col rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-700/50 hover:shadow-xl hover:shadow-orange-950/30"
+                  className="flex h-full flex-col rounded-2xl border border-stone-200 bg-paper p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-300 hover:shadow-md hover:shadow-orange-200/60"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <h2 className="line-clamp-2 text-lg font-bold leading-snug">
@@ -564,11 +564,11 @@ export default function HomePage() {
                     </span>
                   </div>
 
-                  <div className="mt-3 flex flex-wrap gap-1.5 text-xs text-slate-400">
+                  <div className="mt-3 flex flex-wrap gap-1.5 text-xs text-stone-500">
                     {metaChips.map((chip, index) => (
                       <span
                         key={index}
-                        className="max-w-[16rem] truncate rounded-full bg-slate-800 px-2.5 py-1"
+                        className="max-w-[16rem] truncate rounded-full bg-stone-100 px-2.5 py-1"
                       >
                         {chip}
                       </span>
@@ -588,14 +588,14 @@ export default function HomePage() {
                           >
                             {displayScore}
                           </span>
-                          <span className="pb-1 text-xs text-slate-400">/ 100</span>
+                          <span className="pb-1 text-xs text-stone-500">/ 100</span>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-semibold text-slate-100">
+                          <p className="text-sm font-semibold text-ink">
                             {recommendation}
                           </p>
                           {primary && (
-                            <p className="mt-0.5 text-xs text-slate-400">
+                            <p className="mt-0.5 text-xs text-stone-500">
                               {getProviderLabel(primary.metadata.provider)}
                             </p>
                           )}
@@ -603,10 +603,10 @@ export default function HomePage() {
                       </>
                     ) : (
                       <>
-                        <span className="text-sm font-semibold text-slate-300">
+                        <span className="text-sm font-semibold text-stone-600">
                           {h.aiFitScore}
                         </span>
-                        <span className="text-sm text-slate-500">
+                        <span className="text-sm text-stone-400">
                           {h.pendingAnalysis}
                         </span>
                       </>
@@ -614,7 +614,7 @@ export default function HomePage() {
                   </div>
 
                   {primary?.summary && (
-                    <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-400">
+                    <p className="mt-3 line-clamp-2 text-sm leading-6 text-stone-500">
                       {primary.summary}
                     </p>
                   )}
@@ -632,7 +632,7 @@ export default function HomePage() {
                         href={job.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-800"
+                        className="rounded-xl border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100"
                       >
                         {h.originalPage}
                       </a>
@@ -642,7 +642,7 @@ export default function HomePage() {
                       type="button"
                       onClick={() => handleDeleteJob(job.id)}
                       disabled={deletingId === job.id}
-                      className="ml-auto rounded-xl border border-red-500/60 px-4 py-2 text-sm font-semibold text-red-300 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="ml-auto rounded-xl border border-red-300 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {deletingId === job.id
                         ? copy.common.deleting

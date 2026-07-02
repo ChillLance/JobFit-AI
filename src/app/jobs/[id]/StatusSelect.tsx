@@ -89,11 +89,11 @@ export function StatusSelect({
   }
 
   return (
-    <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-6">
+    <section className="mb-6 rounded-2xl border border-stone-200 bg-paper p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-bold">{s.title}</h2>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-1 text-sm text-stone-500">
             {s.current(statusCopy[status])}
           </p>
         </div>
@@ -103,7 +103,7 @@ export function StatusSelect({
             value={status}
             onChange={(e) => handleChange(e.target.value as JobStatus)}
             disabled={isSaving}
-            className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-2 text-sm text-slate-100 transition focus:border-orange-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl border border-stone-300 bg-washi px-4 py-2 text-sm text-ink transition focus:border-orange-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
           >
             {JOB_STATUSES.map((value) => (
               <option key={value} value={value}>
@@ -113,13 +113,13 @@ export function StatusSelect({
           </select>
 
           {isSaving && (
-            <span className="text-sm text-slate-400">{s.saving}</span>
+            <span className="text-sm text-stone-500">{s.saving}</span>
           )}
         </div>
       </div>
 
       {error && (
-        <div className="mt-4 rounded-xl border border-red-700 bg-red-950/50 p-4 text-sm text-red-100">
+        <div className="mt-4 rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-900">
           <p className="font-bold">更新狀態失敗</p>
           <p className="mt-1">{error}</p>
         </div>

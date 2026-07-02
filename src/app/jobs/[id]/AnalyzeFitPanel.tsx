@@ -54,43 +54,43 @@ function fitLevelTheme(level: FitLevel): LevelTheme {
   switch (level) {
     case 'excellent':
       return {
-        scoreText: 'text-emerald-300',
-        ring: 'border-emerald-700/70',
-        chipBg: 'bg-emerald-950/50',
-        chipText: 'text-emerald-200',
-        chipBorder: 'border-emerald-700/70',
+        scoreText: 'text-emerald-700',
+        ring: 'border-emerald-300',
+        chipBg: 'bg-emerald-50',
+        chipText: 'text-emerald-800',
+        chipBorder: 'border-emerald-300',
       }
     case 'good':
       return {
-        scoreText: 'text-amber-300',
-        ring: 'border-amber-700/70',
-        chipBg: 'bg-amber-950/50',
-        chipText: 'text-amber-200',
-        chipBorder: 'border-amber-700/70',
+        scoreText: 'text-amber-700',
+        ring: 'border-amber-300',
+        chipBg: 'bg-amber-50',
+        chipText: 'text-amber-800',
+        chipBorder: 'border-amber-300',
       }
     case 'fair':
       return {
-        scoreText: 'text-sky-300',
-        ring: 'border-sky-700/70',
-        chipBg: 'bg-sky-950/50',
-        chipText: 'text-sky-200',
-        chipBorder: 'border-sky-700/70',
+        scoreText: 'text-sky-700',
+        ring: 'border-sky-300',
+        chipBg: 'bg-sky-50',
+        chipText: 'text-sky-800',
+        chipBorder: 'border-sky-300',
       }
     case 'poor':
       return {
-        scoreText: 'text-rose-300',
-        ring: 'border-rose-700/70',
-        chipBg: 'bg-rose-950/50',
-        chipText: 'text-rose-200',
-        chipBorder: 'border-rose-700/70',
+        scoreText: 'text-rose-700',
+        ring: 'border-rose-300',
+        chipBg: 'bg-rose-50',
+        chipText: 'text-rose-800',
+        chipBorder: 'border-rose-300',
       }
     default:
       return {
-        scoreText: 'text-slate-400',
-        ring: 'border-slate-700',
-        chipBg: 'bg-slate-800/80',
-        chipText: 'text-slate-300',
-        chipBorder: 'border-slate-600',
+        scoreText: 'text-stone-500',
+        ring: 'border-stone-300',
+        chipBg: 'bg-stone-100/80',
+        chipText: 'text-stone-600',
+        chipBorder: 'border-stone-400',
       }
   }
 }
@@ -126,18 +126,18 @@ const COVERAGE_DISPLAY: Record<
 > = {
   ok: {
     label: '輸入覆蓋：良好',
-    box: 'border-emerald-800/60 bg-emerald-950/30',
-    text: 'text-emerald-200',
+    box: 'border-emerald-200 bg-emerald-50',
+    text: 'text-emerald-800',
   },
   partial: {
     label: '輸入覆蓋：部分截斷',
-    box: 'border-amber-800/60 bg-amber-950/30',
-    text: 'text-amber-200',
+    box: 'border-amber-200 bg-amber-50',
+    text: 'text-amber-800',
   },
   risky: {
     label: '輸入覆蓋：可能漏重要資訊',
-    box: 'border-rose-800/60 bg-rose-950/40',
-    text: 'text-rose-200',
+    box: 'border-rose-200 bg-rose-50',
+    text: 'text-rose-800',
   },
 }
 
@@ -183,20 +183,20 @@ function InputCoverageNotice({
     <details className={`group mt-4 rounded-xl border ${display.box}`}>
       <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5">
         <span className={`text-xs font-semibold ${display.text}`}>{label}</span>
-        <span className="text-xs font-normal text-slate-500 transition group-open:rotate-180">
+        <span className="text-xs font-normal text-stone-400 transition group-open:rotate-180">
           ▾
         </span>
       </summary>
       <div className="px-3 pb-3">
         {warnings.length > 0 && (
-          <ul className="list-disc space-y-1 pl-5 text-xs text-slate-300">
+          <ul className="list-disc space-y-1 pl-5 text-xs text-stone-600">
             {warnings.map((warning, index) => (
               <li key={index}>{warning}</li>
             ))}
           </ul>
         )}
         {isDigest && digestStats && (
-          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-stone-500">
             <span>輸入策略：Relevant Digest</span>
             <span>摘要項目：{digestStats.extractedItemCount ?? 0}</span>
             <span>
@@ -231,18 +231,18 @@ function AccentList({
   }
 
   const titleColor: Record<typeof accent, string> = {
-    emerald: 'text-emerald-300',
-    amber: 'text-amber-300',
-    rose: 'text-rose-300',
-    orange: 'text-orange-300',
+    emerald: 'text-emerald-700',
+    amber: 'text-amber-700',
+    rose: 'text-rose-700',
+    orange: 'text-orange-700',
   }
 
   return (
     <div
-      className={`rounded-xl border border-slate-800 border-l-4 ${accentMap[accent]} bg-slate-950/60 p-4`}
+      className={`rounded-xl border border-stone-200 border-l-4 ${accentMap[accent]} bg-stone-100/60 p-4`}
     >
       <h4 className={`text-sm font-semibold ${titleColor[accent]}`}>{title}</h4>
-      <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm text-slate-200">
+      <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm text-stone-700">
         {items.map((item, index) => (
           <li key={index}>{item}</li>
         ))}
@@ -270,11 +270,11 @@ function AnalysisResultCard({
   const theme = fitLevelTheme(data.fitLevel)
 
   return (
-    <div className="rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-lg">
+    <div className="rounded-2xl border border-stone-300 bg-paper p-5 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-lg font-bold text-slate-50">{heading}</h3>
-          <p className="mt-1 text-xs text-slate-400">
+          <h3 className="text-lg font-bold text-ink">{heading}</h3>
+          <p className="mt-1 text-xs text-stone-500">
             {getProviderLabel(data.metadata.provider)}
             {data.metadata.model && (
               <span className="ml-2">模型：{data.metadata.model}</span>
@@ -287,7 +287,7 @@ function AnalysisResultCard({
             type="button"
             onClick={onRegenerate}
             disabled={isRegenerating}
-            className="inline-flex items-center gap-1 rounded-lg border border-slate-700 px-2.5 py-1 text-xs font-medium text-slate-400 transition hover:border-slate-500 hover:text-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center gap-1 rounded-lg border border-stone-300 px-2.5 py-1 text-xs font-medium text-stone-500 transition hover:border-stone-500 hover:text-stone-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isRegenerating ? a.regenerating : a.regenerate}
           </button>
@@ -295,39 +295,39 @@ function AnalysisResultCard({
       </div>
 
       {staleNotice && (
-        <div className="mt-3 rounded-lg border border-amber-800/60 bg-amber-950/40 px-3 py-2 text-xs text-amber-200">
+        <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
           重新產生失敗，以下仍顯示上一次的分析結果。
         </div>
       )}
 
       {/* 1. Recommendation summary first. */}
       {data.summary && (
-        <div className="mt-4 rounded-xl border border-orange-800/50 bg-orange-950/20 p-4">
-          <h4 className="text-sm font-semibold text-orange-200">{a.finalSummary}</h4>
-          <p className="mt-2 text-sm leading-6 text-slate-200">{data.summary}</p>
+        <div className="mt-4 rounded-xl border border-orange-200 bg-orange-50 p-4">
+          <h4 className="text-sm font-semibold text-orange-800">{a.finalSummary}</h4>
+          <p className="mt-2 text-sm leading-6 text-stone-700">{data.summary}</p>
         </div>
       )}
 
       {/* 2. Fit score / verdict. */}
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        <div className={`rounded-xl border ${theme.ring} bg-slate-950/60 p-4`}>
-          <p className="text-xs text-slate-400">{a.fitScore}</p>
+        <div className={`rounded-xl border ${theme.ring} bg-stone-100/60 p-4`}>
+          <p className="text-xs text-stone-500">{a.fitScore}</p>
           <p className={`mt-1 text-3xl font-bold ${theme.scoreText}`}>
             {data.fitScore ?? '—'}
-            <span className="ml-1 text-sm text-slate-500">/ 100</span>
+            <span className="ml-1 text-sm text-stone-400">/ 100</span>
           </p>
         </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-          <p className="text-xs text-slate-400">{a.recommendation}</p>
+        <div className="rounded-xl border border-stone-200 bg-stone-100/60 p-4">
+          <p className="text-xs text-stone-500">{a.recommendation}</p>
           <span
             className={`mt-2 inline-flex rounded-full border px-3 py-1 text-sm font-semibold ${theme.chipBorder} ${theme.chipBg} ${theme.chipText}`}
           >
             {getFitLevelLabel(data.fitLevel)}
           </span>
         </div>
-        <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
-          <p className="text-xs text-slate-400">{a.modelRecommendation}</p>
-          <p className="mt-2 text-lg font-semibold text-slate-100">
+        <div className="rounded-xl border border-stone-200 bg-stone-100/60 p-4">
+          <p className="text-xs text-stone-500">{a.modelRecommendation}</p>
+          <p className="mt-2 text-lg font-semibold text-ink">
             {data.recommendation || '—'}
           </p>
         </div>
@@ -350,13 +350,13 @@ function AnalysisResultCard({
       )}
 
       {data.metadata.analyzedProfileName && (
-        <p className="mt-3 text-xs text-orange-300">
+        <p className="mt-3 text-xs text-orange-700">
           分析設定檔：{data.metadata.analyzedProfileName}
         </p>
       )}
 
       {data.metadata.createdAt && (
-        <p className="mt-4 text-xs text-slate-500">
+        <p className="mt-4 text-xs text-stone-400">
           最後分析時間：{formatMetadataDate(data.metadata.createdAt)}
           {data.metadata.inputMode && (
             <span className="ml-3">輸入模式：{data.metadata.inputMode}</span>
@@ -386,8 +386,8 @@ function EmptyState({
   analyzingLabel: string
 }) {
   return (
-    <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-950/40 p-8 text-center">
-      <p className="text-sm text-slate-400">{description}</p>
+    <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-100/40 p-8 text-center">
+      <p className="text-sm text-stone-500">{description}</p>
       <button
         type="button"
         onClick={onStart}
@@ -397,7 +397,7 @@ function EmptyState({
         {isLoading ? analyzingLabel : buttonLabel}
       </button>
       {error && (
-        <div className="mt-4 rounded-xl border border-rose-800 bg-rose-950/50 p-3 text-sm text-rose-200">
+        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
           {error}
         </div>
       )}
@@ -411,19 +411,19 @@ const CONSISTENCY_DISPLAY: Record<
 > = {
   high: {
     label: '高',
-    chip: 'border-emerald-700/70 bg-emerald-950/50 text-emerald-200',
+    chip: 'border-emerald-300 bg-emerald-50 text-emerald-800',
   },
   medium: {
     label: '中',
-    chip: 'border-amber-700/70 bg-amber-950/50 text-amber-200',
+    chip: 'border-amber-300 bg-amber-50 text-amber-800',
   },
   low: {
     label: '低',
-    chip: 'border-rose-700/70 bg-rose-950/50 text-rose-200',
+    chip: 'border-rose-300 bg-rose-50 text-rose-800',
   },
   insufficient: {
     label: '資料不足',
-    chip: 'border-slate-600 bg-slate-800/80 text-slate-300',
+    chip: 'border-stone-400 bg-stone-100/80 text-stone-600',
   },
 }
 
@@ -433,23 +433,23 @@ const RECOMMENDATION_DISPLAY: Record<
 > = {
   strong_apply: {
     label: '優先投遞',
-    chip: 'border-emerald-700/70 bg-emerald-950/50 text-emerald-200',
+    chip: 'border-emerald-300 bg-emerald-50 text-emerald-800',
   },
   apply_with_checks: {
     label: '可投遞，需確認條件',
-    chip: 'border-amber-700/70 bg-amber-950/50 text-amber-200',
+    chip: 'border-amber-300 bg-amber-50 text-amber-800',
   },
   consider: {
     label: '可考慮',
-    chip: 'border-sky-700/70 bg-sky-950/50 text-sky-200',
+    chip: 'border-sky-300 bg-sky-50 text-sky-800',
   },
   not_priority: {
     label: '非優先',
-    chip: 'border-rose-700/70 bg-rose-950/50 text-rose-200',
+    chip: 'border-rose-300 bg-rose-50 text-rose-800',
   },
   insufficient: {
     label: '需先分析',
-    chip: 'border-slate-600 bg-slate-800/80 text-slate-300',
+    chip: 'border-stone-400 bg-stone-100/80 text-stone-600',
   },
 }
 
@@ -463,9 +463,9 @@ function ScoreCell({
   notAnalyzedLabel: string
 }) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-950/60 p-3 text-center">
-      <p className="text-xs text-slate-400">{label}</p>
-      <p className="mt-1 text-2xl font-bold text-slate-100">
+    <div className="rounded-xl border border-stone-200 bg-stone-100/60 p-3 text-center">
+      <p className="text-xs text-stone-500">{label}</p>
+      <p className="mt-1 text-2xl font-bold text-ink">
         {typeof value === 'number' ? value : notAnalyzedLabel}
       </p>
     </div>
@@ -490,25 +490,25 @@ function ComparisonList({
     sky: 'border-l-sky-500',
   }
   const titleColor: Record<typeof accent, string> = {
-    emerald: 'text-emerald-300',
-    rose: 'text-rose-300',
-    amber: 'text-amber-300',
-    sky: 'text-sky-300',
+    emerald: 'text-emerald-700',
+    rose: 'text-rose-700',
+    amber: 'text-amber-700',
+    sky: 'text-sky-700',
   }
 
   return (
     <div
-      className={`rounded-xl border border-slate-800 border-l-4 ${accentMap[accent]} bg-slate-950/60 p-4`}
+      className={`rounded-xl border border-stone-200 border-l-4 ${accentMap[accent]} bg-stone-100/60 p-4`}
     >
       <h4 className={`text-sm font-semibold ${titleColor[accent]}`}>{title}</h4>
       {items.length > 0 ? (
-        <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm text-slate-200">
+        <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm text-stone-700">
           {items.map((item, index) => (
             <li key={index}>{item}</li>
           ))}
         </ul>
       ) : (
-        <p className="mt-2 text-sm text-slate-500">{emptyText}</p>
+        <p className="mt-2 text-sm text-stone-400">{emptyText}</p>
       )}
     </div>
   )
@@ -527,10 +527,10 @@ function ModelBreakdown({
   if (models.length === 0) return null
 
   return (
-    <details className="group mt-4 rounded-xl border border-slate-800 bg-slate-950/40">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-slate-200 transition hover:bg-slate-900/60">
+    <details className="group mt-4 rounded-xl border border-stone-200 bg-stone-100/40">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-50">
         <span>{a.modelBreakdown(models.length)}</span>
-        <span className="text-xs font-normal text-slate-500 transition group-open:rotate-180">
+        <span className="text-xs font-normal text-stone-400 transition group-open:rotate-180">
           ▾
         </span>
       </summary>
@@ -544,16 +544,16 @@ function ModelBreakdown({
           return (
             <div
               key={provider}
-              className="rounded-xl border border-slate-800 bg-slate-900/60 p-4"
+              className="rounded-xl border border-stone-200 bg-stone-50 p-4"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-slate-100">
+                <p className="text-sm font-semibold text-ink">
                   {a.providers[provider]}
                 </p>
                 <div className="flex items-center gap-2">
                   <span className={`text-xl font-bold ${theme.scoreText}`}>
                     {result.fitScore ?? '—'}
-                    <span className="ml-0.5 text-xs text-slate-500">/100</span>
+                    <span className="ml-0.5 text-xs text-stone-400">/100</span>
                   </span>
                   <span
                     className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${theme.chipBorder} ${theme.chipBg} ${theme.chipText}`}
@@ -566,31 +566,31 @@ function ModelBreakdown({
               {(topReasons.length > 0 || topConcerns.length > 0) && (
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   <div>
-                    <p className="text-xs font-semibold text-emerald-300">
+                    <p className="text-xs font-semibold text-emerald-700">
                       {a.mainReasons}
                     </p>
                     {topReasons.length > 0 ? (
-                      <ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-slate-300">
+                      <ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-stone-600">
                         {topReasons.map((reason, index) => (
                           <li key={index}>{reason}</li>
                         ))}
                       </ul>
                     ) : (
-                      <p className="mt-1 text-xs text-slate-500">—</p>
+                      <p className="mt-1 text-xs text-stone-400">—</p>
                     )}
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-rose-300">
+                    <p className="text-xs font-semibold text-rose-700">
                       {a.mainConcerns}
                     </p>
                     {topConcerns.length > 0 ? (
-                      <ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-slate-300">
+                      <ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-stone-600">
                         {topConcerns.map((concern, index) => (
                           <li key={index}>{concern}</li>
                         ))}
                       </ul>
                     ) : (
-                      <p className="mt-1 text-xs text-slate-500">—</p>
+                      <p className="mt-1 text-xs text-stone-400">—</p>
                     )}
                   </div>
                 </div>
@@ -614,8 +614,8 @@ function ComparisonView({
 }) {
   if (comparison.availableSources.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-700 bg-slate-950/40 p-8 text-center">
-        <p className="text-sm text-slate-400">{a.insufficientComparison}</p>
+      <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-100/40 p-8 text-center">
+        <p className="text-sm text-stone-500">{a.insufficientComparison}</p>
       </div>
     )
   }
@@ -625,11 +625,11 @@ function ComparisonView({
     RECOMMENDATION_DISPLAY[comparison.consensusRecommendation]
 
   return (
-    <div className="rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-lg">
+    <div className="rounded-2xl border border-stone-300 bg-paper p-5 shadow-sm">
       {/* 1. Final recommendation summary — most prominent. */}
-      <div className="rounded-xl border border-orange-800/50 bg-orange-950/20 p-5">
+      <div className="rounded-xl border border-orange-200 bg-orange-50 p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-orange-300">
+          <p className="text-xs font-semibold uppercase tracking-wide text-orange-700">
             {a.finalRecommendation}
           </p>
           <span
@@ -638,10 +638,10 @@ function ComparisonView({
             {recommendation.label}
           </span>
         </div>
-        <p className="mt-3 text-sm leading-6 text-slate-100">
+        <p className="mt-3 text-sm leading-6 text-ink">
           {comparison.finalSummary}
         </p>
-        <p className="mt-3 text-xs text-slate-500">
+        <p className="mt-3 text-xs text-stone-400">
           {a.comparisonFootnote}
         </p>
       </div>
@@ -649,10 +649,10 @@ function ComparisonView({
       {/* 2. Fit score / verdict. */}
       <div className="mt-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h4 className="text-sm font-semibold text-slate-200">
+          <h4 className="text-sm font-semibold text-stone-700">
             {a.scoresAndConsistency}
           </h4>
-          <span className="inline-flex items-center gap-1.5 text-xs text-slate-400">
+          <span className="inline-flex items-center gap-1.5 text-xs text-stone-500">
             {a.modelConsistency}
             <span
               className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${consistency.chip}`}
@@ -682,15 +682,15 @@ function ComparisonView({
             value={comparison.scores.openrouter}
             notAnalyzedLabel={a.notAnalyzed}
           />
-          <div className="rounded-xl border border-orange-800/50 bg-orange-950/30 p-3 text-center">
-            <p className="text-xs text-orange-300">{a.averageScore}</p>
-            <p className="mt-1 text-2xl font-bold text-orange-100">
+          <div className="rounded-xl border border-orange-200 bg-orange-50 p-3 text-center">
+            <p className="text-xs text-orange-700">{a.averageScore}</p>
+            <p className="mt-1 text-2xl font-bold text-orange-900">
               {comparison.averageScore ?? '—'}
             </p>
           </div>
         </div>
         {typeof comparison.scoreSpread === 'number' && (
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-2 text-xs text-stone-400">
             {a.scoreSpread(comparison.scoreSpread)}
           </p>
         )}
@@ -990,28 +990,28 @@ export function AnalyzeFitPanel({
   ]
 
   return (
-    <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-6">
+    <section className="mb-6 rounded-2xl border border-stone-200 bg-paper p-6">
       <div>
-        <h2 className="text-xl font-bold text-slate-50">{a.centerTitle}</h2>
-        <p className="mt-1 text-sm text-slate-400">{a.centerSubtitle}</p>
+        <h2 className="text-xl font-bold text-ink">{a.centerTitle}</h2>
+        <p className="mt-1 text-sm text-stone-500">{a.centerSubtitle}</p>
       </div>
 
       {/* Overview card */}
-      <div className="mt-5 rounded-2xl border border-orange-800/40 bg-gradient-to-br from-slate-950 to-orange-950/20 p-5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-orange-300">
+      <div className="mt-5 rounded-2xl border border-orange-200 bg-gradient-to-br from-paper to-orange-100/60 p-5">
+        <p className="text-xs font-semibold uppercase tracking-wide text-orange-700">
           {a.overviewLabel}
         </p>
         {overview ? (
           <div className="mt-3 flex flex-wrap items-end gap-x-8 gap-y-3">
             <div>
-              <p className="text-xs text-slate-400">{a.fitScore}</p>
+              <p className="text-xs text-stone-500">{a.fitScore}</p>
               <p className={`text-4xl font-bold ${overviewTheme.scoreText}`}>
                 {overview.fitScore ?? '—'}
-                <span className="ml-1 text-base text-slate-500">/ 100</span>
+                <span className="ml-1 text-base text-stone-400">/ 100</span>
               </p>
             </div>
             <div>
-              <p className="text-xs text-slate-400">{a.recommendation}</p>
+              <p className="text-xs text-stone-500">{a.recommendation}</p>
               <span
                 className={`mt-1 inline-flex rounded-full border px-3 py-1 text-sm font-semibold ${overviewTheme.chipBorder} ${overviewTheme.chipBg} ${overviewTheme.chipText}`}
               >
@@ -1019,22 +1019,22 @@ export function AnalyzeFitPanel({
               </span>
             </div>
             <div>
-              <p className="text-xs text-slate-400">{a.source}</p>
-              <p className="mt-1.5 text-sm font-semibold text-slate-100">
+              <p className="text-xs text-stone-500">{a.source}</p>
+              <p className="mt-1.5 text-sm font-semibold text-ink">
                 {getProviderLabel(overview.metadata.provider)}
               </p>
             </div>
             {overview.metadata.createdAt && (
               <div>
-                <p className="text-xs text-slate-400">{a.lastAnalyzed}</p>
-                <p className="mt-1.5 text-sm text-slate-300">
+                <p className="text-xs text-stone-500">{a.lastAnalyzed}</p>
+                <p className="mt-1.5 text-sm text-stone-600">
                   {formatMetadataDate(overview.metadata.createdAt)}
                 </p>
               </div>
             )}
           </div>
         ) : (
-          <p className="mt-3 text-2xl font-bold text-slate-500">
+          <p className="mt-3 text-2xl font-bold text-stone-400">
             {a.notYetAnalyzed}
           </p>
         )}
@@ -1048,7 +1048,7 @@ export function AnalyzeFitPanel({
           className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
             activeTab === 'summary'
               ? 'bg-orange-600 text-white shadow-sm'
-              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
           }`}
         >
           {a.modelComparison}
@@ -1063,13 +1063,13 @@ export function AnalyzeFitPanel({
               className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                 isActive
                   ? 'bg-orange-600 text-white shadow-sm'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
               }`}
             >
               {a.providers[provider]}
               {hasResult[provider] && (
                 <span
-                  className={`ml-1.5 ${isActive ? 'text-orange-100' : 'text-emerald-400'}`}
+                  className={`ml-1.5 ${isActive ? 'text-orange-900' : 'text-emerald-600'}`}
                 >
                   ✓
                 </span>

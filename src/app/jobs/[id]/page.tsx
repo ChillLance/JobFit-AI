@@ -33,7 +33,7 @@ export default async function JobDetailPage({
   const status = resolveStatus(job.status)
 
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-8 text-white">
+    <main className="min-h-screen bg-washi px-6 py-8 text-ink">
       <div className="mx-auto max-w-5xl">
         <JobDetailHeader job={job} status={status} />
 
