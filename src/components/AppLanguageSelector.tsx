@@ -28,7 +28,7 @@ export function AppLanguageSelector() {
         value={language}
         onChange={handleChange}
         aria-label="App language"
-        className="max-w-[9.5rem] rounded-lg border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-100 outline-none transition hover:border-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 sm:max-w-none sm:text-sm"
+        className="max-w-[9.5rem] rounded-lg border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-100 outline-none transition hover:border-slate-600 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 sm:max-w-none sm:text-sm"
       >
         {APP_LANGUAGE_OPTIONS.map(({ value, label }) => (
           <option key={value} value={value}>

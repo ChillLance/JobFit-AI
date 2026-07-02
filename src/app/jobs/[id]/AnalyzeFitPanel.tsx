@@ -219,7 +219,7 @@ function AccentList({
 }: {
   title: string
   items: string[]
-  accent: 'emerald' | 'amber' | 'rose' | 'violet'
+  accent: 'emerald' | 'amber' | 'rose' | 'orange'
 }) {
   if (!items || items.length === 0) return null
 
@@ -227,14 +227,14 @@ function AccentList({
     emerald: 'border-l-emerald-500',
     amber: 'border-l-amber-500',
     rose: 'border-l-rose-500',
-    violet: 'border-l-violet-500',
+    orange: 'border-l-orange-500',
   }
 
   const titleColor: Record<typeof accent, string> = {
     emerald: 'text-emerald-300',
     amber: 'text-amber-300',
     rose: 'text-rose-300',
-    violet: 'text-violet-300',
+    orange: 'text-orange-300',
   }
 
   return (
@@ -302,8 +302,8 @@ function AnalysisResultCard({
 
       {/* 1. Recommendation summary first. */}
       {data.summary && (
-        <div className="mt-4 rounded-xl border border-violet-800/50 bg-violet-950/20 p-4">
-          <h4 className="text-sm font-semibold text-violet-200">{a.finalSummary}</h4>
+        <div className="mt-4 rounded-xl border border-orange-800/50 bg-orange-950/20 p-4">
+          <h4 className="text-sm font-semibold text-orange-200">{a.finalSummary}</h4>
           <p className="mt-2 text-sm leading-6 text-slate-200">{data.summary}</p>
         </div>
       )}
@@ -340,7 +340,7 @@ function AnalysisResultCard({
         <AccentList
           title={a.suggestedActions}
           items={data.suggestedActions}
-          accent="violet"
+          accent="orange"
         />
         <AccentList title={a.skillGaps} items={data.gaps} accent="amber" />
       </div>
@@ -350,7 +350,7 @@ function AnalysisResultCard({
       )}
 
       {data.metadata.analyzedProfileName && (
-        <p className="mt-3 text-xs text-violet-300">
+        <p className="mt-3 text-xs text-orange-300">
           分析設定檔：{data.metadata.analyzedProfileName}
         </p>
       )}
@@ -392,7 +392,7 @@ function EmptyState({
         type="button"
         onClick={onStart}
         disabled={isLoading}
-        className="mt-4 inline-flex items-center rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-4 inline-flex items-center rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isLoading ? analyzingLabel : buttonLabel}
       </button>
@@ -627,9 +627,9 @@ function ComparisonView({
   return (
     <div className="rounded-2xl border border-slate-700 bg-slate-900 p-5 shadow-lg">
       {/* 1. Final recommendation summary — most prominent. */}
-      <div className="rounded-xl border border-violet-800/50 bg-violet-950/20 p-5">
+      <div className="rounded-xl border border-orange-800/50 bg-orange-950/20 p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-violet-300">
+          <p className="text-xs font-semibold uppercase tracking-wide text-orange-300">
             {a.finalRecommendation}
           </p>
           <span
@@ -682,9 +682,9 @@ function ComparisonView({
             value={comparison.scores.openrouter}
             notAnalyzedLabel={a.notAnalyzed}
           />
-          <div className="rounded-xl border border-violet-800/50 bg-violet-950/30 p-3 text-center">
-            <p className="text-xs text-violet-300">{a.averageScore}</p>
-            <p className="mt-1 text-2xl font-bold text-violet-100">
+          <div className="rounded-xl border border-orange-800/50 bg-orange-950/30 p-3 text-center">
+            <p className="text-xs text-orange-300">{a.averageScore}</p>
+            <p className="mt-1 text-2xl font-bold text-orange-100">
               {comparison.averageScore ?? '—'}
             </p>
           </div>
@@ -997,8 +997,8 @@ export function AnalyzeFitPanel({
       </div>
 
       {/* Overview card */}
-      <div className="mt-5 rounded-2xl border border-violet-800/40 bg-gradient-to-br from-slate-950 to-violet-950/20 p-5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-violet-300">
+      <div className="mt-5 rounded-2xl border border-orange-800/40 bg-gradient-to-br from-slate-950 to-orange-950/20 p-5">
+        <p className="text-xs font-semibold uppercase tracking-wide text-orange-300">
           {a.overviewLabel}
         </p>
         {overview ? (
@@ -1047,7 +1047,7 @@ export function AnalyzeFitPanel({
           onClick={() => setActiveTab('summary')}
           className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
             activeTab === 'summary'
-              ? 'bg-violet-600 text-white shadow-sm'
+              ? 'bg-orange-600 text-white shadow-sm'
               : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
           }`}
         >
@@ -1062,14 +1062,14 @@ export function AnalyzeFitPanel({
               onClick={() => setActiveTab(provider)}
               className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                 isActive
-                  ? 'bg-violet-600 text-white shadow-sm'
+                  ? 'bg-orange-600 text-white shadow-sm'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
               }`}
             >
               {a.providers[provider]}
               {hasResult[provider] && (
                 <span
-                  className={`ml-1.5 ${isActive ? 'text-violet-100' : 'text-emerald-400'}`}
+                  className={`ml-1.5 ${isActive ? 'text-orange-100' : 'text-emerald-400'}`}
                 >
                   ✓
                 </span>

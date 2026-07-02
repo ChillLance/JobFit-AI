@@ -103,7 +103,7 @@ export function StatusSelect({
             value={status}
             onChange={(e) => handleChange(e.target.value as JobStatus)}
             disabled={isSaving}
-            className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-2 text-sm text-slate-100 transition focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-2 text-sm text-slate-100 transition focus:border-orange-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
           >
             {JOB_STATUSES.map((value) => (
               <option key={value} value={value}>

@@ -90,7 +90,7 @@ export function JobDetailHeader({
             href={job.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
+            className="rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-500"
           >
             {j.openOriginal}
           </a>
@@ -99,7 +99,7 @@ export function JobDetailHeader({
 
       <section className="mb-6 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg">
         <div className="flex flex-wrap items-center gap-3">
-          <p className="text-sm font-semibold text-blue-400">{j.pageLabel}</p>
+          <p className="text-sm font-semibold text-orange-400">{j.pageLabel}</p>
           <span
             className={`rounded-full border px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(status)}`}
           >

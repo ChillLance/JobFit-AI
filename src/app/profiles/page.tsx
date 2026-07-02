@@ -366,7 +366,7 @@ export default function ProfilesPage() {
             <button
               type="button"
               onClick={handleCreateBlank}
-              className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500"
+              className="rounded-xl bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-500"
             >
               {p.createBlank}
             </button>
@@ -379,7 +379,7 @@ export default function ProfilesPage() {
             </button>
             <Link
               href="/profiles/import"
-              className="rounded-xl border border-violet-600 bg-violet-600/10 px-4 py-2.5 text-sm font-semibold text-violet-200 transition hover:bg-violet-600/20"
+              className="rounded-xl border border-orange-600 bg-orange-600/10 px-4 py-2.5 text-sm font-semibold text-orange-200 transition hover:bg-orange-600/20"
             >
               {p.importFromAi}
             </Link>
@@ -540,7 +540,7 @@ export default function ProfilesPage() {
                   setEditor({ ...editor, text: e.target.value, error: null })
                 }
                 spellCheck={false}
-                className="h-[55vh] w-full resize-none rounded-xl border border-slate-700 bg-slate-950 p-4 font-mono text-xs leading-5 text-slate-100 focus:border-blue-500 focus:outline-none"
+                className="h-[55vh] w-full resize-none rounded-xl border border-slate-700 bg-slate-950 p-4 font-mono text-xs leading-5 text-slate-100 focus:border-orange-500 focus:outline-none"
               />
 
               {editor.error && (
@@ -562,7 +562,7 @@ export default function ProfilesPage() {
               <button
                 type="button"
                 onClick={handleEditorSave}
-                className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
+                className="rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-500"
               >
                 {copy.common.save}
               </button>

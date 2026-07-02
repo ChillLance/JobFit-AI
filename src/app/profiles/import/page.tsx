@@ -209,7 +209,7 @@ export default function ImportProfilePage() {
             <button
               type="button"
               onClick={handleCopyPrompt}
-              className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500"
+              className="rounded-xl bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-500"
             >
               {i.copyPromptButton}
             </button>
@@ -235,7 +235,7 @@ export default function ImportProfilePage() {
             readOnly
             spellCheck={false}
             onFocus={(e) => e.currentTarget.select()}
-            className="mt-4 h-64 w-full resize-none rounded-xl border border-slate-700 bg-slate-950 p-4 font-mono text-xs leading-5 text-slate-100 focus:border-blue-500 focus:outline-none"
+            className="mt-4 h-64 w-full resize-none rounded-xl border border-slate-700 bg-slate-950 p-4 font-mono text-xs leading-5 text-slate-100 focus:border-orange-500 focus:outline-none"
           />
         </section>
 
@@ -251,7 +251,7 @@ export default function ImportProfilePage() {
             }}
             spellCheck={false}
             placeholder='{ "version": "japan_career_profile_v1", "name": "...", ... }'
-            className="mt-4 h-64 w-full resize-none rounded-xl border border-slate-700 bg-slate-950 p-4 font-mono text-xs leading-5 text-slate-100 placeholder:text-slate-600 focus:border-blue-500 focus:outline-none"
+            className="mt-4 h-64 w-full resize-none rounded-xl border border-slate-700 bg-slate-950 p-4 font-mono text-xs leading-5 text-slate-100 placeholder:text-slate-600 focus:border-orange-500 focus:outline-none"
           />
 
           {importError && (
@@ -293,7 +293,7 @@ export default function ImportProfilePage() {
             <button
               type="button"
               onClick={handleImport}
-              className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500"
+              className="rounded-xl bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-500"
             >
               {i.importButton}
             </button>

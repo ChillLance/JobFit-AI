@@ -33,10 +33,10 @@ export function ActiveProfileBanner() {
     ''
 
   return (
-    <section className="mb-6 rounded-2xl border border-violet-900/50 bg-violet-950/20 px-5 py-4">
+    <section className="mb-6 rounded-2xl border border-orange-900/50 bg-orange-950/20 px-5 py-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-violet-300">
+          <p className="text-xs font-semibold uppercase tracking-wide text-orange-300">
             {p.label}
           </p>
           <p className="mt-1 text-sm font-semibold text-slate-100">
@@ -77,7 +77,7 @@ export function ActiveProfileBanner() {
 
         <Link
           href="/profiles"
-          className="shrink-0 rounded-full border border-violet-700 bg-violet-600/10 px-3 py-1.5 text-xs font-semibold text-violet-200 transition hover:bg-violet-600/20"
+          className="shrink-0 rounded-full border border-orange-700 bg-orange-600/10 px-3 py-1.5 text-xs font-semibold text-orange-200 transition hover:bg-orange-600/20"
         >
           {p.manage}
         </Link>

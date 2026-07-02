@@ -5,7 +5,7 @@
 :root {
   --background: #020617; /* slate-950 */
   --foreground: #f1f5f9; /* slate-100 */
-  --accent: #7c3aed; /* violet-600 */
+  --accent: #ea580c; /* orange-600 */
 }
 
 @theme inline {
@@ -29,7 +29,7 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Atmospheric depth: a faint violet aurora behind the top of every page. */
+/* Atmospheric depth: a faint orange aurora behind the top of every page. */
 body::before {
   content: "";
   position: fixed;
@@ -39,7 +39,7 @@ body::before {
   background:
     radial-gradient(
       60rem 24rem at 50% -8rem,
-      rgba(124, 58, 237, 0.14),
+      rgba(234, 88, 12, 0.12),
       transparent 70%
     ),
     radial-gradient(
@@ -55,7 +55,7 @@ body > * {
 }
 
 ::selection {
-  background: rgba(124, 58, 237, 0.45);
+  background: rgba(234, 88, 12, 0.5);
   color: #f8fafc;
 }
 
@@ -78,7 +78,7 @@ body > * {
 
 /* Visible keyboard focus without hunting per-component. */
 :focus-visible {
-  outline: 2px solid rgba(139, 92, 246, 0.8);
+  outline: 2px solid rgba(251, 146, 60, 0.85);
   outline-offset: 2px;
   border-radius: 4px;
 }

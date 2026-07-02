@@ -299,7 +299,7 @@ export default function HomePage() {
       <div className="mx-auto max-w-5xl">
         <header className="mb-8 flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-violet-400">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-orange-400">
               {h.brand}
             </p>
             <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight">
@@ -318,7 +318,7 @@ export default function HomePage() {
 
             <Link
               href="/profiles/import"
-              className="rounded-xl border border-violet-600 bg-violet-600/10 px-5 py-3 font-semibold text-violet-200 transition hover:bg-violet-600/20"
+              className="rounded-xl border border-orange-600 bg-orange-600/10 px-5 py-3 font-semibold text-orange-200 transition hover:bg-orange-600/20"
             >
               {h.importFromAi}
             </Link>
@@ -327,7 +327,7 @@ export default function HomePage() {
               type="button"
               onClick={loadJobs}
               disabled={isLoading}
-              className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-xl bg-orange-600 px-5 py-3 font-semibold text-white transition hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isLoading ? copy.common.refreshing : copy.common.refresh}
             </button>
@@ -359,7 +359,7 @@ export default function HomePage() {
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
                   placeholder={h.searchPlaceholder}
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:border-orange-500 focus:outline-none"
                 />
               </div>
 
@@ -376,7 +376,7 @@ export default function HomePage() {
                   onChange={(event) =>
                     setScoreFilter(event.target.value as ScoreFilter)
                   }
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm text-white focus:border-blue-500 focus:outline-none lg:w-auto"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none lg:w-auto"
                 >
                   {scoreFilters.map(({ value, label }) => (
                     <option key={value} value={value}>
@@ -399,7 +399,7 @@ export default function HomePage() {
                   onChange={(event) =>
                     setSortKey(event.target.value as JobSortKey)
                   }
-                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm text-white focus:border-blue-500 focus:outline-none lg:w-auto"
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none lg:w-auto"
                 >
                   {sortOptions.map(({ value, label }) => (
                     <option key={value} value={value}>
@@ -414,7 +414,7 @@ export default function HomePage() {
                   type="checkbox"
                   checked={riskOnly}
                   onChange={(event) => setRiskOnly(event.target.checked)}
-                  className="h-4 w-4 accent-blue-600"
+                  className="h-4 w-4 accent-orange-600"
                 />
                 {h.riskOnly}
               </label>
@@ -431,7 +431,7 @@ export default function HomePage() {
                     onClick={() => setStatusFilter(value)}
                     className={`rounded-xl border px-4 py-2 text-sm font-semibold transition ${
                       isActive
-                        ? 'border-blue-500 bg-blue-600 text-white'
+                        ? 'border-orange-500 bg-orange-600 text-white'
                         : 'border-slate-700 bg-slate-900 text-slate-300 hover:border-slate-600 hover:bg-slate-800'
                     }`}
                   >
@@ -551,7 +551,7 @@ export default function HomePage() {
               return (
                 <article
                   key={job.id}
-                  className="flex h-full flex-col rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-700/50 hover:shadow-xl hover:shadow-violet-950/30"
+                  className="flex h-full flex-col rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-lg transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-700/50 hover:shadow-xl hover:shadow-orange-950/30"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <h2 className="line-clamp-2 text-lg font-bold leading-snug">
@@ -622,7 +622,7 @@ export default function HomePage() {
                   <div className="mt-auto flex flex-wrap items-center gap-2 pt-4">
                     <Link
                       href={`/jobs/${encodeURIComponent(job.id)}`}
-                      className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500"
+                      className="rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-500"
                     >
                       {h.viewDetails}
                     </Link>

@@ -68,8 +68,8 @@ export default function DashboardStatsCards({
         stats.unanalyzedJobs > 0
           ? d.unanalyzedHint(stats.unanalyzedJobs)
           : undefined,
-      accent: 'border-violet-900/70 bg-violet-950/30',
-      valueClass: 'text-violet-300',
+      accent: 'border-orange-900/70 bg-orange-950/30',
+      valueClass: 'text-orange-300',
     },
     {
       key: 'risky',
