@@ -386,7 +386,7 @@ Content-Type: application/json
 { "title": "...", "url": "...", "rawText": "..." }
 ```
 
-The app UI references a **Chrome Extension** for this step. Extension source is **not included in this repository**; any client with the same payload works.
+The companion **Chrome Extension (JobFlow Collector)** lives in [`extension/`](extension/): open any job posting page, click the toolbar button, and it POSTs the page title / URL / text to the local app. Load it via `chrome://extensions` → Developer mode → "Load unpacked" → select the `extension/` folder. Any HTTP client with the same payload also works.
 
 Refresh the home page after collecting to load jobs via `GET /api/jobs`.
 
@@ -489,7 +489,6 @@ Important areas:
 - Full multilingual UI (Profile Builder Prompt is Chinese only today)
 - `ANALYZE_MODE` as a single global provider switch
 - AI provider fallback orchestration
-- Chrome Extension source in this repository
 
 ---
 
@@ -504,7 +503,6 @@ Important areas:
 - Demo data / sample job scenarios
 - Deployment polish
 - Screenshots and usage examples
-- Chrome Extension packaged or linked from this repo
 
 ### Future ideas
 
