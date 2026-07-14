@@ -163,6 +163,14 @@ export const defaultJapanCareerProfile: JapanCareerProfile = {
   },
   notes:
     'Migrated from the project-root user_profile.json. Japanese is practical for many customer-service situations but advanced business Japanese is still a growth area; web development should be evaluated at junior / trainee level.',
+  workingHoliday: {
+    hasDriverLicense: null,
+    splitShiftTolerance: null,
+    availableMonths: null,
+    availableFrom: null,
+    targetMonthlySavingsJpy: null,
+    privateRoomRequired: null,
+  },
 }
 
 /**

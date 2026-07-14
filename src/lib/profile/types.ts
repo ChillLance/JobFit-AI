@@ -113,6 +113,27 @@ export type ProfileCareer = {
 }
 
 /**
+ * Working-holiday-specific logistics that affect job fit beyond the generic
+ * target/conditions fields (driver's license, split-shift tolerance, how long
+ * / from when the candidate can work, and a savings goal used against
+ * `estimateMonthlySavings` — see src/lib/jobs/savings.ts).
+ *
+ * Optional on `JapanCareerProfile` so existing stored profiles (which predate
+ * this field) keep validating and loading without migration.
+ */
+export type ProfileWorkingHoliday = {
+  hasDriverLicense: boolean | null
+  /** Tolerance for 中抜けシフト (split shifts with an unpaid midday gap). */
+  splitShiftTolerance: ToleranceLevel | null
+  /** Longest number of months the candidate can work continuously. */
+  availableMonths: number | null
+  /** e.g. '2026-10' — when the candidate can start. */
+  availableFrom: string | null
+  targetMonthlySavingsJpy: number | null
+  privateRoomRequired: boolean | null
+}
+
+/**
  * A single, versioned Japan-focused career profile.
  */
 export type JapanCareerProfile = {
@@ -136,6 +157,8 @@ export type JapanCareerProfile = {
   career: ProfileCareer
   /** Free-form notes. */
   notes: string
+  /** Optional — working-holiday-specific logistics (see ProfileWorkingHoliday). */
+  workingHoliday?: ProfileWorkingHoliday
 }
 
 /**

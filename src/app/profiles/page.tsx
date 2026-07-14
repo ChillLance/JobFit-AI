@@ -15,6 +15,7 @@ import {
 } from '@/lib/profile'
 import { getUiCopy } from '@/lib/uiCopy'
 import { useAppLanguage } from '@/lib/useAppLanguage'
+import type { AppLanguage } from '@/lib/appLanguage'
 
 function nowIso(): string {
   return new Date().toISOString()
@@ -30,10 +31,10 @@ function genId(): string {
   return `profile_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
 }
 
-function formatDate(value?: string): string {
+function formatDate(value: string | undefined, language: AppLanguage): string {
   if (!value) return '—'
   try {
-    return new Date(value).toLocaleString()
+    return new Date(value).toLocaleString(language)
   } catch {
     return value
   }
@@ -467,7 +468,7 @@ export default function ProfilesPage() {
                 </dl>
 
                 <p className="mt-4 text-xs text-stone-400">
-                  {p.lastUpdated}{formatDate(profile.updatedAt)}
+                  {p.lastUpdated}{formatDate(profile.updatedAt, language)}
                 </p>
 
                 <div className="mt-auto flex flex-wrap gap-2 pt-4">

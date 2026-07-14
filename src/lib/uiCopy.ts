@@ -31,6 +31,8 @@ export type UiCopy = {
     subtitle: (count: number) => string
     manageProfiles: string
     importFromAi: string
+    analyzeAllLocal: string
+    analyzeAllLocalProgress: string
     searchLabel: string
     searchPlaceholder: string
     scoreLabel: string
@@ -50,6 +52,8 @@ export type UiCopy = {
     pendingAnalysis: string
     sourcePrefix: string
     collectedPrefix: string
+    /** Estimated net monthly savings chip (see src/lib/jobs/savings.ts). */
+    savingsChip: (jpy: number) => string
     scoreFilters: {
       all: string
       high: string
@@ -69,6 +73,9 @@ export type UiCopy = {
       oldest: string
       scoreDesc: string
       scoreAsc: string
+      salaryDesc: string
+      salaryAsc: string
+      savingsDesc: string
       companyAsc: string
       titleAsc: string
     }
@@ -248,7 +255,7 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
       close: '關閉',
       cancel: '取消',
       save: '儲存',
-      active: 'Active',
+      active: '使用中',
       unknownTime: '未知時間',
       unnamedJob: '未命名職缺',
     },
@@ -263,8 +270,10 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
       brand: 'JobFit AI',
       title: '職缺採集儀表板',
       subtitle: (count) => `目前已採集 ${count} 筆職缺資料`,
-      manageProfiles: 'Manage Profiles',
-      importFromAi: 'Import from AI',
+      manageProfiles: '管理 Profile',
+      importFromAi: '從 AI 匯入',
+      analyzeAllLocal: '一鍵本地分析',
+      analyzeAllLocalProgress: '本地分析中...',
       searchLabel: '搜尋',
       searchPlaceholder: '搜尋職稱、公司、地點...',
       scoreLabel: '分數',
@@ -286,6 +295,7 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
       pendingAnalysis: '待分析',
       sourcePrefix: '來源：',
       collectedPrefix: '採集：',
+      savingsChip: (jpy) => `預估月存 約¥${jpy.toLocaleString('en-US')}`,
       scoreFilters: {
         all: '全部分數',
         high: '高匹配 (≥80)',
@@ -305,6 +315,9 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
         oldest: '最舊新增',
         scoreDesc: '分數高到低',
         scoreAsc: '分數低到高',
+        salaryDesc: '預估月薪高到低',
+        salaryAsc: '預估月薪低到高',
+        savingsDesc: '預估月存高到低',
         companyAsc: '公司 A-Z',
         titleAsc: '職稱 A-Z',
       },
@@ -326,34 +339,34 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
       riskyDesc: '偵測到需確認條件',
     },
     profiles: {
-      title: 'Career Profiles',
+      title: '職涯 Profile',
       description:
-        'Manage multiple Japan career profiles and choose which one should be used for job-fit analysis.',
+        '管理多份日本職涯 Profile，並選擇要用哪一份來進行職缺適合度分析。',
       activeProfileLabel: '使用中的 Profile (Active)',
-      createBlank: 'Create Blank Profile',
-      duplicateActive: 'Duplicate Active Profile',
-      importFromAi: 'Import from AI',
-      resetDefault: 'Reset to Default Profiles',
+      createBlank: '建立空白 Profile',
+      duplicateActive: '複製使用中的 Profile',
+      importFromAi: '從 AI 匯入',
+      resetDefault: '重設為預設 Profile',
       loading: '載入 Profile 中...',
-      setActive: 'Set Active',
+      setActive: '設為使用中',
       inUse: '使用中',
-      duplicate: 'Duplicate',
-      editJson: 'Edit JSON',
-      exportJson: 'Export JSON',
-      delete: 'Delete',
-      editModalTitle: 'Edit Profile JSON',
+      duplicate: '複製',
+      editJson: '編輯 JSON',
+      exportJson: '匯出 JSON',
+      delete: '刪除',
+      editModalTitle: '編輯 Profile JSON',
       lastUpdated: '最後更新：',
       unnamedProfile: '未命名 Profile',
       fields: {
-        desiredRoles: 'Desired roles',
-        desiredLocations: 'Desired locations',
-        japaneseLevel: 'Japanese level',
-        employmentTypes: 'Employment types',
-        careerGoal: 'Career goal / vision',
+        desiredRoles: '期望職種',
+        desiredLocations: '期望地點',
+        japaneseLevel: '日文程度',
+        employmentTypes: '雇用形態',
+        careerGoal: '職涯目標 / 願景',
       },
     },
     profileImport: {
-      title: 'Import Profile from External AI',
+      title: '從外部 AI 匯入 Profile',
       description:
         'JobFit-AI 不需要你的原始履歷。你可以在自己信任的 AI 工具中處理敏感的個人文件，只把整理後、結構化的 Profile JSON 貼回來匯入。你的履歷原文不會經過 JobFit-AI。',
       stepsTitle: '操作步驟',
@@ -362,16 +375,16 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
         '貼到你的 AI 助手（ChatGPT / Gemini / Claude）。',
         '在該 AI 工具中上傳或貼上你的履歷 / 職務經歷書 / 作品集等資料。',
         '複製 AI 產生的 JapanCareerProfile JSON。',
-        '貼到下方欄位並點「Import Profile」匯入。',
+        '貼到下方欄位並點「匯入 Profile」匯入。',
       ],
       copyPromptTitle: '1. 複製提示詞',
       copyPromptDesc: '貼到 ChatGPT / Gemini / Claude，並附上你的求職資料。',
-      copyPromptButton: 'Copy Prompt',
+      copyPromptButton: '複製提示詞',
       promptFollowsAppLanguage: '提示詞語言跟隨上方語言選擇器',
       pasteJsonTitle: '2. 貼上並匯入 JSON',
       pasteJsonDesc:
-        '把 AI 產生的 JapanCareerProfile JSON 貼到下方，然後點「Import Profile」。',
-      importButton: 'Import Profile',
+        '把 AI 產生的 JapanCareerProfile JSON 貼到下方，然後點「匯入 Profile」。',
+      importButton: '匯入 Profile',
       backToProfiles: '返回 Profiles',
       importSuccessTitle: '匯入成功',
       goToProfiles: '前往 Profiles 查看',
@@ -510,6 +523,8 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
       subtitle: (count) => `${count} job${count === 1 ? '' : 's'} collected so far`,
       manageProfiles: 'Manage Profiles',
       importFromAi: 'Import from AI',
+      analyzeAllLocal: 'Analyze all (local)',
+      analyzeAllLocalProgress: 'Analyzing...',
       searchLabel: 'Search',
       searchPlaceholder: 'Search title, company, location...',
       scoreLabel: 'Score',
@@ -531,6 +546,7 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
       pendingAnalysis: 'Not analyzed',
       sourcePrefix: 'Source: ',
       collectedPrefix: 'Collected: ',
+      savingsChip: (jpy) => `Est. savings ~¥${jpy.toLocaleString('en-US')}/mo`,
       scoreFilters: {
         all: 'All scores',
         high: 'High match (≥80)',
@@ -550,6 +566,9 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
         oldest: 'Oldest first',
         scoreDesc: 'Score high to low',
         scoreAsc: 'Score low to high',
+        salaryDesc: 'Estimated monthly pay: high to low',
+        salaryAsc: 'Estimated monthly pay: low to high',
+        savingsDesc: 'Est. savings: high to low',
         companyAsc: 'Company A–Z',
         titleAsc: 'Title A–Z',
       },
@@ -762,6 +781,8 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
       subtitle: (count) => `現在 ${count} 件の求人を収集済み`,
       manageProfiles: 'Profiles 管理',
       importFromAi: 'AI からインポート',
+      analyzeAllLocal: '一括ローカル分析',
+      analyzeAllLocalProgress: '分析中...',
       searchLabel: '検索',
       searchPlaceholder: '職種、会社、勤務地で検索...',
       scoreLabel: 'スコア',
@@ -783,6 +804,7 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
       pendingAnalysis: '未分析',
       sourcePrefix: 'ソース：',
       collectedPrefix: '収集：',
+      savingsChip: (jpy) => `推定貯金 約¥${jpy.toLocaleString('en-US')}/月`,
       scoreFilters: {
         all: 'すべてのスコア',
         high: '高マッチ (≥80)',
@@ -802,6 +824,9 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
         oldest: '古い順',
         scoreDesc: 'スコア高い順',
         scoreAsc: 'スコア低い順',
+        salaryDesc: '推定月収が高い順',
+        salaryAsc: '推定月収が低い順',
+        savingsDesc: '推定貯金が多い順',
         companyAsc: '会社 A–Z',
         titleAsc: '職種 A–Z',
       },
@@ -823,7 +848,7 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
       riskyDesc: '要確認の条件を検出',
     },
     profiles: {
-      title: 'Career Profiles',
+      title: 'キャリア Profile',
       description:
         '複数の Japan キャリア Profile を管理し、求人適合度分析に使う Profile を選択します。',
       activeProfileLabel: '使用中の Profile',
@@ -859,7 +884,7 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
         'AI アシスタント（ChatGPT / Gemini / Claude）に貼り付けます。',
         'そのツールで履歴書 / 職務経歴書 / ポートフォリオ等をアップロードまたは貼り付けます。',
         'AI が生成した JapanCareerProfile JSON をコピーします。',
-        '下の欄に貼り付けて「Import Profile」をクリックします。',
+        '下の欄に貼り付けて「Profile をインポート」をクリックします。',
       ],
       copyPromptTitle: '1. プロンプトをコピー',
       copyPromptDesc:
@@ -868,8 +893,8 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
       promptFollowsAppLanguage: 'プロンプト言語は上部の言語選択に従います',
       pasteJsonTitle: '2. JSON を貼り付けてインポート',
       pasteJsonDesc:
-        'AI が生成した JapanCareerProfile JSON を下に貼り付け、「Import Profile」をクリックします。',
-      importButton: 'Import Profile',
+        'AI が生成した JapanCareerProfile JSON を下に貼り付け、「Profile をインポート」をクリックします。',
+      importButton: 'Profile をインポート',
       backToProfiles: 'Profiles に戻る',
       importSuccessTitle: 'インポート成功',
       goToProfiles: 'Profiles を見る',

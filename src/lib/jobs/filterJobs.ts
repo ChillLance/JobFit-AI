@@ -1,3 +1,7 @@
+import { getJobSalaryEstimate } from './salary'
+import { estimateMonthlySavings } from './savings'
+import type { JobExtraction } from '@/types/extraction'
+
 // Pure client-side filtering + sorting for the job list (TASK-023).
 // No API calls, no AI. Operates only on fields already present on a job plus
 // caller-supplied derived getters (score / risk / status) so this stays
@@ -12,6 +16,9 @@ export type JobSortKey =
   | 'oldest'
   | 'score_desc'
   | 'score_asc'
+  | 'salary_desc'
+  | 'salary_asc'
+  | 'savings_desc'
   | 'company_asc'
   | 'title_asc'
 
@@ -29,9 +36,13 @@ export type FilterableJob = {
   employmentType?: string
   collectedAt?: string
   scrapedAt?: string
+  salary?: string
   savedAt?: string
   updatedAt?: string
   createdAt?: string
+  // Structured LLM extraction (present for some jobs — see src/types/extraction.ts).
+  // Read-only here; only used to derive the 'savings_desc' sort key.
+  extraction?: JobExtraction | null
 }
 
 export type JobFilterState = {
@@ -130,19 +141,35 @@ function matchesScoreFilter(score: number | null, filter: ScoreFilter): boolean 
 }
 
 // Filter + sort a list of jobs. Returns a new array; never mutates the input.
-// Scores / risk / status are derived once per job and cached so sorting does
-// not recompute them.
+// Scores and salary estimates are derived once per job and cached so sorting
+// does not recompute them.
 export function filterAndSortJobs<T extends FilterableJob>(
   jobs: T[],
   state: JobFilterState,
   helpers: JobFilterHelpers<T>
 ): T[] {
   const scoreCache = new Map<string, number | null>()
+  const salaryCache = new Map<string, number | null>()
+  const savingsCache = new Map<string, number | null>()
   const scoreOf = (job: T): number | null => {
     const cached = scoreCache.get(job.id)
     if (cached !== undefined) return cached
     const value = helpers.getScore(job)
     scoreCache.set(job.id, value)
+    return value
+  }
+  const salaryOf = (job: T): number | null => {
+    const cached = salaryCache.get(job.id)
+    if (cached !== undefined) return cached
+    const value = getJobSalaryEstimate(job)?.monthlyJpy ?? null
+    salaryCache.set(job.id, value)
+    return value
+  }
+  const savingsOf = (job: T): number | null => {
+    const cached = savingsCache.get(job.id)
+    if (cached !== undefined) return cached
+    const value = estimateMonthlySavings(job)?.savingsJpy ?? null
+    savingsCache.set(job.id, value)
     return value
   }
 
@@ -156,7 +183,7 @@ export function filterAndSortJobs<T extends FilterableJob>(
     return true
   })
 
-  return sortJobs(filtered, state.sort, scoreOf)
+  return sortJobs(filtered, state.sort, scoreOf, salaryOf, savingsOf)
 }
 
 // Sort a copy of the list. Jobs missing the relevant value are pushed to the
@@ -164,7 +191,9 @@ export function filterAndSortJobs<T extends FilterableJob>(
 function sortJobs<T extends FilterableJob>(
   jobs: T[],
   sort: JobSortKey,
-  scoreOf: (job: T) => number | null
+  scoreOf: (job: T) => number | null,
+  salaryOf: (job: T) => number | null,
+  savingsOf: (job: T) => number | null
 ): T[] {
   const copy = [...jobs]
 
@@ -192,6 +221,30 @@ function sortJobs<T extends FilterableJob>(
         if (sa === null) return 1
         if (sb === null) return -1
         return (sa - sb) * direction
+      })
+    }
+
+    case 'salary_desc':
+    case 'salary_asc': {
+      const direction = sort === 'salary_desc' ? -1 : 1
+      return copy.sort((a, b) => {
+        const sa = salaryOf(a)
+        const sb = salaryOf(b)
+        if (sa === null && sb === null) return 0
+        if (sa === null) return 1
+        if (sb === null) return -1
+        return (sa - sb) * direction
+      })
+    }
+
+    case 'savings_desc': {
+      return copy.sort((a, b) => {
+        const sa = savingsOf(a)
+        const sb = savingsOf(b)
+        if (sa === null && sb === null) return 0
+        if (sa === null) return 1
+        if (sb === null) return -1
+        return sb - sa
       })
     }
 

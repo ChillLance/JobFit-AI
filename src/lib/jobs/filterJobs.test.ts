@@ -5,6 +5,71 @@ import {
   matchesSearch,
   type FilterableJob,
 } from './filterJobs'
+import type { JobExtraction } from '@/types/extraction'
+
+// Minimal "empty" extraction fixture — mirrors the fixture pattern used in
+// src/lib/extraction/collectUpsert.test.ts / src/lib/jobs/savings.test.ts.
+function fakeExtraction(overrides: Partial<JobExtraction> = {}): JobExtraction {
+  return {
+    schemaVersion: 1,
+    extractedAt: '2026-07-14T00:00:00.000Z',
+    model: 'test-model',
+    rawTextHash: 'hash',
+    workplaceName: null,
+    agencyName: null,
+    listingId: null,
+    roleCategory: null,
+    dutySummary: null,
+    employmentType: null,
+    startTiming: null,
+    minDurationMonths: null,
+    durationNote: null,
+    extensionPossible: null,
+    requiredLanguages: [],
+    requiredLicenses: [],
+    requiredExperience: null,
+    foreignerSignals: [],
+    wageType: null,
+    wageMinJpy: null,
+    wageMaxJpy: null,
+    overtimeNote: null,
+    statedMonthlyIncomeJpy: null,
+    incomeExamples: [],
+    dormFeeJpy: null,
+    dormFeeNote: null,
+    utilitiesFeeJpy: null,
+    utilitiesFeeNote: null,
+    mealsCostType: null,
+    mealsCostNote: null,
+    travelReimbursement: null,
+    travelReimbursementCapJpy: null,
+    travelReimbursementCondition: null,
+    payDay: null,
+    advancePayAvailable: null,
+    completionBonusNote: null,
+    housingType: null,
+    housingWifi: null,
+    housingNote: null,
+    mealsProvidedNote: null,
+    prefecture: null,
+    cityArea: null,
+    areaName: null,
+    accessNote: null,
+    carAllowed: null,
+    onsenUse: null,
+    shiftType: null,
+    hoursNote: null,
+    nightWork: null,
+    overtimeEstimate: null,
+    holidaysPerMonthNote: null,
+    trainingSupport: null,
+    sourceRatingScore: null,
+    sourceRatingCount: null,
+    redFlags: [],
+    evidence: {},
+    ...overrides,
+  }
+}
 
 const helpers = {
   getScore: (job: FilterableJob & { score?: number | null }) =>
@@ -84,6 +149,83 @@ describe('filterAndSortJobs', () => {
       helpers
     )
     expect(result.map((j) => j.id)).toEqual(['a', 'b', 'c'])
+  })
+
+  it('sorts salary estimates by normalized monthly JPY, keeping unknown salaries last', () => {
+    const salaryJobs: TestJob[] = [
+      { id: 'hourly', salary: '時給 1,500円' },
+      { id: 'monthly', salary: '月給 300,000円' },
+      { id: 'annual', salary: '年収 4,800,000円' },
+      { id: 'unknown', salary: '応相談' },
+    ]
+
+    const highToLow = filterAndSortJobs(
+      salaryJobs,
+      { search: '', status: 'all', score: 'all', riskOnly: false, sort: 'salary_desc' },
+      helpers
+    )
+    const lowToHigh = filterAndSortJobs(
+      salaryJobs,
+      { search: '', status: 'all', score: 'all', riskOnly: false, sort: 'salary_asc' },
+      helpers
+    )
+
+    expect(highToLow.map((job) => job.id)).toEqual([
+      'annual',
+      'monthly',
+      'hourly',
+      'unknown',
+    ])
+    expect(lowToHigh.map((job) => job.id)).toEqual([
+      'hourly',
+      'monthly',
+      'annual',
+      'unknown',
+    ])
+  })
+
+  it('sorts by estimated monthly savings descending, pushing jobs with no estimate last', () => {
+    const savingsJobs: TestJob[] = [
+      {
+        id: 'high-savings',
+        extraction: fakeExtraction({
+          statedMonthlyIncomeJpy: 250_000,
+          dormFeeJpy: 0,
+          utilitiesFeeJpy: 0,
+          mealsCostType: 'free',
+        }),
+      },
+      {
+        id: 'low-savings',
+        extraction: fakeExtraction({
+          statedMonthlyIncomeJpy: 200_000,
+          dormFeeJpy: 30_000,
+          utilitiesFeeJpy: 10_000,
+          mealsCostType: 'not_provided',
+        }),
+      },
+      {
+        id: 'no-estimate',
+        extraction: fakeExtraction({
+          statedMonthlyIncomeJpy: 200_000,
+          dormFeeJpy: null,
+        }),
+      },
+      { id: 'no-extraction' },
+    ]
+
+    const result = filterAndSortJobs(
+      savingsJobs,
+      { search: '', status: 'all', score: 'all', riskOnly: false, sort: 'savings_desc' },
+      helpers
+    )
+
+    expect(result.map((j) => j.id)).toEqual([
+      'high-savings',
+      'low-savings',
+      'no-estimate',
+      'no-extraction',
+    ])
   })
 
   it('sorts by newest collectedAt first', () => {

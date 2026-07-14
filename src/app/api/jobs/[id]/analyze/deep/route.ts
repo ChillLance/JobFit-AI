@@ -319,7 +319,10 @@ async function callGemini(
         temperature: 0.1,
         topP: 0.8,
         topK: 20,
-        maxOutputTokens: 4096,
+        // gemini-3.5-flash is a thinking model: thinking tokens count against
+        // maxOutputTokens, so 4096 gets exhausted before the JSON is emitted
+        // (measured 2026-07-14: finishReason MAX_TOKENS with 306 chars out).
+        maxOutputTokens: 32768,
         responseMimeType: 'application/json',
       },
     }),
@@ -351,6 +354,12 @@ async function callGemini(
 
   const candidates = (payload as { candidates?: unknown[] }).candidates
   const first = Array.isArray(candidates) ? candidates[0] : undefined
+
+  const finishReason = (first as { finishReason?: string } | undefined)?.finishReason
+  if (finishReason === 'MAX_TOKENS') {
+    throw new Error('Gemini output truncated (finishReason MAX_TOKENS) — raise maxOutputTokens')
+  }
+
   const parts = (first as { content?: { parts?: unknown[] } })?.content?.parts
   const textPart = Array.isArray(parts)
     ? parts.find((p) => typeof (p as { text?: string }).text === 'string')

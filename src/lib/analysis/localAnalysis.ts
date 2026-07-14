@@ -16,7 +16,9 @@ import type {
   ToleranceLevel,
 } from '@/lib/profile'
 import { getFitLevel } from './normalizeAnalysis'
+import { estimateMonthlySavings } from '@/lib/jobs/savings'
 import type { AnalysisResult, FitLevel } from '@/types/analysis'
+import type { JobExtraction } from '@/types/extraction'
 
 export type LocalAnalyzableJob = {
   id: string
@@ -27,6 +29,11 @@ export type LocalAnalyzableJob = {
   salary?: string
   rawText?: string
   description?: string
+  // Structured LLM extraction (present for some jobs — see
+  // src/types/extraction.ts). Optional and read-only here: when absent, every
+  // extraction-driven rule below is skipped and scoring behaves exactly as it
+  // did before extraction existed (regression-safe for jobs without it).
+  extraction?: JobExtraction | null
 }
 
 export type LocalAnalysisResult = AnalysisResult & {
@@ -374,7 +381,12 @@ export function analyzeJobLocally(
     label: string
   }[] = [
     {
-      detected: /夜勤|ナイトフロント|night shift|深夜/.test(jobText),
+      // extraction.nightWork (when the LLM extraction explicitly classified
+      // the listing as night work) reinforces the text-based regex detection
+      // rather than adding a separate scoring path.
+      detected:
+        /夜勤|ナイトフロント|night shift|深夜/.test(jobText) ||
+        job.extraction?.nightWork === true,
       level: profile.conditions.nightShiftTolerance,
       label: '夜班',
     },
@@ -399,6 +411,99 @@ export function analyzeJobLocally(
     const outcome = toleranceOutcome(cond.level, cond.label)
     score -= outcome.penalty
     if (outcome.risk) risks.push(outcome.risk)
+  }
+
+  // 9. Financial visibility from extraction (TASK-030 follow-up) ----------
+  // Local rules previously had no visibility into extraction.dormFeeJpy /
+  // mealsCostType / utilitiesFeeJpy, so a job with fully-covered housing and
+  // meals scored the same as one with none of that — the "financial blind
+  // spot". These rules are independent of the profile: they fire whenever
+  // extraction says so, regardless of who is being scored.
+  const extraction = job.extraction
+  if (extraction) {
+    let financialBonus = 0
+    if (extraction.dormFeeJpy === 0) {
+      financialBonus += 4
+      strengths.push('寮費0円——住宿成本全免。')
+    }
+    if (extraction.mealsCostType === 'free') {
+      financialBonus += 4
+      strengths.push('餐食全免，可再省下一筆生活支出。')
+    }
+    if (extraction.utilitiesFeeJpy === 0) {
+      financialBonus += 2
+      strengths.push('水道光熱費0円，進一步降低生活成本。')
+    }
+    score += Math.min(financialBonus, 10)
+
+    if (
+      typeof extraction.travelReimbursementCondition === 'string' &&
+      extraction.travelReimbursementCondition.includes('満了')
+    ) {
+      risks.push('交通費採滿約後支付——中途離職拿不到。')
+    }
+
+    // 10. Profile cross-reference (only fires when both extraction AND the
+    // profile's workingHoliday settings have a concrete value) -------------
+    const wh = profile.workingHoliday
+    if (wh) {
+      if (extraction.requiredLicenses.some((lic) => lic.includes('免許'))) {
+        if (wh.hasDriverLicense === false) {
+          score -= 15
+          risks.push('職缺要求駕照，但你的設定為沒有駕照，請確認是否仍可應徵。')
+        } else if (wh.hasDriverLicense === true) {
+          score += 3
+          strengths.push('職缺要求駕照，你符合這項條件。')
+        }
+      }
+
+      if (extraction.shiftType === 'split') {
+        if (
+          wh.splitShiftTolerance === 'avoid' ||
+          wh.splitShiftTolerance === 'low'
+        ) {
+          score -= 6
+          risks.push(
+            '職缺為中抜けシフト（排班中段有空班），但你的接受度偏低，請確認實際排班安排。'
+          )
+        } else if (
+          wh.splitShiftTolerance === 'high' ||
+          wh.splitShiftTolerance === 'flexible'
+        ) {
+          score += 2
+          strengths.push('職缺為中抜けシフト，符合你可接受的排班彈性。')
+        }
+      }
+
+      if (
+        extraction.minDurationMonths !== null &&
+        wh.availableMonths !== null &&
+        extraction.minDurationMonths > wh.availableMonths
+      ) {
+        score -= 15
+        risks.push(
+          `最短勤務期間超過你可工作的月數（職缺要求至少 ${extraction.minDurationMonths} 個月，你最長可工作 ${wh.availableMonths} 個月）。`
+        )
+      }
+
+      if (wh.targetMonthlySavingsJpy !== null) {
+        const savings = estimateMonthlySavings(job)
+        if (savings !== null) {
+          const targetLabel = wh.targetMonthlySavingsJpy.toLocaleString('en-US')
+          const savingsLabel = savings.savingsJpy.toLocaleString('en-US')
+          if (savings.savingsJpy >= wh.targetMonthlySavingsJpy) {
+            score += 4
+            strengths.push(
+              `預估每月可存約 ¥${savingsLabel}，達到你設定的存錢目標（¥${targetLabel}）。`
+            )
+          } else {
+            risks.push(
+              `預估每月可存約 ¥${savingsLabel}，低於你設定的存錢目標（¥${targetLabel}）。`
+            )
+          }
+        }
+      }
+    }
   }
 
   // ---- Finalize ---------------------------------------------------------

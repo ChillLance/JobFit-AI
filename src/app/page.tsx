@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import type { FitLevel } from '@/types/analysis'
+import type { AppLanguage } from '@/lib/appLanguage'
 import {
   getFitLevel,
   getFitLevelLabel,
@@ -19,11 +20,13 @@ import {
   type JobSortKey,
   type ScoreFilter,
 } from '@/lib/jobs/filterJobs'
+import { estimateMonthlySavings } from '@/lib/jobs/savings'
 import { getDashboardStats } from '@/lib/jobs/getDashboardStats'
 import DashboardStatsCards from '@/components/jobs/DashboardStatsCards'
 import { getUiCopy } from '@/lib/uiCopy'
 import { useAppLanguage } from '@/lib/useAppLanguage'
 import { ToriiIcon } from '@/components/ToriiIcon'
+import type { JobExtraction } from '@/types/extraction'
 
 type JobStatus =
   | 'not_applied'
@@ -44,6 +47,9 @@ type Job = {
   employmentType?: string
   salary?: string
   status?: string
+  // Structured LLM extraction (present for some jobs — see
+  // src/types/extraction.ts). Used to derive the estimated-savings chip.
+  extraction?: JobExtraction | null
   aiScore?: unknown
   deepAnalysis?: unknown
   groqAnalysis?: unknown
@@ -134,13 +140,13 @@ async function readJsonSafely(response: Response) {
   }
 }
 
-function formatDate(value?: string) {
+function formatDate(value: string | undefined, language: AppLanguage, unknownTime: string) {
   if (!value) {
-    return '未知時間'
+    return unknownTime
   }
 
   try {
-    return new Date(value).toLocaleString()
+    return new Date(value).toLocaleString(language)
   } catch {
     return value
   }
@@ -173,6 +179,9 @@ export default function HomePage() {
     { value: 'oldest', label: h.sortOptions.oldest },
     { value: 'score_desc', label: h.sortOptions.scoreDesc },
     { value: 'score_asc', label: h.sortOptions.scoreAsc },
+    { value: 'salary_desc', label: h.sortOptions.salaryDesc },
+    { value: 'salary_asc', label: h.sortOptions.salaryAsc },
+    { value: 'savings_desc', label: h.sortOptions.savingsDesc },
     { value: 'company_asc', label: h.sortOptions.companyAsc },
     { value: 'title_asc', label: h.sortOptions.titleAsc },
   ]
@@ -182,6 +191,7 @@ export default function HomePage() {
   const [jobs, setJobs] = useState<Job[]>([])
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isAnalyzingAll, setIsAnalyzingAll] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [searchQuery, setSearchQuery] = useState('')
@@ -250,6 +260,37 @@ export default function HomePage() {
       setError(error instanceof Error ? error.message : '讀取職缺失敗')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  async function handleAnalyzeAllLocally() {
+    try {
+      setIsAnalyzingAll(true)
+      setError(null)
+
+      const response = await fetch('/api/jobs/analyze-local-all', {
+        method: 'POST',
+      })
+
+      const data = (await readJsonSafely(response)) as {
+        analyzed?: number
+        error?: string
+      } | null
+
+      if (!response.ok) {
+        throw new Error(data?.error || '本地分析失敗')
+      }
+
+      await loadJobs()
+      // This is the point of the one-click workflow: after a full local
+      // analysis pass, surface the highest-scoring jobs first so AI analysis
+      // quota can be prioritized toward them.
+      setSortKey('score_desc')
+    } catch (error) {
+      console.error('本地分析失敗:', error)
+      setError(error instanceof Error ? error.message : '本地分析失敗')
+    } finally {
+      setIsAnalyzingAll(false)
     }
   }
 
@@ -323,6 +364,15 @@ export default function HomePage() {
             >
               {h.importFromAi}
             </Link>
+
+            <button
+              type="button"
+              onClick={handleAnalyzeAllLocally}
+              disabled={isAnalyzingAll || isLoading || jobs.length === 0}
+              className="rounded-xl border border-orange-600 bg-orange-600/10 px-5 py-3 font-semibold text-orange-800 transition hover:bg-orange-600/20 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isAnalyzingAll ? h.analyzeAllLocalProgress : h.analyzeAllLocal}
+            </button>
 
             <button
               type="button"
@@ -540,13 +590,18 @@ export default function HomePage() {
               const recommendation =
                 primary?.recommendation || getFitLevelLabel(fitLevel)
 
+              const savingsEstimate = estimateMonthlySavings(job)
+
               const metaChips = [
                 job.company,
                 job.location,
                 job.employmentType,
                 job.salary,
+                savingsEstimate
+                  ? h.savingsChip(savingsEstimate.savingsJpy)
+                  : null,
                 job.source ? `${h.sourcePrefix}${job.source}` : null,
-                `${h.collectedPrefix}${formatDate(job.collectedAt)}`,
+                `${h.collectedPrefix}${formatDate(job.collectedAt, language, copy.common.unknownTime)}`,
               ].filter((value): value is string => Boolean(value))
 
               return (

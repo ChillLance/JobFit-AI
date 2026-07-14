@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { getUiCopy } from '@/lib/uiCopy'
 import { useAppLanguage } from '@/lib/useAppLanguage'
+import type { AppLanguage } from '@/lib/appLanguage'
 import { ToriiIcon } from '@/components/ToriiIcon'
 import type { JobStatus } from './StatusSelect'
 
@@ -19,10 +20,10 @@ function getStatusBadgeClass(status: JobStatus) {
   }
 }
 
-function formatDate(value: string | undefined, unknownLabel: string) {
+function formatDate(value: string | undefined, unknownLabel: string, language: AppLanguage) {
   if (!value) return unknownLabel
   try {
-    return new Date(value).toLocaleString()
+    return new Date(value).toLocaleString(language)
   } catch {
     return value
   }
@@ -136,7 +137,7 @@ export function JobDetailHeader({
           )}
           <span className="rounded-full bg-stone-100 px-3 py-1">
             {j.collectedAt}
-            {formatDate(job.collectedAt, copy.common.unknownTime)}
+            {formatDate(job.collectedAt, copy.common.unknownTime, language)}
           </span>
         </div>
       </section>
@@ -162,7 +163,7 @@ export function JobDetailSections({ job }: { job: JobData }) {
     job.source ? { label: f.source, value: job.source } : null,
     {
       label: f.collectedAt,
-      value: formatDate(job.collectedAt, copy.common.unknownTime),
+      value: formatDate(job.collectedAt, copy.common.unknownTime, language),
     },
     {
       label: f.charCount,
