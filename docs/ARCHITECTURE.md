@@ -109,15 +109,16 @@ flowchart TD
     I --> J[Job Detail UI]
 ```
 
-The active profile is converted into analysis context (`profileToAnalysisContext` in `src/lib/profile/profileContext.ts`) and passed into the analysis process. The detail UI sends the active profile in the request body when calling analyze APIs.
+The browser's active profile is maintained in `localStorage` and mirrored to SQLite through `POST /api/profile-sync` after every profile-store write. Analysis routes resolve the active profile server-side through `profileRepository.ts`, with the default profile as a fallback before the first sync.
 
-Analysis endpoints (server-side, writing results back to `jobs_temp.json`):
+Analysis endpoints are server-side and persist results through the SQLite job repository:
 
 | Provider | Route |
 | --- | --- |
 | Local | `POST /api/jobs/[id]/analyze` |
 | Gemini | `POST /api/jobs/[id]/analyze/deep` |
 | Groq | `POST /api/jobs/[id]/analyze/groq` |
+| OpenRouter | `POST /api/jobs/[id]/analyze/openrouter` |
 
 The analyzer can then reason about:
 
@@ -185,9 +186,9 @@ flowchart TD
     I --> J[Display Recommendation]
 ```
 
-Jobs and stored analysis outputs persist in `jobs_temp.json` on the server (read/written with Node `fs` from API routes and the job detail server page). Profile persistence stays in the browser.
+Jobs and stored analysis outputs persist in `data/jobfit.sqlite` on the server. Only `src/lib/jobs/jobsRepository.ts` accesses the jobs table. The browser profile store remains the UI source of truth and is mirrored server-side through `src/lib/profile/profileRepository.ts`.
 
-In the current MVP, this split is intentional. The project prioritizes validating the decision-support workflow over building a production database.
+SQLite keeps the local-first MVP portable while providing a single server-side source of truth for jobs and analysis.
 
 ---
 
@@ -258,18 +259,18 @@ The MVP uses lightweight persistence suitable for a portfolio project.
 Typical data categories:
 
 ```text
-Profiles (browser localStorage)
+Profiles (browser localStorage + server SQLite mirror)
 - JapanCareerProfile objects
 - Active profile ID
 - Profile store metadata (ProfileStore)
 
-Jobs (server jobs_temp.json)
+Jobs (server data/jobfit.sqlite)
 - Job posting information
 - Source / URL if available
 - Application status
 - Collected date
 
-Analysis Results (on each job record in jobs_temp.json)
+Analysis Results (on each job row in SQLite)
 - localAnalysis / deepAnalysis / groqAnalysis (canonical flat per-provider keys)
 - Deprecated back-compat keys read but never written: `analysis` (old local key),
   `aiScore` (the mock /score route + ScorePanel were removed in Phase 1)
@@ -277,9 +278,9 @@ Analysis Results (on each job record in jobs_temp.json)
 - Final comparison result (computed in UI from stored outputs)
 ```
 
-Profiles are stored client-side for fast iteration and privacy-friendly local testing. Jobs and analysis results live in `jobs_temp.json` on the machine running Next.js.
+The profile mirror enables server-side analysis without sending a full profile in every request; it is not an account system or cross-device sync. `jobs_temp.json` remains a read-only, one-time migration source for a fresh SQLite database.
 
-A reference seed file `user_profile.json` at the project root documents default candidate preferences for development; runtime profile data comes from `localStorage`, not that file.
+A reference seed file `user_profile.json` at the project root documents default candidate preferences for development; runtime profile data comes from the browser store and its SQLite mirror, not that file.
 
 This keeps the system simple and avoids adding login, accounts, or cloud synchronization too early.
 
@@ -323,12 +324,12 @@ JobFit-AI is currently a portfolio MVP.
 It intentionally avoids some production features:
 
 - No required user account system
-- No cloud profile synchronization
+- No account-based or cross-device profile synchronization
 - No automatic resume upload pipeline
-- No production database requirement
+- No managed cloud database
 - No guaranteed legal/career correctness
 - No full job-board integration inside the main app
-- Chrome Extension source is not in this repository (only the collect API contract)
+- Chrome Extension source is included in `extension/`, but is not packaged for a browser extension store
 
 The project focuses on the core decision-support loop:
 
@@ -348,7 +349,7 @@ Possible future improvements:
 - Built-in Japan career questionnaire
 - AI provider fallback layer
 - Job alert email parser
-- Browser extension packaged or linked from this repo
+- Browser extension packaging and store distribution
 - Exportable analysis reports
 - Demo data / sample scenarios
 - Full multilingual prompt and UI support

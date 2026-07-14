@@ -2,13 +2,13 @@
 
 This document describes how to run JobFit-AI locally, build for production, configure environment variables, and what to expect when deploying the current MVP.
 
-JobFit-AI is a **local-first portfolio MVP**. Profiles live in the browser; jobs and stored analysis results live in `jobs_temp.json` on the machine running the Next.js server. Plan deployments accordingly.
+JobFit-AI is a **local-first portfolio MVP**. Jobs, stored analysis results, and a server-side mirror of the active profile store live in `data/jobfit.sqlite` on the machine running the Next.js server. The browser's `localStorage` profile store remains the primary UI store and syncs to the server after changes. Plan deployments around persistent local disk.
 
 ---
 
 ## 1. Prerequisites
 
-- **Node.js** 20+ (matches `@types/node` in `package.json`)
+- **Node.js** 24 (the CI baseline; required for the built-in `node:sqlite` API)
 - **npm** (or compatible package manager)
 - A modern browser for the UI
 - Optional: API keys for Gemini and/or Groq deep analysis
@@ -46,6 +46,7 @@ Primary UI copy is Traditional Chinese.
 ```bash
 npx tsc --noEmit
 npm run lint
+npm test
 npm run build
 ```
 
@@ -92,6 +93,8 @@ From `package.json`:
 | `build` | `next build` | Production build |
 | `start` | `next start` | Serve production build (run after `build`) |
 | `lint` | `eslint` | Lint the project |
+| `test` | `vitest run` | Unit tests for analysis, filtering, salary parsing, and repositories |
+| `test:watch` | `vitest` | Run tests in watch mode |
 
 There is no separate `typecheck` script; use `npx tsc --noEmit`.
 
@@ -113,11 +116,12 @@ Default URL: [http://localhost:3000](http://localhost:3000) (set `PORT` if your 
 
 | Data | Location | Notes |
 | --- | --- | --- |
-| Jobs + analysis on job records | `jobs_temp.json` (project root) | Gitignored; created/updated by API routes and server pages |
-| Career profiles | Browser `localStorage` | Per browser/device; not on the server |
+| Jobs + analysis on job records | `data/jobfit.sqlite` | Gitignored; read and written only through the server-side repositories |
+| Career profiles | Browser `localStorage` + SQLite mirror | The UI source of truth stays per browser; each write is mirrored to the server for analysis |
+| Legacy job snapshot | `jobs_temp.json` | Gitignored, read once only to migrate an empty SQLite store; never rewritten |
 | Reference seed profile | `user_profile.json` | Committed reference; not the runtime profile store |
 
-Ensure the process user can read and write `jobs_temp.json` in the project root.
+Ensure the process user can create and write the `data/` directory.
 
 ---
 
@@ -125,7 +129,7 @@ Ensure the process user can read and write `jobs_temp.json` in the project root.
 
 ### Recommended for this MVP: local or single VM
 
-Because the app writes `jobs_temp.json` with Node `fs`, the **simplest reliable deployment** is:
+Because the app writes its SQLite database to local disk, the **simplest reliable deployment** is:
 
 - Run `npm run build && npm run start` on one long-lived host, **or**
 - Use the project locally for portfolio demos
@@ -134,9 +138,9 @@ Because the app writes `jobs_temp.json` with Node `fs`, the **simplest reliable 
 
 You can deploy the Next.js app to Vercel or similar, but be aware:
 
-- **Ephemeral filesystem:** `jobs_temp.json` may not persist across invocations or redeploys unless you attach durable storage.
-- **Profiles still client-only:** `localStorage` is per browser; hosted URL does not sync profiles across devices.
-- **API routes** that read/write jobs need a writable path; the current MVP assumes a local file on disk.
+- **Ephemeral filesystem:** `data/jobfit.sqlite` may not persist across invocations or redeploys unless you attach durable storage.
+- **Profiles are not multi-user:** the browser store is still per browser and the server-side mirror is app-wide; this is not account-based sync.
+- **API routes** that read/write jobs or profiles need a persistent writable path; the current MVP assumes local disk.
 
 For a portfolio demo, prefer **local `npm run dev`** or a **single Node host** with a persistent disk.
 
@@ -163,7 +167,7 @@ Content-Type: application/json
 }
 ```
 
-The README references a **Chrome Extension** for collection; extension source is **not** in this repository. Any HTTP client with the same payload works.
+The collection Chrome Extension source is included in `extension/`. Any HTTP client with the same payload also works.
 
 After collecting, refresh the home page (`GET /api/jobs`) to see jobs.
 
@@ -173,17 +177,19 @@ After collecting, refresh the home page (`GET /api/jobs`) to see jobs.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `POST` | `/api/collect` | Append job to `jobs_temp.json` |
+| `POST` | `/api/collect` | Add a job to SQLite |
 | `GET` | `/api/jobs` | List jobs |
 | `DELETE` | `/api/jobs/[id]` | Delete job |
 | `PATCH` | `/api/jobs/[id]/status` | Update application status |
+| `POST` | `/api/profile-sync` | Mirror the browser profile store to SQLite |
 | `POST` | `/api/jobs/[id]/analyze` | Local profile-driven analysis |
 | `POST` | `/api/jobs/[id]/analyze/deep` | Gemini analysis (`GEMINI_API_KEY`) |
 | `POST` | `/api/jobs/[id]/analyze/groq` | Groq analysis (`GROQ_API_KEY`) |
+| `POST` | `/api/jobs/[id]/analyze/openrouter` | OpenRouter analysis |
 
-Job detail reads `jobs_temp.json` on the server; there is no `GET /api/jobs/[id]`.
+Job detail reads jobs through the SQLite repository on the server; there is no `GET /api/jobs/[id]`.
 
-Successful analyze calls **persist results on the job record** in `jobs_temp.json`.
+Successful analyze calls **persist results on the job record** in SQLite.
 
 ---
 
@@ -191,7 +197,7 @@ Successful analyze calls **persist results on the job record** in `jobs_temp.jso
 
 - [ ] `GEMINI_API_KEY` and `GROQ_API_KEY` only in server env (`.env.local` / host secrets)
 - [ ] `.env.local` not committed
-- [ ] `jobs_temp.json` not committed if it contains real job data
+- [ ] `data/jobfit.sqlite` not committed if it contains real job data
 - [ ] HTTPS in production if exposed to the internet
 - [ ] Treat AI output as decision support, not authoritative advice
 
@@ -216,7 +222,7 @@ For reviewers and interview demos:
 1. Clone the repo and `npm install`.
 2. Copy `.env.local` only if demonstrating Gemini/Groq.
 3. `npm run dev` (fastest) or `npm run build && npm run start`.
-4. Pre-seed `jobs_temp.json` via collect API or copy from a local dev machine (do not commit private postings).
+4. Seed jobs with `npm run demo` or the collect API (do not commit private postings).
 5. Import or create two profiles with clearly different deal breakers/locations.
 6. Follow the demo script in [QA.md](./QA.md#14-manual-demo-script).
 
@@ -225,10 +231,10 @@ For reviewers and interview demos:
 ## 12. Known deployment limitations
 
 - No built-in authentication or multi-user isolation.
-- No cloud profile sync; profiles are per browser.
-- Job store is a single JSON file, not a database.
-- Hosted serverless deploys may lose `jobs_temp.json` between runs.
-- Chrome Extension is external to this repo.
+- No account-based or cross-device profile sync; the browser store is per browser.
+- Job storage is a local SQLite database, not managed cloud storage.
+- Hosted serverless deploys may lose `data/jobfit.sqlite` between runs.
+- Chrome Extension source is included but not published to a browser extension store.
 - `ANALYZE_MODE` does not yet act as a single global provider switch in the UI.
 
 See also README **Notes and Limitations** and [ARCHITECTURE.md](./ARCHITECTURE.md).

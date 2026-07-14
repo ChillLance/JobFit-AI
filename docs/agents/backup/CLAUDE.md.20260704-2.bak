@@ -1,0 +1,49 @@
+@AGENTS.md
+# CLAUDE.md - JobFit-AI
+
+專案規則的單一來源是 AGENTS.md（上一行已自動載入，**不要再讀一次**）。
+本檔只放四樣東西：指令、路由表、硬規則、本機陷阱。詳細制度在 `docs/agents/`，按路由表載入，不符合情況就不要讀。
+
+## Commands
+
+```bash
+npm run dev       # dev server (http://localhost:3000)
+npm run build     # production build
+npm run lint      # eslint
+npm test          # vitest
+npx tsc --noEmit  # typecheck
+```
+
+## 路由表——什麼情況載入哪份檔
+
+| 情況 | 讀這份 |
+|---|---|
+| 要派 subagent；或任務預估讀 >10 個檔案／改 >3 個檔案 | docs/agents/model-dispatch.md |
+| 要寫派工 prompt | docs/agents/prompt-templates.md |
+| 同一問題卡住 2 次、要宣告「完成」、猶豫要不要問使用者、懷疑方向錯了 | docs/agents/judgment.md |
+| 需要模型字串、Agent tool 參數、MCP/skills 清單 | docs/agents/environment.md |
+| 要修改 CLAUDE.md 或 docs/agents/ 底下任何檔 | docs/agents/maintenance.md（先讀完才准改） |
+| 新模型／新環境第一次接手本專案 | docs/agents/handover.md（讀一次即可） |
+| 要驗證 UI 行為 | webapp-testing skill（dev server port 3000 + Playwright） |
+| 規劃新功能、討論 roadmap／Phase 3 | docs/REDESIGN.md |
+| 要動 src/lib 或 API 路由的結構 | docs/ARCHITECTURE.md |
+| 要動 UI 樣式、配色、字體 | DESIGN.md |
+| 使用者提到 TASK-0xx 編號 | docs/TASKS.md ＋ docs/CURRENT_CONTEXT.md（⚠ 歷史檔：其儲存層描述已過時，一律以 AGENTS.md 為準） |
+| 被問部署相關 | docs/DEPLOYMENT.md |
+| 被問測試策略／QA | docs/QA.md |
+| 檢討或修訂這套制度本身 | docs/agents/diagnosis.md |
+| （README.md 是對外文件，日常任務不需要讀） | — |
+
+## 硬規則（其餘專案規則見 AGENTS.md，不在此重複）
+
+1. 破壞性操作（`--force`、reseed、reset、bulk delete/update、`git reset --hard`、DROP、批次覆寫）**每一次執行前**都要先備份並確認備份檔存在——即使 5 分鐘前才備份過、即使自認「等下會還原」：
+   `Copy-Item data\jobfit.sqlite ("data\jobfit.sqlite-backup-{0}" -f (Get-Date -Format yyyyMMdd-HHmmss))`
+   為什麼：2026-07-02 使用者數月收集的真實資料，因同 session 第二次 reseed 前略過這一步而**永久遺失**（詳見 memory: data-safety-lesson）。備份檔名必須以 `jobfit.sqlite-` 開頭——這樣才會命中 .gitignore:49 的 `data/jobfit.sqlite-*`，個人資料不會被誤 commit 到公開 repo。
+2. 每完成一個交付就立刻落檔（寫進檔案）再繼續；重要結論不留在對話裡。為什麼：context 隨時可能被摘要，摘要會掉細節。
+
+## 本機陷阱（Windows 11 / PowerShell 5.1——每條都是實際踩過的）
+
+1. PowerShell 5.1 沒有 `&&` `||` `??` `?:`；雙引號字串裡變數後接冒號要寫 `${var}:`，寫 `$var:` 會直接解析錯誤。
+2. Bash 工具與 PowerShell 共享工作目錄——用了 `cd` 之後要切回專案根目錄再跑相對路徑指令。
+3. **禁止用 `Read` 工具讀 `.png` 等圖片檔來「驗證畫面」**（2026-07-02 曾一次灌入 1,020,891 字元灌爆 context）；驗證 UI 一律用 preview_screenshot / preview_snapshot 或 webapp-testing skill。
+4. PowerShell 5.1 的 `Get-Content` 預設 ANSI 解碼，讀 UTF-8 中文檔會變亂碼——看檔案內容用 `Read` 工具；PowerShell 只拿來量測時要用 `[IO.File]::ReadAllText($f, [Text.Encoding]::UTF8)`。

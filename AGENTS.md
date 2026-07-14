@@ -5,6 +5,11 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # JobFit-AI Agent Rules
 
+Shared instructions for any AI coding agent (Claude, Codex, etc.) working in
+this repository. This file is the single source of truth for project-wide agent
+rules. Agent-specific files may import it and add only agent-specific notes;
+do not duplicate shared rules between them.
+
 ## Project Overview
 
 JobFit-AI is a local Next.js App Router project for collecting job postings, storing them locally, and showing AI-based job-fit analysis.
@@ -83,6 +88,32 @@ src/app/jobs/[id]/page.tsx
   `profileRepository`.
 - Use Client Components only for interactive UI such as buttons, filters, forms, and dropdowns.
 
+## Shared Memory Workflow (Claude + Codex)
+
+- At the start of every task, read `MEMORIES/index.md`, then open only the
+  topic memory or ADR relevant to the files and product area being changed.
+- Project-shared facts live in `AGENTS.md` and `MEMORIES/`. An agent's automatic
+  session memory, private notes, chat history, or home-directory memory is not a
+  project-shared source of truth.
+- `MEMORIES/index.md` is a short routing index, not a work log. Put detail in a
+  linked topic file or `MEMORIES/decisions/ADR-*.md`.
+- When a task produces durable, reusable knowledge (a confirmed product
+  decision, architecture constraint, data contract, known bug, or workaround),
+  propose a memory update in the handoff. Do not write it unless the user asks
+  to save it or explicitly approves the update.
+- Once approved, Claude or Codex may write the shared memory. Keep it concise,
+  dated, verifiable, and linked to the detailed source document or affected
+  code. Update the index whenever a new topic file or ADR is added.
+- Never store chat transcripts, temporary status, speculative conclusions,
+  secrets, API keys, or a user's personal resume/visa data in version-controlled
+  shared memory.
+- If memory conflicts with current code or an authoritative project document,
+  verify the current state and record a dated correction or superseding ADR;
+  do not silently rewrite history.
+- This is intentionally a minimal shared-memory system. Do not add autonomous
+  memory databases, embeddings, proposal queues, or conflict-resolution
+  machinery until real multi-agent contention justifies it.
+
 ## Do Not Do Yet
 
 - Postgres/Supabase migration (Phase 3)
@@ -93,5 +124,4 @@ src/app/jobs/[id]/page.tsx
 - Cover letter generation
 
 <!-- END:nextjs-agent-rules -->
-
 
