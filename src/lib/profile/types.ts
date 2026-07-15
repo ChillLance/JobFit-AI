@@ -21,6 +21,22 @@ export type ProfileStoreVersion = typeof PROFILE_STORE_VERSION
  */
 export type ToleranceLevel = 'avoid' | 'low' | 'medium' | 'high' | 'flexible'
 
+/** The job-search lane currently being evaluated by a profile. */
+export type WorkSearchMode =
+  | 'resort_baito'
+  | 'local_baito'
+  | 'remote_tech'
+  | 'japan_career'
+  | 'other'
+
+/** Self-reported Japanese readiness for a concrete work task. */
+export type JapaneseTaskReadiness =
+  | 'not_ready'
+  | 'basic'
+  | 'comfortable'
+  | 'confident'
+  | null
+
 /**
  * Preferred working style regarding remote / on-site work.
  */
@@ -122,6 +138,8 @@ export type ProfileCareer = {
  * this field) keep validating and loading without migration.
  */
 export type ProfileWorkingHoliday = {
+  /** Keeps resort baito, local baito, remote-tech, and long-term search logic separate. */
+  workSearchMode?: WorkSearchMode | null
   hasDriverLicense: boolean | null
   /** Tolerance for 中抜けシフト (split shifts with an unpaid midday gap). */
   splitShiftTolerance: ToleranceLevel | null
@@ -129,8 +147,67 @@ export type ProfileWorkingHoliday = {
   availableMonths: number | null
   /** e.g. '2026-10' — when the candidate can start. */
   availableFrom: string | null
+  /** e.g. '2027-03' — latest practical end date for this search. */
+  availableUntil?: string | null
+  /** User-confirmed visa / residence-status expiry. Never infer this from prose. */
+  visaExpiryDate?: string | null
   targetMonthlySavingsJpy: number | null
   privateRoomRequired: boolean | null
+  /** Whether live-in housing is required, preferred, or unnecessary. */
+  dormitoryPreference?: 'required' | 'preferred' | 'not_needed' | null
+  wifiRequired?: boolean | null
+  mealsPreference?: 'required' | 'preferred' | 'not_needed' | null
+  targetSeasons?: string[]
+  japaneseTaskReadiness?: {
+    customerService: JapaneseTaskReadiness
+    phone: JapaneseTaskReadiness
+    rulesReading: JapaneseTaskReadiness
+    interview: JapaneseTaskReadiness
+  }
+}
+
+export type SearchIntentLaneKind = 'base' | 'bridge' | 'target'
+
+/**
+ * A direction hypothesis from the discovery interview. It is deliberately
+ * separate from desiredRoles: a lane may remain unconfirmed and must not be
+ * treated as a scoring preference.
+ */
+export type SearchIntentLane = {
+  id: string
+  kind: SearchIntentLaneKind
+  title: string
+  definition: string
+  exampleRoles: string[]
+  japaneseKeywords: string[]
+  supportingEvidence: string[]
+  uncertainties: string[]
+  hardBlockers: string[]
+  microExperiment: string
+  marketExperiment: string
+  passCriteria: string
+}
+
+/**
+ * Evidence and experiments behind a confirmed job-search direction. This is
+ * stored with the profile for local-only recall, but analysis must use the
+ * confirmed profile fields rather than score these hypotheses directly.
+ */
+export type SearchIntent = {
+  version: 'search_intent_v1'
+  status: 'exploring' | 'confirmed'
+  createdAt: string
+  updatedAt: string
+  currentSituation: string
+  provenFacts: string[]
+  energyGivers: string[]
+  energyDrainers: string[]
+  nonNegotiables: string[]
+  tradeableConditions: string[]
+  hypotheses: string[]
+  lanes: SearchIntentLane[]
+  selectedLaneIds: string[]
+  nextExperiments: string[]
 }
 
 /**
@@ -157,6 +234,8 @@ export type JapanCareerProfile = {
   career: ProfileCareer
   /** Free-form notes. */
   notes: string
+  /** Direction-discovery evidence; never use unconfirmed hypotheses for scoring. */
+  searchIntent?: SearchIntent
   /** Optional — working-holiday-specific logistics (see ProfileWorkingHoliday). */
   workingHoliday?: ProfileWorkingHoliday
 }

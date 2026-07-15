@@ -20,6 +20,9 @@ history here.
 - [2026-07-14 extraction pipeline + local scoring handoff](handoff-2026-07-14-extraction-pipeline.md):
   what shipped, current data state (16/26 real jobs extracted, 10 blocked on
   Gemini daily quota), loose ends, and the next planned phase.
+- [2026-07-14 profile direction + decision UI handoff](handoff-2026-07-14-profile-direction-and-decision-ui.md):
+  the implemented two-stage profile flow, decision-first job UI, verification,
+  remaining product gaps, and the recommended next slice.
 
 ## Detailed source documents
 

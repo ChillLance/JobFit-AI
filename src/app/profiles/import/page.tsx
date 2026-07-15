@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRef, useState } from 'react'
 import {
+  DIRECTION_DISCOVERY_PROMPTS,
   JAPAN_CAREER_PROFILE_VERSION,
   PROFILE_BUILDER_PROMPTS,
   addProfile,
@@ -76,6 +77,7 @@ function validateProfileShape(value: unknown): ValidationResult {
 }
 
 type Status = { type: 'success' | 'error'; text: string } | null
+type PromptMode = 'explore' | 'quick'
 
 export default function ImportProfilePage() {
   const { language } = useAppLanguage()
@@ -87,9 +89,20 @@ export default function ImportProfilePage() {
   const [importError, setImportError] = useState<string | null>(null)
   const [jsonText, setJsonText] = useState('')
   const [importedName, setImportedName] = useState<string | null>(null)
+  const [mode, setMode] = useState<PromptMode>('explore')
 
   const promptRef = useRef<HTMLTextAreaElement | null>(null)
-  const selectedPrompt = PROFILE_BUILDER_PROMPTS[language]
+  const isExploreMode = mode === 'explore'
+  const selectedPrompt = isExploreMode
+    ? DIRECTION_DISCOVERY_PROMPTS[language]
+    : PROFILE_BUILDER_PROMPTS[language]
+  const steps = isExploreMode ? i.exploreSteps : i.steps
+  const promptTitle = isExploreMode
+    ? i.explorePromptTitle
+    : i.copyPromptTitle
+  const promptDescription = isExploreMode
+    ? i.explorePromptDesc
+    : i.copyPromptDesc
 
   async function handleCopyPrompt() {
     setCopyStatus(null)
@@ -184,12 +197,43 @@ export default function ImportProfilePage() {
           </Link>
           <h1 className="mt-2 text-3xl font-bold">{i.title}</h1>
           <p className="mt-3 max-w-2xl leading-7 text-stone-500">{i.description}</p>
+
+          <div className="mt-5 flex flex-wrap gap-2" aria-label="Profile setup mode">
+            <button
+              type="button"
+              onClick={() => setMode('explore')}
+              className={`rounded-xl border px-4 py-2 text-sm font-semibold transition ${
+                isExploreMode
+                  ? 'border-orange-500 bg-orange-600 text-white'
+                  : 'border-stone-300 bg-paper text-stone-600 hover:bg-stone-100'
+              }`}
+            >
+              {i.exploreModeLabel}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('quick')}
+              className={`rounded-xl border px-4 py-2 text-sm font-semibold transition ${
+                !isExploreMode
+                  ? 'border-orange-500 bg-orange-600 text-white'
+                  : 'border-stone-300 bg-paper text-stone-600 hover:bg-stone-100'
+              }`}
+            >
+              {i.quickModeLabel}
+            </button>
+          </div>
+
+          {isExploreMode && (
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-500">
+              {i.exploreModeDescription}
+            </p>
+          )}
         </header>
 
         <section className="mb-6 rounded-2xl border border-stone-200 bg-paper p-6 shadow-sm">
           <h2 className="text-lg font-bold">{i.stepsTitle}</h2>
           <ol className="mt-3 space-y-2">
-            {i.steps.map((step, index) => (
+            {steps.map((step, index) => (
               <li key={index} className="flex gap-3 text-sm leading-6 text-stone-600">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-stone-300 bg-stone-100 text-xs font-semibold text-stone-700">
                   {index + 1}
@@ -203,8 +247,8 @@ export default function ImportProfilePage() {
         <section className="mb-6 rounded-2xl border border-stone-200 bg-paper p-6 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-bold">{i.copyPromptTitle}</h2>
-              <p className="mt-1 text-sm text-stone-500">{i.copyPromptDesc}</p>
+              <h2 className="text-lg font-bold">{promptTitle}</h2>
+              <p className="mt-1 text-sm text-stone-500">{promptDescription}</p>
             </div>
             <button
               type="button"
@@ -239,6 +283,18 @@ export default function ImportProfilePage() {
           />
         </section>
 
+        {isExploreMode ? (
+          <section className="mb-6 rounded-2xl border border-orange-200 bg-orange-50/60 p-6 shadow-sm">
+            <h2 className="text-lg font-bold text-ink">{i.exploreNextStep}</h2>
+            <button
+              type="button"
+              onClick={() => setMode('quick')}
+              className="mt-4 rounded-xl bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-500"
+            >
+              {i.switchToQuickMode}
+            </button>
+          </section>
+        ) : (
         <section className="mb-6 rounded-2xl border border-stone-200 bg-paper p-6 shadow-sm">
           <h2 className="text-lg font-bold">{i.pasteJsonTitle}</h2>
           <p className="mt-1 text-sm text-stone-500">{i.pasteJsonDesc}</p>
@@ -305,6 +361,7 @@ export default function ImportProfilePage() {
             </Link>
           </div>
         </section>
+        )}
       </div>
     </main>
   )

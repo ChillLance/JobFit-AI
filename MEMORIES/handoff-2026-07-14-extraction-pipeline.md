@@ -42,15 +42,23 @@
    `workingHoliday` block for the user's current real values** — don't
    hardcode assumptions about them here, they're user data and may change.
 
-## Data state (as of 2026-07-14, ~16:00 JST)
+## Data state (updated 2026-07-16)
 
 - 26 real jobs collected (Indeed jp/com ×12, resortbaito.com ×9,
   resortbaito-dive.com ×5), 3+ sources per the ADR-2026-001 validation order.
-- 16/26 have `extraction` populated. The other 10 are blocked on Gemini's
-  **free-tier daily quota (20 requests/day)** — not a bug. Rerun
-  `bash _tmp_batch.sh` from the project root once the quota resets
-  (~16:00 JST / midnight Pacific) to finish them, then
-  `POST /api/jobs/analyze-local-all` again to refresh scores with the newly
+- 20/26 have `extraction` populated (up from 16/26 on 2026-07-14 — the
+  free-tier daily quota that blocked the other 10 has long since reset).
+  The remaining 6 failed on 2026-07-16 with a transient Gemini 503
+  ("model is currently experiencing high demand") on both the first attempt
+  and one retry — not the daily quota error (that's a 429 with a distinct
+  quota message) and not the `MAX_TOKENS` truncation bug (already fixed in
+  both `extract/route.ts` and `analyze/deep/route.ts`). Per this project's
+  retry norm (2 attempts, then stop and reassess rather than hammer a
+  failing call), don't loop `bash _tmp_batch.sh` back-to-back — retry later
+  when Gemini's own load has settled. Failed job ids as of 2026-07-16:
+  `51565d82`, `fad52b0a`, `801fd41d`, `b89f322e`, `e95871ca`, `91147e7f`
+  (prefixes; see `data/jobfit.sqlite` for full ids). After finishing, rerun
+  `POST /api/jobs/analyze-local-all` to refresh scores with the newly
   extracted fields.
 - One exact-duplicate job row still exists in the DB (predates the
   URL-normalization fix; the fix prevents new duplicates, it does not

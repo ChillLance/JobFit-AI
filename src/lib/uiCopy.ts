@@ -54,6 +54,16 @@ export type UiCopy = {
     collectedPrefix: string
     /** Estimated net monthly savings chip (see src/lib/jobs/savings.ts). */
     savingsChip: (jpy: number) => string
+    decisionFacts: {
+      pay: string
+      housing: string
+      meals: string
+      shift: string
+      duration: string
+      missing: (count: number) => string
+      noExtraction: string
+      redFlag: string
+    }
     scoreFilters: {
       all: string
       high: string
@@ -138,6 +148,14 @@ export type UiCopy = {
     importSuccessTitle: string
     goToProfiles: string
     importAnother: string
+    exploreModeLabel: string
+    quickModeLabel: string
+    exploreModeDescription: string
+    exploreSteps: string[]
+    explorePromptTitle: string
+    explorePromptDesc: string
+    exploreNextStep: string
+    switchToQuickMode: string
   }
   jobDetail: {
     backToList: string
@@ -147,6 +165,9 @@ export type UiCopy = {
     rawContentTitle: string
     rawContentDesc: string
     noRawContent: string
+    decisionTitle: string
+    decisionDesc: string
+    missingInfoTitle: string
     collectedAt: string
     charCount: (count: number) => string
     notFoundLabel: string
@@ -296,6 +317,16 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
       sourcePrefix: '來源：',
       collectedPrefix: '採集：',
       savingsChip: (jpy) => `預估月存 約¥${jpy.toLocaleString('en-US')}`,
+      decisionFacts: {
+        pay: '收入',
+        housing: '住宿',
+        meals: '餐食',
+        shift: '班別',
+        duration: '期間',
+        missing: (count) => `${count} 項待確認`,
+        noExtraction: '尚未擷取工作條件',
+        redFlag: '需留意',
+      },
       scoreFilters: {
         all: '全部分數',
         high: '高匹配 (≥80)',
@@ -389,6 +420,21 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
       importSuccessTitle: '匯入成功',
       goToProfiles: '前往 Profiles 查看',
       importAnother: '再匯入一個',
+      exploreModeLabel: '先探索工作方向',
+      quickModeLabel: '我已知道要找什麼',
+      exploreModeDescription:
+        '先用真實經驗、限制與小型實驗找出值得測試的工作方向；這一步不會替你猜職涯，也不會立刻產生 Profile。',
+      exploreSteps: [
+        '複製方向探索 Prompt。',
+        '貼到 Claude、ChatGPT 或 Gemini，依序回答問題。',
+        '確認一條 Base、Bridge 或 Target 路線，並保留方向探索報告。',
+        '切換到「我已知道要找什麼」，在同一段對話中把確認後的方向整理成 Profile JSON。',
+      ],
+      explorePromptTitle: '1. 複製方向探索 Prompt',
+      explorePromptDesc: '先探索與驗證，再建立會真正影響職缺評分的 Profile。',
+      exploreNextStep:
+        '完成並確認一條方向後，再切換快速建檔模式。請把方向探索報告與已確認的硬性條件帶到同一段 AI 對話。',
+      switchToQuickMode: '下一步：快速建立 Profile',
     },
     jobDetail: {
       backToList: '← 回到職缺列表',
@@ -398,6 +444,9 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
       rawContentTitle: '完整原始職缺內容',
       rawContentDesc: '這是 Chrome Extension 採集到的原始文字內容，預設收合。',
       noRawContent: '這筆職缺沒有原始內容。',
+      decisionTitle: '工作條件與生活成本',
+      decisionDesc: '以下欄位由職缺原文擷取；未知的條件會明確標示為待確認。',
+      missingInfoTitle: '投遞前待確認',
       collectedAt: '採集時間：',
       charCount: (count) => `${count} 字`,
       notFoundLabel: '找不到職缺',
@@ -423,7 +472,7 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
         desiredRoles: '期望職種',
         desiredLocations: '期望地點',
         careerGoal: '職涯目標 / 願景',
-        footnote: '所有分析都會以此設定檔作為判斷基準。',
+        footnote: '這是目前使用中的設定檔；已儲存的舊分析可能使用先前的設定，請以分析結果內的時間與來源為準。',
         manage: '管理設定檔',
       },
     },
@@ -547,6 +596,16 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
       sourcePrefix: 'Source: ',
       collectedPrefix: 'Collected: ',
       savingsChip: (jpy) => `Est. savings ~¥${jpy.toLocaleString('en-US')}/mo`,
+      decisionFacts: {
+        pay: 'Pay',
+        housing: 'Housing',
+        meals: 'Meals',
+        shift: 'Schedule',
+        duration: 'Term',
+        missing: (count) => `${count} item${count === 1 ? '' : 's'} to confirm`,
+        noExtraction: 'Job conditions not extracted yet',
+        redFlag: 'Watch for',
+      },
       scoreFilters: {
         all: 'All scores',
         high: 'High match (≥80)',
@@ -641,6 +700,22 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
       importSuccessTitle: 'Import successful',
       goToProfiles: 'Go to Profiles',
       importAnother: 'Import another',
+      exploreModeLabel: 'Explore my direction first',
+      quickModeLabel: 'I know what I am seeking',
+      exploreModeDescription:
+        'Use real experiences, constraints, and small experiments to identify a direction worth testing. This mode does not guess a career or create a Profile immediately.',
+      exploreSteps: [
+        'Copy the direction-discovery prompt.',
+        'Paste it into Claude, ChatGPT, or Gemini and answer the questions in order.',
+        'Confirm one Base, Bridge, or Target lane and keep the direction report.',
+        'Switch to “I know what I am seeking” and use the confirmed direction to create Profile JSON in the same conversation.',
+      ],
+      explorePromptTitle: '1. Copy the direction-discovery prompt',
+      explorePromptDesc:
+        'Discover and validate a direction before creating the Profile that will affect job scores.',
+      exploreNextStep:
+        'After confirming a lane, switch to quick-profile mode. Carry the direction report and confirmed hard constraints into the same AI conversation.',
+      switchToQuickMode: 'Next: create a quick Profile',
     },
     jobDetail: {
       backToList: '← Back to job list',
@@ -651,6 +726,10 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
       rawContentDesc:
         'Raw text collected by the Chrome Extension. Collapsed by default.',
       noRawContent: 'This job has no raw content.',
+      decisionTitle: 'Work conditions and living costs',
+      decisionDesc:
+        'These fields were extracted from the posting. Unknown conditions remain explicitly marked for confirmation.',
+      missingInfoTitle: 'Confirm before applying',
       collectedAt: 'Collected: ',
       charCount: (count) => `${count} chars`,
       notFoundLabel: 'Job not found',
@@ -676,7 +755,7 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
         desiredRoles: 'Desired roles',
         desiredLocations: 'Desired locations',
         careerGoal: 'Career goal / vision',
-        footnote: 'All analyses use this profile as the baseline.',
+        footnote: 'This is the currently active profile. Saved analyses may use an earlier profile; check each result’s source and timestamp.',
         manage: 'Manage profiles',
       },
     },
@@ -805,6 +884,16 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
       sourcePrefix: 'ソース：',
       collectedPrefix: '収集：',
       savingsChip: (jpy) => `推定貯金 約¥${jpy.toLocaleString('en-US')}/月`,
+      decisionFacts: {
+        pay: '収入',
+        housing: '住まい',
+        meals: '食事',
+        shift: '勤務',
+        duration: '期間',
+        missing: (count) => `要確認 ${count} 件`,
+        noExtraction: '求人条件は未抽出です',
+        redFlag: '要注意',
+      },
       scoreFilters: {
         all: 'すべてのスコア',
         high: '高マッチ (≥80)',
@@ -899,6 +988,22 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
       importSuccessTitle: 'インポート成功',
       goToProfiles: 'Profiles を見る',
       importAnother: 'もう1件インポート',
+      exploreModeLabel: '先に仕事の方向を探す',
+      quickModeLabel: '探す仕事が分かっている',
+      exploreModeDescription:
+        '実際の経験、制約、小さな実験から試す価値のある方向を見つけます。このモードではキャリアを推測せず、すぐに Profile も作成しません。',
+      exploreSteps: [
+        '方向探索プロンプトをコピーします。',
+        'Claude、ChatGPT、Gemini に貼り付け、順番に答えます。',
+        'Base、Bridge、Target のいずれかを確認し、方向探索レポートを残します。',
+        '「探す仕事が分かっている」に切り替え、同じ会話で確認済み方向を Profile JSON にします。',
+      ],
+      explorePromptTitle: '1. 方向探索プロンプトをコピー',
+      explorePromptDesc:
+        '求人スコアに影響する Profile を作る前に、方向を探索・検証します。',
+      exploreNextStep:
+        '方向を確認したらクイック Profile 作成へ切り替えてください。方向探索レポートと確認済みのハード条件を同じ AI 会話に引き継ぎます。',
+      switchToQuickMode: '次へ：クイック Profile を作成',
     },
     jobDetail: {
       backToList: '← 求人一覧へ',
@@ -909,6 +1014,10 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
       rawContentDesc:
         'Chrome 拡張機能で収集した原文です。デフォルトで折りたたみます。',
       noRawContent: 'この求人には原文がありません。',
+      decisionTitle: '勤務条件と生活コスト',
+      decisionDesc:
+        '求人原文から抽出した項目です。不明な条件は確認事項として明示します。',
+      missingInfoTitle: '応募前に確認すること',
       collectedAt: '収集日時：',
       charCount: (count) => `${count} 文字`,
       notFoundLabel: '求人が見つかりません',
@@ -934,7 +1043,7 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
         desiredRoles: '希望職種',
         desiredLocations: '希望勤務地',
         careerGoal: 'キャリア目標 / ビジョン',
-        footnote: 'すべての分析はこの Profile を基準に行われます。',
+        footnote: 'これは現在使用中の Profile です。保存済みの分析は以前の Profile を使っている可能性があるため、結果内のソースと日時を確認してください。',
         manage: 'Profile を管理',
       },
     },

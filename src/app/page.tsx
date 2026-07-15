@@ -21,6 +21,7 @@ import {
   type ScoreFilter,
 } from '@/lib/jobs/filterJobs'
 import { estimateMonthlySavings } from '@/lib/jobs/savings'
+import { getDecisionFacts, getCriticalMissingCount } from '@/lib/jobs/decisionFacts'
 import { getDashboardStats } from '@/lib/jobs/getDashboardStats'
 import DashboardStatsCards from '@/components/jobs/DashboardStatsCards'
 import { getUiCopy } from '@/lib/uiCopy'
@@ -152,6 +153,66 @@ function formatDate(value: string | undefined, language: AppLanguage, unknownTim
   }
 }
 
+function getRoleLabel(
+  role: JobExtraction['roleCategory'],
+  language: AppLanguage
+): string | null {
+  if (!role) return null
+
+  const labels: Record<AppLanguage, Partial<Record<NonNullable<JobExtraction['roleCategory']>, string>>> = {
+    'zh-TW': {
+      front_desk_bell: '前台／接待',
+      room_attendant: '房務／旅館服務',
+      restaurant_service: '餐廳服務',
+      kitchen: '廚房',
+      cleaning_backyard: '清潔／後勤',
+      shop_sales: '商店銷售',
+      office_reservation: '訂房／事務',
+      general_all: '全般業務',
+      night_front: '夜間前台',
+      other: '其他工作',
+    },
+    en: {
+      front_desk_bell: 'Front desk / bell',
+      room_attendant: 'Room attendant',
+      restaurant_service: 'Restaurant service',
+      kitchen: 'Kitchen',
+      cleaning_backyard: 'Cleaning / back office',
+      shop_sales: 'Shop sales',
+      office_reservation: 'Reservations / office',
+      general_all: 'General duties',
+      night_front: 'Night front desk',
+      other: 'Other work',
+    },
+    ja: {
+      front_desk_bell: 'フロント・ベル',
+      room_attendant: '客室・旅館業務',
+      restaurant_service: 'レストランサービス',
+      kitchen: '調理',
+      cleaning_backyard: '清掃・裏方',
+      shop_sales: '売店・販売',
+      office_reservation: '予約・事務',
+      general_all: '全般業務',
+      night_front: 'ナイトフロント',
+      other: 'その他',
+    },
+  }
+
+  return labels[language][role] ?? null
+}
+
+function getCardTitle(job: Job, language: AppLanguage, fallback: string): string {
+  const extraction = job.extraction
+  if (!extraction) return job.title || fallback
+
+  if (extraction.workplaceName) return extraction.workplaceName
+
+  const role = getRoleLabel(extraction.roleCategory, language)
+  const area = extraction.areaName || extraction.cityArea || extraction.prefecture
+  if (role && area) return `${role} · ${area}`
+  return role || area || job.title || fallback
+}
+
 export default function HomePage() {
   const { language } = useAppLanguage()
   const copy = getUiCopy(language)
@@ -199,16 +260,26 @@ export default function HomePage() {
   const [riskOnly, setRiskOnly] = useState(false)
   const [sortKey, setSortKey] = useState<JobSortKey>('newest')
 
-  const statusCounts = countJobsByStatus(jobs)
+  // Demo postings are useful for a blank installation, but must not distort a
+  // real job seeker's counts, averages, or shortlist once real captures exist.
+  const displayJobs = useMemo(() => {
+    const realJobs = jobs.filter((job) => job.source !== 'demo')
+    return realJobs.length > 0 ? realJobs : jobs
+  }, [jobs])
+
+  const statusCounts = countJobsByStatus(displayJobs)
 
   // Dashboard stats are computed over ALL jobs (not the filtered view) so they
   // reflect the overall job-search state and stay stable while filtering.
-  const dashboardStats = useMemo(() => getDashboardStats(jobs), [jobs])
+  const dashboardStats = useMemo(
+    () => getDashboardStats(displayJobs),
+    [displayJobs]
+  )
 
   const filteredJobs = useMemo(
     () =>
       filterAndSortJobs(
-        jobs,
+        displayJobs,
         {
           search: searchQuery,
           status: statusFilter,
@@ -222,7 +293,7 @@ export default function HomePage() {
           getStatus: (job) => resolveStatus(job.status),
         }
       ),
-    [jobs, searchQuery, statusFilter, scoreFilter, riskOnly, sortKey]
+    [displayJobs, searchQuery, statusFilter, scoreFilter, riskOnly, sortKey]
   )
 
   const hasActiveFilters =
@@ -347,7 +418,7 @@ export default function HomePage() {
             <h1 className="mt-2 font-[family-name:var(--font-display)] text-3xl font-bold tracking-tight">
               {h.title}
             </h1>
-            <p className="mt-2 text-stone-500">{h.subtitle(jobs.length)}</p>
+            <p className="mt-2 text-stone-500">{h.subtitle(displayJobs.length)}</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -368,7 +439,7 @@ export default function HomePage() {
             <button
               type="button"
               onClick={handleAnalyzeAllLocally}
-              disabled={isAnalyzingAll || isLoading || jobs.length === 0}
+              disabled={isAnalyzingAll || isLoading || displayJobs.length === 0}
               className="rounded-xl border border-orange-600 bg-orange-600/10 px-5 py-3 font-semibold text-orange-800 transition hover:bg-orange-600/20 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isAnalyzingAll ? h.analyzeAllLocalProgress : h.analyzeAllLocal}
@@ -394,7 +465,7 @@ export default function HomePage() {
           </section>
         )}
 
-        {jobs.length > 0 && (
+        {displayJobs.length > 0 && (
           <section className="mb-6 rounded-2xl border border-stone-200 bg-paper p-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
               <div className="flex-1">
@@ -410,7 +481,7 @@ export default function HomePage() {
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
                   placeholder={h.searchPlaceholder}
-                  className="w-full rounded-xl border border-stone-300 bg-washi px-4 py-2.5 text-sm text-white placeholder:text-stone-400 focus:border-orange-500 focus:outline-none"
+                  className="w-full rounded-xl border border-stone-300 bg-washi px-4 py-2.5 text-sm text-ink placeholder:text-stone-400 focus:border-orange-500 focus:outline-none"
                 />
               </div>
 
@@ -427,7 +498,7 @@ export default function HomePage() {
                   onChange={(event) =>
                     setScoreFilter(event.target.value as ScoreFilter)
                   }
-                  className="w-full rounded-xl border border-stone-300 bg-washi px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none lg:w-auto"
+                  className="w-full rounded-xl border border-stone-300 bg-washi px-4 py-2.5 text-sm text-ink focus:border-orange-500 focus:outline-none lg:w-auto"
                 >
                   {scoreFilters.map(({ value, label }) => (
                     <option key={value} value={value}>
@@ -450,7 +521,7 @@ export default function HomePage() {
                   onChange={(event) =>
                     setSortKey(event.target.value as JobSortKey)
                   }
-                  className="w-full rounded-xl border border-stone-300 bg-washi px-4 py-2.5 text-sm text-white focus:border-orange-500 focus:outline-none lg:w-auto"
+                  className="w-full rounded-xl border border-stone-300 bg-washi px-4 py-2.5 text-sm text-ink focus:border-orange-500 focus:outline-none lg:w-auto"
                 >
                   {sortOptions.map(({ value, label }) => (
                     <option key={value} value={value}>
@@ -497,7 +568,7 @@ export default function HomePage() {
 
             <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
               <span className="text-stone-500">
-                {h.showingCount(filteredJobs.length, jobs.length)}
+                {h.showingCount(filteredJobs.length, displayJobs.length)}
               </span>
 
               {hasActiveFilters && (
@@ -534,7 +605,7 @@ export default function HomePage() {
           </section>
         )}
 
-        {jobs.length === 0 ? (
+        {displayJobs.length === 0 ? (
           <section className="rounded-2xl border border-dashed border-stone-300 bg-stone-50/60 p-12 text-center">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-orange-200 bg-orange-50 text-orange-600">
               <ToriiIcon className="h-6 w-6" />
@@ -591,16 +662,22 @@ export default function HomePage() {
                 primary?.recommendation || getFitLevelLabel(fitLevel)
 
               const savingsEstimate = estimateMonthlySavings(job)
+              const decisionFacts = getDecisionFacts(
+                job.extraction,
+                h.decisionFacts,
+                language
+              )
+              const missingFactCount = getCriticalMissingCount(job.extraction)
+              const cardTitle = getCardTitle(job, language, copy.common.unnamedJob)
+              const dutySummary = job.extraction?.dutySummary
+              const firstRedFlag = job.extraction?.redFlags[0]
 
               const metaChips = [
-                job.company,
-                job.location,
-                job.employmentType,
-                job.salary,
+                job.extraction?.agencyName || job.company,
+                job.extraction?.areaName || job.location,
                 savingsEstimate
                   ? h.savingsChip(savingsEstimate.savingsJpy)
                   : null,
-                job.source ? `${h.sourcePrefix}${job.source}` : null,
                 `${h.collectedPrefix}${formatDate(job.collectedAt, language, copy.common.unknownTime)}`,
               ].filter((value): value is string => Boolean(value))
 
@@ -610,9 +687,16 @@ export default function HomePage() {
                   className="flex h-full flex-col rounded-2xl border border-stone-200 bg-paper p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-orange-300 hover:shadow-md hover:shadow-orange-200/60"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <h2 className="line-clamp-2 text-lg font-bold leading-snug">
-                      {job.title || copy.common.unnamedJob}
-                    </h2>
+                    <div className="min-w-0">
+                      <h2 className="line-clamp-2 text-lg font-bold leading-snug">
+                        {cardTitle}
+                      </h2>
+                      {dutySummary && (
+                        <p className="mt-1 line-clamp-2 text-sm leading-5 text-stone-500">
+                          {dutySummary}
+                        </p>
+                      )}
+                    </div>
                     <span
                       className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${getStatusBadgeClass(status)}`}
                     >
@@ -631,8 +715,45 @@ export default function HomePage() {
                     ))}
                   </div>
 
+                  {job.extraction ? (
+                    <>
+                      <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                        {decisionFacts.map((fact) => (
+                          <div
+                            key={`${fact.label}-${fact.value}`}
+                            className="rounded-xl border border-stone-200 bg-stone-100/60 px-3 py-2"
+                          >
+                            <dt className="text-[11px] font-semibold uppercase tracking-wide text-stone-500">
+                              {fact.label}
+                            </dt>
+                            <dd className="mt-0.5 truncate text-sm font-semibold text-ink">
+                              {fact.value}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+
+                      <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                        {missingFactCount > 0 && (
+                          <span className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 font-semibold text-amber-800">
+                            {h.decisionFacts.missing(missingFactCount)}
+                          </span>
+                        )}
+                        {firstRedFlag && (
+                          <span className="max-w-full truncate rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-rose-800">
+                            {h.decisionFacts.redFlag}：{firstRedFlag}
+                          </span>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="mt-4 text-xs font-medium text-stone-500">
+                      {h.decisionFacts.noExtraction}
+                    </p>
+                  )}
+
                   <div
-                    className={`mt-4 flex items-center justify-between gap-3 rounded-xl border p-4 ${getScoreBoxClass(
+                    className={`mt-4 flex items-center justify-between gap-3 rounded-xl border px-4 py-3 ${getScoreBoxClass(
                       fitLevel
                     )}`}
                   >
@@ -640,7 +761,7 @@ export default function HomePage() {
                       <>
                         <div className="flex items-end gap-2">
                           <span
-                            className={`text-3xl font-bold ${getScoreColorClass(displayScore)}`}
+                            className={`text-2xl font-bold ${getScoreColorClass(displayScore)}`}
                           >
                             {displayScore}
                           </span>

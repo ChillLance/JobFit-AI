@@ -5,6 +5,15 @@ import { getUiCopy } from '@/lib/uiCopy'
 import { useAppLanguage } from '@/lib/useAppLanguage'
 import type { AppLanguage } from '@/lib/appLanguage'
 import { ToriiIcon } from '@/components/ToriiIcon'
+import type { JobExtraction } from '@/types/extraction'
+import {
+  getPayFact,
+  getHousingFact,
+  getMealsFact,
+  getShiftFact,
+  getDurationFact,
+  getMissingConditionLabels,
+} from '@/lib/jobs/decisionFacts'
 import type { JobStatus } from './StatusSelect'
 
 function getStatusBadgeClass(status: JobStatus) {
@@ -40,6 +49,15 @@ type JobData = {
   salary?: string
   source?: string
   collectedAt?: string
+  extraction?: JobExtraction | null
+}
+
+function getDetailTitle(job: JobData, fallback: string): string {
+  return job.extraction?.workplaceName || job.title || fallback
+}
+
+function getDetailSummary(job: JobData): string | null {
+  return job.extraction?.dutySummary || null
 }
 
 export function JobNotFound({ id }: { id: string }) {
@@ -111,8 +129,14 @@ export function JobDetailHeader({
         </div>
 
         <h1 className="mt-3 text-3xl font-bold leading-relaxed">
-          {job.title || copy.common.unnamedJob}
+          {getDetailTitle(job, copy.common.unnamedJob)}
         </h1>
+
+        {getDetailSummary(job) ? (
+          <p className="mt-3 line-clamp-2 text-base leading-relaxed text-stone-600">
+            {getDetailSummary(job)}
+          </p>
+        ) : null}
 
         <div className="mt-4 flex flex-wrap gap-2 text-sm text-stone-500">
           {job.company && (
@@ -150,8 +174,30 @@ export function JobDetailSections({ job }: { job: JobData }) {
   const copy = getUiCopy(language)
   const j = copy.jobDetail
   const f = j.fields
+  const decision = copy.home.decisionFacts
 
   const charCount = job.rawText ? job.rawText.length.toLocaleString() : '0'
+  const extraction = job.extraction
+
+  const payFact = extraction ? getPayFact(extraction, language) : null
+  const housingFact = extraction ? getHousingFact(extraction, language) : null
+  const mealsFact = extraction ? getMealsFact(extraction, language) : null
+  const shiftFact = extraction ? getShiftFact(extraction, language) : null
+  const durationFact = extraction ? getDurationFact(extraction, language) : null
+
+  const decisionItems: { label: string; value: string }[] = extraction
+    ? [
+        payFact ? { label: decision.pay, value: payFact } : null,
+        housingFact ? { label: decision.housing, value: housingFact } : null,
+        { label: decision.meals, value: mealsFact || '—' },
+        { label: decision.shift, value: shiftFact || '—' },
+        { label: decision.duration, value: durationFact || '—' },
+      ].filter((item): item is { label: string; value: string } => Boolean(item))
+    : []
+
+  const missingConditions = extraction
+    ? getMissingConditionLabels(extraction, decision, language)
+    : []
 
   const overviewItems: { label: string; value: string }[] = [
     job.company ? { label: f.company, value: job.company } : null,
@@ -176,6 +222,41 @@ export function JobDetailSections({ job }: { job: JobData }) {
 
   return (
     <>
+      {extraction && (
+        <section className="mb-6 rounded-2xl border border-stone-200 bg-paper p-6">
+          <h2 className="text-xl font-bold">{j.decisionTitle}</h2>
+          <p className="mt-1 text-sm text-stone-500">{j.decisionDesc}</p>
+
+          <dl className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {decisionItems.map((item) => (
+              <div
+                key={item.label}
+                className="rounded-xl border border-stone-200 bg-stone-100/60 p-4"
+              >
+                <dt className="text-xs font-semibold uppercase tracking-wide text-stone-500">
+                  {item.label}
+                </dt>
+                <dd className="mt-1.5 text-sm font-semibold text-ink">{item.value}</dd>
+              </div>
+            ))}
+          </dl>
+
+          {(missingConditions.length > 0 || extraction.redFlags.length > 0) && (
+            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <h3 className="font-semibold text-amber-900">{j.missingInfoTitle}</h3>
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-900">
+                {missingConditions.map((item) => (
+                  <li key={`missing-${item}`}>{item}</li>
+                ))}
+                {extraction.redFlags.slice(0, 3).map((item) => (
+                  <li key={`risk-${item}`}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
+      )}
+
       <section className="mb-6 rounded-2xl border border-stone-200 bg-paper p-6">
         <h2 className="text-xl font-bold">{j.overviewTitle}</h2>
         <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
