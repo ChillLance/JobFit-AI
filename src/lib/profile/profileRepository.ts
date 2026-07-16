@@ -1,5 +1,6 @@
 /**
- * Server-only mirror of the client's ProfileStore (redesign Phase 2).
+ * Server-only mirror of the client's ProfileStore (redesign Phase 2 +
+ * DEMO_MODE).
  *
  * The client (profileStore.ts) stays the source of truth for the profiles
  * UI, backed by localStorage — nothing about that UI changes. This module
@@ -13,12 +14,18 @@
  * back to the default profile — the same fallback the client uses, so
  * behavior for a fresh install is unchanged.
  *
+ * `DEMO_MODE=true` swaps the singleton for an in-memory repository (see
+ * memoryProfileRepository.ts) so this module never touches `node:sqlite` in
+ * a demo deployment — see jobsRepository.ts for the identical pattern and
+ * rationale (docs/DEPLOYMENT.md §6). `@/lib/jobs/db` is loaded with a lazy
+ * `require()` instead of a top-level `import` for the same reason.
+ *
  * MUST stay server-side. Do not import from Client Components.
  */
 import type { DatabaseSync } from 'node:sqlite'
-import { getDb } from '@/lib/jobs/db'
 import { defaultJapanCareerProfile } from './defaultProfile'
 import type { JapanCareerProfile, ProfileStore } from './types'
+import { createMemoryProfileRepository } from './memoryProfileRepository'
 
 export type ProfileRepository = {
   readStore(): ProfileStore | null
@@ -62,13 +69,31 @@ export function createProfileRepository(db: DatabaseSync): ProfileRepository {
   return { readStore, writeStore, getActiveProfile }
 }
 
+function isDemoMode(): boolean {
+  return process.env.DEMO_MODE === 'true'
+}
+
+/**
+ * Lazily `require()` db.ts only on the non-demo path — see
+ * jobsRepository.ts's createSqliteBackedRepository for the full rationale.
+ */
+function createSqliteBackedRepository(): ProfileRepository {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- intentional lazy load, see comment above.
+  const { getDb } = require('@/lib/jobs/db') as typeof import('@/lib/jobs/db')
+  return createProfileRepository(getDb())
+}
+
 // Lazy singleton: merely importing this module (e.g. to reuse
 // createProfileRepository in tests against an isolated database) must never
 // open the real data/jobfit.sqlite file. The connection is only made on the
-// first actual call.
+// first actual call, and only when not in DEMO_MODE.
 let defaultRepository: ProfileRepository | null = null
 function getDefaultRepository(): ProfileRepository {
-  if (!defaultRepository) defaultRepository = createProfileRepository(getDb())
+  if (!defaultRepository) {
+    defaultRepository = isDemoMode()
+      ? createMemoryProfileRepository()
+      : createSqliteBackedRepository()
+  }
   return defaultRepository
 }
 

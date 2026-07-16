@@ -3,12 +3,13 @@
 import Link from 'next/link'
 import { useRef, useState } from 'react'
 import {
-  DIRECTION_DISCOVERY_PROMPTS,
   JAPAN_CAREER_PROFILE_VERSION,
   PROFILE_BUILDER_PROMPTS,
+  SEARCH_MISSION_DISCOVERY_PROMPTS,
   addProfile,
   type JapanCareerProfile,
 } from '@/lib/profile'
+import { getMissionCopy } from '@/lib/missions'
 import { getUiCopy } from '@/lib/uiCopy'
 import { useAppLanguage } from '@/lib/useAppLanguage'
 
@@ -83,6 +84,7 @@ export default function ImportProfilePage() {
   const { language } = useAppLanguage()
   const copy = getUiCopy(language)
   const i = copy.profileImport
+  const missionCopy = getMissionCopy(language)
 
   const [copyStatus, setCopyStatus] = useState<Status>(null)
   const [importStatus, setImportStatus] = useState<Status>(null)
@@ -94,14 +96,14 @@ export default function ImportProfilePage() {
   const promptRef = useRef<HTMLTextAreaElement | null>(null)
   const isExploreMode = mode === 'explore'
   const selectedPrompt = isExploreMode
-    ? DIRECTION_DISCOVERY_PROMPTS[language]
+    ? SEARCH_MISSION_DISCOVERY_PROMPTS[language]
     : PROFILE_BUILDER_PROMPTS[language]
-  const steps = isExploreMode ? i.exploreSteps : i.steps
+  const steps = isExploreMode ? missionCopy.discoverySteps : i.steps
   const promptTitle = isExploreMode
-    ? i.explorePromptTitle
+    ? missionCopy.discoveryPromptTitle
     : i.copyPromptTitle
   const promptDescription = isExploreMode
-    ? i.explorePromptDesc
+    ? missionCopy.discoveryPromptDescription
     : i.copyPromptDesc
 
   async function handleCopyPrompt() {
@@ -208,7 +210,7 @@ export default function ImportProfilePage() {
                   : 'border-stone-300 bg-paper text-stone-600 hover:bg-stone-100'
               }`}
             >
-              {i.exploreModeLabel}
+              {missionCopy.discoveryModeLabel}
             </button>
             <button
               type="button"
@@ -225,7 +227,7 @@ export default function ImportProfilePage() {
 
           {isExploreMode && (
             <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-500">
-              {i.exploreModeDescription}
+              {missionCopy.discoveryDescription}
             </p>
           )}
         </header>
@@ -259,7 +261,7 @@ export default function ImportProfilePage() {
             </button>
           </div>
 
-          <p className="mt-4 text-sm text-stone-400">{i.promptFollowsAppLanguage}</p>
+          <p className="mt-4 text-sm text-stone-400">{isExploreMode ? missionCopy.discoveryNextStep : i.promptFollowsAppLanguage}</p>
 
           {copyStatus && (
             <div

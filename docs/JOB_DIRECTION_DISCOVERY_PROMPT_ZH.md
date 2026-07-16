@@ -1,5 +1,11 @@
 # 找到自己想要的工作 — Claude 探索 Prompt（繁體中文）
 
+> **已被取代（2026-07-16）**：本文件的 Base/Bridge/Target 固定方向設計已由
+> Search Mission（見 [ADR-2026-003](../MEMORIES/decisions/ADR-2026-003.md)）
+> 取代——目前程式碼裡對應的 prompt 是 `SEARCH_MISSION_DISCOVERY_PROMPTS`
+> （`src/lib/profile/profilePrompt.ts`），不是本檔案。保留本檔案作為歷史紀錄，
+> 不要再依此文件實作或引用給使用者。
+>
 > 用途：先探索工作方向，再產生 JobFit-AI Profile。  
 > 不要把這份 Prompt 當成履歷整理器；它是一個多輪決策訪談。
 

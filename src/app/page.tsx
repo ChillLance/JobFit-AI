@@ -28,6 +28,13 @@ import { getUiCopy } from '@/lib/uiCopy'
 import { useAppLanguage } from '@/lib/useAppLanguage'
 import { ToriiIcon } from '@/components/ToriiIcon'
 import type { JobExtraction } from '@/types/extraction'
+import {
+  evaluateJobForMission,
+  getActiveSearchMission,
+  getMissionCopy,
+  type MissionDecisionStatus,
+  type SearchMission,
+} from '@/lib/missions'
 
 type JobStatus =
   | 'not_applied'
@@ -116,6 +123,17 @@ function getScoreBoxClass(level: FitLevel) {
       return 'border-rose-200 bg-rose-50'
     default:
       return 'border-stone-300 bg-washi'
+  }
+}
+
+function getMissionDecisionClass(status: MissionDecisionStatus) {
+  switch (status) {
+    case 'apply':
+      return 'border-emerald-200 bg-emerald-50 text-emerald-900'
+    case 'confirm':
+      return 'border-amber-200 bg-amber-50 text-amber-900'
+    default:
+      return 'border-rose-200 bg-rose-50 text-rose-900'
   }
 }
 
@@ -218,6 +236,7 @@ export default function HomePage() {
   const copy = getUiCopy(language)
   const h = copy.home
   const statusCopy = copy.status
+  const missionCopy = getMissionCopy(language)
 
   const statusFilters: { value: StatusFilter; label: string }[] = [
     { value: 'all', label: statusCopy.all },
@@ -259,6 +278,7 @@ export default function HomePage() {
   const [scoreFilter, setScoreFilter] = useState<ScoreFilter>('all')
   const [riskOnly, setRiskOnly] = useState(false)
   const [sortKey, setSortKey] = useState<JobSortKey>('newest')
+  const [activeMission, setActiveMission] = useState<SearchMission | null>(null)
 
   // Demo postings are useful for a blank installation, but must not distort a
   // real job seeker's counts, averages, or shortlist once real captures exist.
@@ -407,9 +427,22 @@ export default function HomePage() {
     loadJobs()
   }, [])
 
+  useEffect(() => {
+    const refreshMission = () => setActiveMission(getActiveSearchMission())
+    refreshMission()
+    window.addEventListener('jobfit-search-missions-changed', refreshMission)
+    return () => window.removeEventListener('jobfit-search-missions-changed', refreshMission)
+  }, [])
+
   return (
     <main className="min-h-screen bg-washi px-6 py-8 text-ink">
       <div className="mx-auto max-w-5xl">
+        {process.env.NEXT_PUBLIC_DEMO_MODE === 'true' && (
+          <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-center text-sm font-semibold text-amber-800">
+            {copy.common.demoBanner}
+          </div>
+        )}
+
         <header className="mb-8 flex flex-col gap-4 rounded-2xl border border-stone-200 bg-paper p-6 shadow-sm md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-orange-600">
@@ -427,6 +460,13 @@ export default function HomePage() {
               className="rounded-xl border border-stone-300 bg-stone-100 px-5 py-3 font-semibold text-ink transition hover:border-stone-400 hover:bg-stone-200"
             >
               {h.manageProfiles}
+            </Link>
+
+            <Link
+              href="/missions"
+              className="rounded-xl border border-emerald-600 bg-emerald-50 px-5 py-3 font-semibold text-emerald-800 transition hover:bg-emerald-100"
+            >
+              {missionCopy.manage}
             </Link>
 
             <Link
@@ -455,6 +495,25 @@ export default function HomePage() {
             </button>
           </div>
         </header>
+
+        <section className="mb-6 rounded-2xl border border-stone-200 bg-paper p-5 shadow-sm">
+          {activeMission ? (
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">{missionCopy.current}</p>
+                <h2 className="mt-1 text-xl font-bold">{activeMission.name}</h2>
+                {activeMission.description && <p className="mt-1 text-sm text-stone-500">{activeMission.description}</p>}
+                <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                  {activeMission.goalPriorities.slice(0, 2).map((priority) => <span key={priority} className="rounded-full bg-orange-50 px-2.5 py-1 font-semibold text-orange-800">{missionCopy.priority[priority]}</span>)}
+                  {activeMission.targetRegions.slice(0, 3).map((region) => <span key={region} className="rounded-full bg-stone-100 px-2.5 py-1 text-stone-600">{region}</span>)}
+                </div>
+              </div>
+              <Link href="/missions" className="shrink-0 rounded-xl border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">{missionCopy.manage}</Link>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="font-bold">{missionCopy.noActive}</h2><p className="mt-1 text-sm text-stone-500">{missionCopy.emptyDescription}</p></div><Link href="/missions" className="shrink-0 rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white">{missionCopy.setup}</Link></div>
+          )}
+        </section>
 
         <DashboardStatsCards stats={dashboardStats} />
 
@@ -671,6 +730,9 @@ export default function HomePage() {
               const cardTitle = getCardTitle(job, language, copy.common.unnamedJob)
               const dutySummary = job.extraction?.dutySummary
               const firstRedFlag = job.extraction?.redFlags[0]
+              const missionDecision = activeMission
+                ? evaluateJobForMission(job, activeMission)
+                : null
 
               const metaChips = [
                 job.extraction?.agencyName || job.company,
@@ -750,6 +812,18 @@ export default function HomePage() {
                     <p className="mt-4 text-xs font-medium text-stone-500">
                       {h.decisionFacts.noExtraction}
                     </p>
+                  )}
+
+                  {missionDecision && (
+                    <div className={`mt-4 rounded-xl border px-4 py-3 ${getMissionDecisionClass(missionDecision.status)}`}>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-sm font-bold">{missionCopy.outcome[missionDecision.status]}</p>
+                        <span className="text-xs font-medium opacity-80">{missionCopy.route[missionDecision.route]}</span>
+                      </div>
+                      <ul className="mt-2 space-y-1 text-xs leading-5">
+                        {missionDecision.reasons.slice(0, 2).map((reason, index) => <li key={`${reason.code}-${index}`}>• {missionCopy.reason(reason)}</li>)}
+                      </ul>
+                    </div>
                   )}
 
                   <div

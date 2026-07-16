@@ -23,6 +23,8 @@ export type UiCopy = {
     active: string
     unknownTime: string
     unnamedJob: string
+    /** Shown when NEXT_PUBLIC_DEMO_MODE=true (see docs/DEPLOYMENT.md §6). */
+    demoBanner: string
   }
   status: Record<JobStatusKey, string> & { all: string }
   home: {
@@ -279,6 +281,7 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
       active: '使用中',
       unknownTime: '未知時間',
       unnamedJob: '未命名職缺',
+      demoBanner: '展示模式 — 目前顯示的是虛構職缺資料，僅供功能展示；伺服器重啟後資料會重置。',
     },
     status: {
       all: '全部',
@@ -558,6 +561,8 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
       active: 'Active',
       unknownTime: 'Unknown time',
       unnamedJob: 'Untitled job',
+      demoBanner:
+        'Demo mode — showing fictional job postings for feature demonstration only; data resets whenever the server restarts.',
     },
     status: {
       all: 'All',
@@ -846,6 +851,8 @@ const UI_COPY: Record<AppLanguage, UiCopy> = {
       active: '使用中',
       unknownTime: '不明な日時',
       unnamedJob: '無題の求人',
+      demoBanner:
+        'デモモード — 機能紹介のための架空の求人データを表示しています。サーバー再起動でリセットされます。',
     },
     status: {
       all: 'すべて',

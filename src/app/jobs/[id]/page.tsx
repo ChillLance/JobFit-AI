@@ -1,6 +1,7 @@
 import { StatusSelect } from './StatusSelect'
 import { AnalyzeFitPanel } from './AnalyzeFitPanel'
 import { ActiveProfileBanner } from './ActiveProfileBanner'
+import { ApplicationKitPanel } from './ApplicationKit'
 import {
   JobDetailHeader,
   JobDetailSections,
@@ -38,6 +39,8 @@ export default async function JobDetailPage({
         <JobDetailHeader job={job} status={status} />
 
         <ActiveProfileBanner />
+
+        <ApplicationKitPanel job={job} />
 
         <AnalyzeFitPanel
           jobId={job.id}

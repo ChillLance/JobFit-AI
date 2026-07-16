@@ -13,6 +13,7 @@ import {
   type JapanCareerProfile,
   type ProfileStore,
 } from '@/lib/profile'
+import { getMissionCopy } from '@/lib/missions'
 import { getUiCopy } from '@/lib/uiCopy'
 import { useAppLanguage } from '@/lib/useAppLanguage'
 import type { AppLanguage } from '@/lib/appLanguage'
@@ -167,6 +168,7 @@ export default function ProfilesPage() {
   const { language } = useAppLanguage()
   const copy = getUiCopy(language)
   const p = copy.profiles
+  const missionCopy = getMissionCopy(language)
 
   const [store, setStore] = useState<ProfileStore | null>(null)
   const [toast, setToast] = useState<Toast>(null)
@@ -383,6 +385,12 @@ export default function ProfilesPage() {
               className="rounded-xl border border-orange-600 bg-orange-600/10 px-4 py-2.5 text-sm font-semibold text-orange-800 transition hover:bg-orange-600/20"
             >
               {p.importFromAi}
+            </Link>
+            <Link
+              href="/missions"
+              className="rounded-xl border border-emerald-600 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100"
+            >
+              {missionCopy.manage}
             </Link>
             <button
               type="button"

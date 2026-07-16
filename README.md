@@ -13,6 +13,8 @@ The core idea is simple:
 
 ![Job detail — multi-model analyze fit panel](docs/screenshots/job-detail.png)
 
+*Screenshots above predate decision-fact chips, the savings estimate, and the trilingual UI — refreshed captures are on the roadmap.*
+
 ---
 
 ## Try it in 60 seconds
@@ -89,6 +91,22 @@ This makes the tool especially useful for career transition, foreign job seekers
 
 ---
 
+## Real-world use
+
+I'm using JobFit-AI myself while applying for working-holiday and resort-baito
+roles in Japan — it's an assist tool in that search, not a decisive one: it
+helps me screen postings faster and flags conditions (dorm fees, meal cost,
+night shifts, visa support) I'd otherwise have to re-read the whole listing to
+find, but the actual apply/skip call is still mine. Interviews and direct
+conversations with hiring contacts during that search are what's actually
+driving the roadmap items in [docs/TASKS.md](docs/TASKS.md) and
+[docs/PRODUCT_DIRECTION_2026-07.md](docs/PRODUCT_DIRECTION_2026-07.md) — things
+like the quote-grounded extraction schema and the estimated-savings chip came
+directly out of "what do I actually check before applying" rather than a
+generic feature wishlist.
+
+---
+
 ## Key Features
 
 ### Profile-driven Job Analysis
@@ -159,6 +177,42 @@ This workflow is:
 - Easy to customize
 - Suitable for sensitive career documents
 - Focused on decision support rather than resume storage
+
+The import page also offers a **two-stage direction-discovery mode** ("Explore
+my direction first" vs. "I know what I am seeking"): before generating a
+Profile, users can copy a direction-discovery prompt that walks through real
+experience, constraints, and small experiments to confirm a Base/Bridge/Target
+career lane, then carry that confirmed direction into the quick-profile
+prompt. This avoids guessing a career direction on the user's behalf.
+
+---
+
+### Quote-grounded Field Extraction and Decision Facts
+
+Long Japanese job postings often bury the details that actually decide
+whether a working-holiday or resort-baito job is livable: dorm fees, meal
+cost, shift pattern, minimum duration. JobFit-AI can extract these into
+structured fields (`POST /api/jobs/[id]/extract`, requires `GEMINI_API_KEY`)
+under a **quote-grounded schema** (`src/types/extraction.ts`): every
+non-classification field is either backed by a verbatim quote from the
+original posting or forced to `null` — `null` is a first-class value meaning
+"the listing does not state this," not a parsing failure.
+
+This powers two dashboard-card features:
+
+- **Decision fact chips** (pay / housing / meals / shift / duration) and a
+  "N items to confirm" chip when the extraction leaves fields unconfirmed
+- **Estimated monthly savings** (`src/lib/jobs/savings.ts`) — net savings
+  after dorm, utilities, and meals, since a lower-paying job with free
+  housing can out-save a higher-paying job with none of that covered
+
+### One-click Local Analysis
+
+`POST /api/jobs/analyze-local-all` re-runs the free rule-based analyzer over
+every stored job against the active profile in one click ("一鍵本地分析" on
+the dashboard), then sorts by score — useful after importing or seeding a
+batch of postings so the highest-fit jobs surface first before spending any
+paid AI-analysis quota.
 
 ---
 
@@ -321,6 +375,31 @@ The UI presents these with Traditional Chinese labels in `AnalyzeFitPanel`.
 | Profile storage | Browser `localStorage`, mirrored server-side for analysis (see below) |
 | Optional AI | Gemini, Groq, OpenRouter (server routes only) |
 | Tests / CI | Vitest, GitHub Actions |
+
+---
+
+## Public demo (DEMO_MODE)
+
+The default storage layer (`node:sqlite` writing to `data/jobfit.sqlite`)
+needs a persistent local disk, which rules out most serverless hosts (see
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) §6). For a public, shareable,
+read-mostly portfolio demo, set two environment variables:
+
+```env
+DEMO_MODE=true
+NEXT_PUBLIC_DEMO_MODE=true
+```
+
+This swaps the job and profile repositories for in-memory implementations
+(`src/lib/jobs/memoryJobsRepository.ts`, `src/lib/profile/memoryProfileRepository.ts`)
+seeded from 7 fictional postings (`data/demo-jobs.json`, 4 of them with
+hand-authored, quote-grounded `extraction` data) with local analysis already
+run, so the dashboard shows scored cards immediately. The demo path never
+imports `node:sqlite`, so it works on serverless Node runtimes that don't
+ship it. A banner shown via `NEXT_PUBLIC_DEMO_MODE` tells visitors the data is
+fictional and resets whenever the instance restarts — writes (status changes,
+deletes, etc.) work within the running process but are not durable. See
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) §6 for the Vercel deployment steps.
 
 ---
 
@@ -489,13 +568,16 @@ Important areas:
 
 - `JapanCareerProfile` schema and validation
 - Profile store with `localStorage` persistence; multiple profiles and active profile selection
-- External AI Profile Builder Prompt import (`/profiles/import`, Chinese prompt)
-- Profile-driven local analysis; Gemini/Groq analysis when API keys are configured
+- External AI Profile Builder Prompt import (`/profiles/import`), including a two-stage direction-discovery mode before quick-profile generation
+- Profile-driven local analysis; Gemini/Groq/OpenRouter analysis when API keys are configured; one-click "analyze all" local pass
+- Quote-grounded field extraction (`src/types/extraction.ts`) and derived decision-fact chips + estimated monthly savings
 - Model comparison and consensus recommendation (`buildAnalysisComparison`)
 - Home dashboard: stats cards, search, status/score/risk filters, sorting
 - Application status tracking (`PATCH /api/jobs/[id]/status`)
 - Job detail: active profile banner, Analyze Fit panel, collapsed raw posting
 - Job persistence via SQLite (`data/jobfit.sqlite`) and `POST /api/collect`
+- Trilingual UI (Traditional Chinese / English / Japanese) via `src/lib/uiCopy.ts`
+- Public read-only demo mode (`DEMO_MODE`, see [Public demo](#public-demo-demo_mode) below)
 - Unit tests (Vitest) and CI (GitHub Actions) for the pure logic and repositories
 
 ### In progress / near-term (see Roadmap)
@@ -504,11 +586,9 @@ Important areas:
 
 ### Skipped or deferred
 
-- Built-in demo data
 - Login and cloud sync
 - Resume upload into the app
 - Built-in questionnaire
-- Full multilingual UI (Profile Builder Prompt is Chinese only today)
 - `ANALYZE_MODE` as a single global provider switch
 - AI provider fallback orchestration
 
@@ -520,11 +600,8 @@ Important areas:
 
 - Portfolio UI polish (shadcn-style components)
 - Architecture diagram in docs
-- Multilingual Profile Builder Prompt (Traditional Chinese, English, Japanese)
 - Export analysis report as Markdown or JSON
-- Demo data / sample job scenarios
-- Deployment polish
-- Screenshots and usage examples
+- Refreshed screenshots reflecting the current UI
 
 ### Future ideas
 
@@ -536,7 +613,6 @@ Important areas:
 - Job alert email parser
 - Semi-automated job search assistant
 - Advanced career exploration prompt pack
-- Full multilingual UI
 - Database migration
 
 ---

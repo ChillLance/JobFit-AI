@@ -166,50 +166,6 @@ export type ProfileWorkingHoliday = {
   }
 }
 
-export type SearchIntentLaneKind = 'base' | 'bridge' | 'target'
-
-/**
- * A direction hypothesis from the discovery interview. It is deliberately
- * separate from desiredRoles: a lane may remain unconfirmed and must not be
- * treated as a scoring preference.
- */
-export type SearchIntentLane = {
-  id: string
-  kind: SearchIntentLaneKind
-  title: string
-  definition: string
-  exampleRoles: string[]
-  japaneseKeywords: string[]
-  supportingEvidence: string[]
-  uncertainties: string[]
-  hardBlockers: string[]
-  microExperiment: string
-  marketExperiment: string
-  passCriteria: string
-}
-
-/**
- * Evidence and experiments behind a confirmed job-search direction. This is
- * stored with the profile for local-only recall, but analysis must use the
- * confirmed profile fields rather than score these hypotheses directly.
- */
-export type SearchIntent = {
-  version: 'search_intent_v1'
-  status: 'exploring' | 'confirmed'
-  createdAt: string
-  updatedAt: string
-  currentSituation: string
-  provenFacts: string[]
-  energyGivers: string[]
-  energyDrainers: string[]
-  nonNegotiables: string[]
-  tradeableConditions: string[]
-  hypotheses: string[]
-  lanes: SearchIntentLane[]
-  selectedLaneIds: string[]
-  nextExperiments: string[]
-}
-
 /**
  * A single, versioned Japan-focused career profile.
  */
@@ -234,8 +190,6 @@ export type JapanCareerProfile = {
   career: ProfileCareer
   /** Free-form notes. */
   notes: string
-  /** Direction-discovery evidence; never use unconfirmed hypotheses for scoring. */
-  searchIntent?: SearchIntent
   /** Optional — working-holiday-specific logistics (see ProfileWorkingHoliday). */
   workingHoliday?: ProfileWorkingHoliday
 }

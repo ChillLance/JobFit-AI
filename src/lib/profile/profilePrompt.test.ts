@@ -1,15 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import {
-  DIRECTION_DISCOVERY_PROMPTS,
   PROFILE_BUILDER_PROMPTS,
+  SEARCH_MISSION_DISCOVERY_PROMPTS,
 } from './profilePrompt'
 
 describe('profile prompts', () => {
-  it('offers a direction-discovery prompt for every supported language', () => {
-    for (const prompt of Object.values(DIRECTION_DISCOVERY_PROMPTS)) {
+  it('starts a time-bound search from purpose instead of a fixed career direction', () => {
+    for (const prompt of Object.values(SEARCH_MISSION_DISCOVERY_PROMPTS)) {
       expect(prompt.length).toBeGreaterThan(500)
-      expect(prompt).toMatch(/Base|Bridge|Target/)
+      expect(prompt).toContain('Search Mission')
+      expect(prompt).not.toContain('Base / Bridge / Target')
     }
+    expect(SEARCH_MISSION_DISCOVERY_PROMPTS.en).toContain('no more than three')
+    expect(SEARCH_MISSION_DISCOVERY_PROMPTS.en).toContain('Confirm Mission')
   })
 
   it('makes quick-profile prompts wait for a confirmed direction', () => {

@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { getUiCopy } from '@/lib/uiCopy'
 import { useAppLanguage } from '@/lib/useAppLanguage'
 import type { AppLanguage } from '@/lib/appLanguage'
@@ -15,6 +16,13 @@ import {
   getMissingConditionLabels,
 } from '@/lib/jobs/decisionFacts'
 import type { JobStatus } from './StatusSelect'
+import {
+  evaluateJobForMission,
+  getActiveSearchMission,
+  getMissionCopy,
+  type MissionDecisionStatus,
+  type SearchMission,
+} from '@/lib/missions'
 
 function getStatusBadgeClass(status: JobStatus) {
   switch (status) {
@@ -26,6 +34,17 @@ function getStatusBadgeClass(status: JobStatus) {
       return 'border-stone-400 bg-stone-100/80 text-stone-500'
     default:
       return 'border-stone-300 bg-stone-100 text-stone-600'
+  }
+}
+
+function getMissionDecisionClass(status: MissionDecisionStatus) {
+  switch (status) {
+    case 'apply':
+      return 'border-emerald-200 bg-emerald-50 text-emerald-900'
+    case 'confirm':
+      return 'border-amber-200 bg-amber-50 text-amber-900'
+    default:
+      return 'border-rose-200 bg-rose-50 text-rose-900'
   }
 }
 
@@ -172,12 +191,21 @@ export function JobDetailHeader({
 export function JobDetailSections({ job }: { job: JobData }) {
   const { language } = useAppLanguage()
   const copy = getUiCopy(language)
+  const missionCopy = getMissionCopy(language)
   const j = copy.jobDetail
   const f = j.fields
   const decision = copy.home.decisionFacts
 
   const charCount = job.rawText ? job.rawText.length.toLocaleString() : '0'
   const extraction = job.extraction
+  const [activeMission, setActiveMission] = useState<SearchMission | null>(null)
+
+  useEffect(() => {
+    const refreshMission = () => setActiveMission(getActiveSearchMission())
+    refreshMission()
+    window.addEventListener('jobfit-search-missions-changed', refreshMission)
+    return () => window.removeEventListener('jobfit-search-missions-changed', refreshMission)
+  }, [])
 
   const payFact = extraction ? getPayFact(extraction, language) : null
   const housingFact = extraction ? getHousingFact(extraction, language) : null
@@ -198,6 +226,9 @@ export function JobDetailSections({ job }: { job: JobData }) {
   const missingConditions = extraction
     ? getMissingConditionLabels(extraction, decision, language)
     : []
+  const missionDecision = activeMission
+    ? evaluateJobForMission(job, activeMission)
+    : null
 
   const overviewItems: { label: string; value: string }[] = [
     job.company ? { label: f.company, value: job.company } : null,
@@ -222,6 +253,23 @@ export function JobDetailSections({ job }: { job: JobData }) {
 
   return (
     <>
+      <section className="mb-6 rounded-2xl border border-stone-200 bg-paper p-6">
+        {activeMission && missionDecision ? (
+          <>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div><p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">{missionCopy.current}</p><h2 className="mt-1 text-xl font-bold">{activeMission.name}</h2></div>
+              <span className={`w-fit rounded-full border px-3 py-1 text-sm font-bold ${getMissionDecisionClass(missionDecision.status)}`}>{missionCopy.outcome[missionDecision.status]}</span>
+            </div>
+            <ul className="mt-4 space-y-2 text-sm text-stone-700">
+              {missionDecision.reasons.map((reason, index) => <li key={`${reason.code}-${index}`} className="rounded-xl bg-stone-100/70 px-3 py-2">{missionCopy.reason(reason)}</li>)}
+            </ul>
+            <p className="mt-4 text-xs text-stone-500">{missionCopy.route[missionDecision.route]}</p>
+          </>
+        ) : (
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="font-bold">{missionCopy.noActive}</h2><p className="mt-1 text-sm text-stone-500">{missionCopy.emptyDescription}</p></div><Link href="/missions" className="w-fit rounded-xl bg-orange-600 px-4 py-2 text-sm font-semibold text-white">{missionCopy.setup}</Link></div>
+        )}
+      </section>
+
       {extraction && (
         <section className="mb-6 rounded-2xl border border-stone-200 bg-paper p-6">
           <h2 className="text-xl font-bold">{j.decisionTitle}</h2>

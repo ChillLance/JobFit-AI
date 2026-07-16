@@ -64,6 +64,8 @@ Server-side only (read in API routes / `src/lib/aiConfig.ts`). Do not expose key
 | `GROQ_API_KEY` | `POST /api/jobs/[id]/analyze/groq` | Not in `.env.example`; add to `.env.local` |
 | `GROQ_MODEL` | Groq (optional) | Defaults to `llama-3.3-70b-versatile` in the groq route |
 | `ANALYZE_MODE` | — | Documented in `.env.example`; read by `getAnalyzeMode()` in `src/lib/aiConfig.ts`. Providers are selected explicitly in the job detail UI today |
+| `DEMO_MODE` | — | `true` = server-side job/profile storage switches to in-memory (see §6 DEMO_MODE). Default/unset = normal SQLite-backed storage |
+| `NEXT_PUBLIC_DEMO_MODE` | — | Client-exposed by design (Next.js `NEXT_PUBLIC_*` convention) — inlined into the browser bundle to show the demo banner. Keep this equal to `DEMO_MODE` |
 
 ### Example `.env.local`
 
@@ -141,8 +143,53 @@ You can deploy the Next.js app to Vercel or similar, but be aware:
 - **Ephemeral filesystem:** `data/jobfit.sqlite` may not persist across invocations or redeploys unless you attach durable storage.
 - **Profiles are not multi-user:** the browser store is still per browser and the server-side mirror is app-wide; this is not account-based sync.
 - **API routes** that read/write jobs or profiles need a persistent writable path; the current MVP assumes local disk.
+- **`node:sqlite` availability:** the SQLite-backed repositories require Node's built-in `node:sqlite`, which may not exist on every serverless Node runtime version. See **DEMO_MODE** below if you need a deployment that avoids it entirely.
 
-For a portfolio demo, prefer **local `npm run dev`** or a **single Node host** with a persistent disk.
+For a portfolio demo with real persistence, prefer **local `npm run dev`** or a **single Node host** with a persistent disk. For a public, shareable, read-only-ish demo on Vercel's free tier, use **DEMO_MODE** instead (next section).
+
+### DEMO_MODE: public demo deployment on Vercel
+
+`DEMO_MODE` swaps the SQLite-backed job/profile repositories for in-memory
+ones seeded from `data/demo-jobs.json` (see README's [Public demo
+(DEMO_MODE)](../README.md#public-demo-demo_mode) section for the full
+rationale). This is the recommended way to put JobFit-AI behind a public URL
+without provisioning a durable disk.
+
+**Setup:**
+
+1. Deploy the repo to Vercel as a normal Next.js project (no special build command needed).
+2. In the Vercel project's **Environment Variables**, add:
+
+   | Variable | Value |
+   | --- | --- |
+   | `DEMO_MODE` | `true` |
+   | `NEXT_PUBLIC_DEMO_MODE` | `true` |
+
+   Both must be set to the same value — `DEMO_MODE` switches the server-side
+   storage layer; `NEXT_PUBLIC_DEMO_MODE` is inlined into the browser bundle
+   at build time and only controls the visible demo banner. Setting one
+   without the other leaves the banner and the actual storage layer out of
+   sync.
+3. Redeploy (env var changes require a new build in Vercel).
+4. Do **not** set `GEMINI_API_KEY` / `GROQ_API_KEY` / `OPENROUTER_API_KEY` on
+   a public demo unless you intend to expose paid AI analysis to anonymous
+   visitors — local analysis works without any keys and is what the seeded
+   demo jobs already show.
+
+**Limitations specific to DEMO_MODE:**
+
+- All data (the 7 seeded demo jobs, any status changes, any profile created
+  through `/profiles`) lives in server process memory only. It resets on
+  every cold start, redeploy, and — on Vercel specifically — is **not
+  shared across concurrent serverless invocations**, so two visitors hitting
+  different function instances can see different in-memory state. This is
+  acceptable for a portfolio demo, not for anything resembling real usage.
+  - `POST /api/collect` still works in DEMO_MODE (it just writes to the
+    in-memory store instead of SQLite) but collected jobs won't persist or
+    be visible to other visitors.
+- The demo banner (driven by `NEXT_PUBLIC_DEMO_MODE`) is the only visible
+  indicator that data is fictional/ephemeral — don't disable it independently
+  of `DEMO_MODE`.
 
 ### Environment variables on the host
 
@@ -217,7 +264,11 @@ Successful analyze calls **persist results on the job record** in SQLite.
 
 ## 11. Portfolio demo deployment
 
-For reviewers and interview demos:
+Two options depending on whether you control the host:
+
+### Local / self-hosted (full features, real persistence)
+
+For reviewers and interview demos on a machine or VM you control:
 
 1. Clone the repo and `npm install`.
 2. Copy `.env.local` only if demonstrating Gemini/Groq.
@@ -225,6 +276,14 @@ For reviewers and interview demos:
 4. Seed jobs with `npm run demo` or the collect API (do not commit private postings).
 5. Import or create two profiles with clearly different deal breakers/locations.
 6. Follow the demo script in [QA.md](./QA.md#14-manual-demo-script).
+
+### Public URL (Vercel free tier, read-mostly)
+
+For a shareable link (e.g. a portfolio/resume link) where you don't want to
+manage a persistent host: deploy with `DEMO_MODE=true` and
+`NEXT_PUBLIC_DEMO_MODE=true` — see §6 **DEMO_MODE: public demo deployment on
+Vercel** above for the full setup and its limitations (in-memory storage,
+resets on cold start, not shared across concurrent instances).
 
 ---
 
