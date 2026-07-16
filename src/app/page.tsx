@@ -437,12 +437,6 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-washi px-6 py-8 text-ink">
       <div className="mx-auto max-w-5xl">
-        {process.env.NEXT_PUBLIC_DEMO_MODE === 'true' && (
-          <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-center text-sm font-semibold text-amber-800">
-            {copy.common.demoBanner}
-          </div>
-        )}
-
         <header className="mb-8 flex flex-col gap-4 rounded-2xl border border-stone-200 bg-paper p-6 shadow-sm md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-orange-600">

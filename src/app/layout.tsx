@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google";
 import { AppLanguageSelector } from "@/components/AppLanguageSelector";
+import { DemoModeBanner } from "@/components/DemoModeBanner";
 import { ToriiIcon } from "@/components/ToriiIcon";
 import "./globals.css";
 
@@ -50,6 +51,7 @@ export default function RootLayout({
           <AppLanguageSelector />
         </div>
         <div className="kiriko-edge shrink-0" aria-hidden="true" />
+        {process.env.NEXT_PUBLIC_DEMO_MODE === "true" && <DemoModeBanner />}
         {children}
       </body>
     </html>
